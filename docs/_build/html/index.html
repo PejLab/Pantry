@@ -1,0 +1,147 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>TURNAP User Guide &#8212; turnap 0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="turnap-user-guide">
+<h1>TURNAP User Guide<a class="headerlink" href="#turnap-user-guide" title="Permalink to this headline">¶</a></h1>
+<p>Tool for Unified RNA Phenotypes</p>
+<section id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="input-files">
+<h2>Input files<a class="headerlink" href="#input-files" title="Permalink to this headline">¶</a></h2>
+<section id="fastq-sample-map">
+<h3>FASTQ sample map<a class="headerlink" href="#fastq-sample-map" title="Permalink to this headline">¶</a></h3>
+<p>A file containing FASTQ file paths and the name of the sample they map to, separated by tabs, with no header. For example:</p>
+<blockquote>
+<div><p>batch1/sample1_run1.fastq.gz   sample1
+batch1/sample1_run2.fastq.gz   sample1
+batch2/sample1_run3.fastq.gz   sample1
+batch1/sample2_run1.fastq.gz   sample2
+…</p>
+</div></blockquote>
+</section>
+<section id="fastq-files">
+<h3>FASTQ files<a class="headerlink" href="#fastq-files" title="Permalink to this headline">¶</a></h3>
+<p>[need to be zipped?]
+Multiple FASTQ files can be provided for each sample and all reads will be used.
+[how to specify paired-end files]</p>
+</section>
+</section>
+<section id="running-from-the-command-line">
+<h2>Running from the command line<a class="headerlink" href="#running-from-the-command-line" title="Permalink to this headline">¶</a></h2>
+<p>Phenotypes are computed by running one subprocess per phenotype category per sample. Within the specified output directory, one directory will be created for each phenotype category, containing per-sample output files from each program. For example, <code class="docutils literal notranslate"><span class="pre">expression/</span></code> will contain …</p>
+<p>These data will then be combined into one BED file per phenotype group so that QTL mapping can be run separately for each.</p>
+</section>
+<section id="output-files">
+<h2>Output files<a class="headerlink" href="#output-files" title="Permalink to this headline">¶</a></h2>
+<section id="bed-output-files">
+<h3>BED output files<a class="headerlink" href="#bed-output-files" title="Permalink to this headline">¶</a></h3>
+<p>The <a class="reference external" href="https://genome.ucsc.edu/FAQ/FAQformat.html#format1">BED</a> files include four annotation columns, <code class="docutils literal notranslate"><span class="pre">chrom</span></code>, <code class="docutils literal notranslate"><span class="pre">chromStart</span></code>, <code class="docutils literal notranslate"><span class="pre">chromEnd</span></code>, and <code class="docutils literal notranslate"><span class="pre">name</span></code>, followed by one column per sample containing the phenotype values. There may be one phenotype per gene (e.g. expression) or multiple (e.g. splicing), but in either case the coordinates indicate the transcription start site of the phenotype’s gene. This ensures that the same cis-window variants are tested for all phenotypes of the same gene.</p>
+<div class="toctree-wrapper compound">
+</div>
+</section>
+</section>
+</section>
+<section id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="#">turnap</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2021, Daniel Munro.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.1.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
