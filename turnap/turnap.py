@@ -4,7 +4,7 @@ import argparse
 import os
 from pathlib import Path
 import subprocess
-from typing import Iterator
+from typing import List
 import numpy as np
 import pandas as pd
 from gtfparse import read_gtf
@@ -30,11 +30,16 @@ def main():
     parser_extract = subparsers.add_parser('extract')
     parser_extract.add_argument('id', help='Sample ID that will be used in output files')
     paired_group = parser_extract.add_mutually_exclusive_group(required=True)
-    parser_extract.add_argument('--single-end', action='store_false', dest='paired_end', help='Reads are single-end. Provide one or more FASTQ files whose reads will be combined into one BAM file.')
-    parser_extract.add_argument('--paired-end', action='store_true', help='Reads are paired-end. Provide one or more pairs of FASTQ files whose reads will be combined into one BAM file.')
-    fastq_group = parser_extract.add_mutually_exclusive_group(required=True)
-    fastq_group.add_argument('--fastq', nargs='+', type=Path, metavar='PATH', help='FASTQ file path(s) for the sample, separated by spaces. For paired-end reads, provide paths in comma-separated pairs, e.g. "--fastq fileA_1.fastq.gz,fileA_2.fastq.gz fileB_1.fastq.gz,fileB_2.fastq.gz"')
-    fastq_group.add_argument('--fastq-map', type=Path, metavar='PATH', help='As an alternative to the --fastq file list, provide the path of the file containing FASTQ file paths and the name of the sample they map to, separated by tabs, with no header. Only the files mapping to the current sample ID will be used. For paired-end reads, include a row for each pair and have two FASTQ columns plus the sample name')
+    paired_group.add_argument('--single-end', action='store_false', dest='paired_end', help='Reads are single-end. Provide one or more FASTQ files whose reads will be combined into one BAM file.')
+    paired_group.add_argument('--paired-end', action='store_true', help='Reads are paired-end. Provide one or more pairs of FASTQ files whose reads will be combined into one BAM file.')
+    # fastq_group = parser_extract.add_mutually_exclusive_group(required=True)
+    # # fastq_group.add_argument('--fastq', nargs='+', type=Path, metavar='PATH', help='FASTQ file path(s) for the sample, separated by spaces. For paired-end reads, provide paths in comma-separated pairs, e.g. "--fastq fileA_1.fastq.gz,fileA_2.fastq.gz fileB_1.fastq.gz,fileB_2.fastq.gz"')
+    # fastq_group.add_argument('--fastq', nargs='+', type=Path, metavar='PATH', help='For single-end, FASTQ file path(s) for the sample, separated by spaces"')
+    # fastq_paired_group = fastq_group.add_argument_group()
+    # fastq_paired_group.add_argument('--fastq1', nargs='+', type=Path, metavar='PATH', help='For paired-end, first-in-each-pair FASTQ file path(s) for the sample, separated by spaces')
+    # fastq_paired_group.add_argument('--fastq2', nargs='+', type=Path, metavar='PATH', help='For paired-end, second-in-each-pair FASTQ file path(s) for the sample, separated by spaces')
+    # fastq_group.add_argument('--fastq-map', type=Path, metavar='PATH', help='As an alternative to the --fastq file list, provide the path of the file containing FASTQ file paths and the name of the sample they map to, separated by tabs, with no header. Only the files mapping to the current sample ID will be used. For paired-end reads, include a row for each pair and have two FASTQ columns plus the sample name.')
+    parser_extract.add_argument('--fastq-map', type=Path, required=True, metavar='PATH', help='The path of a file containing FASTQ file paths and the name of the sample they map to, separated by tabs, with no header. Only the files mapping to the current sample ID will be used. For paired-end reads, include a row for each pair and have two FASTQ columns plus the sample name.')
     parser_extract.add_argument('--fastq-dir', type=Path, default=Path('.'), metavar='PATH', help='For convenience, FASTQ file paths given by --fastq or --fastq_map can be relative to this directory. Defaults to the current directory.')
     parser_extract.add_argument('--out-dir', type=Path, required=True, metavar='PATH', help='Name of directory in which to write output')
     parser_extract.add_argument('--ref-dir', type=Path, metavar='PATH', help='Path of reference directory if different from the default {out-dir}/reference/')
@@ -68,14 +73,13 @@ def prepare(args):
         (out_dir / 'bam').mkdir(exist_ok=True)
         (out_dir / 'expression').mkdir(exist_ok=True)
         (out_dir / 'splicing').mkdir(exist_ok=True)
-        (out_dir / 'htseq').mkdir(exist_ok=True)
         (out_dir / 'stability').mkdir(exist_ok=True)
     if not (ref_dir / 'star_index' / 'SAindex').exists() or args.rerun_all:
         message('Preparing STAR index')
         if not args.dry_run:
             prepare_star_index(ref_seq, ref_anno, ref_dir, args.read_length, args.threads)
-    exon_gtf = ref_dir / 'htseq.consExons.gtf'
-    intron_gtf = ref_dir / 'htseq.Introns.gtf'
+    exon_gtf = ref_dir / 'constit_exons.gtf'
+    intron_gtf = ref_dir / 'introns.gtf'
     if not (exon_gtf.exists() and intron_gtf.exists()) or args.rerun_all:
         message('Extracting exons and introns from GTF')
         script = Path(__file__).parent.parent / 'src' / 'exons_introns_from_gtf.sh'
@@ -88,7 +92,7 @@ def prepare(args):
         message('Extracting genes from GTF')
         if not args.dry_run:
             script = Path(__file__).parent.parent / 'src' / 'collapse_annotation.py'
-            # subprocess.run(['python3', script, ref_anno, gene_gtf])
+            subprocess.run(['python3', script, ref_anno, collapsed_gtf], check=True)
             cmd = f'gtf2bed < {collapsed_gtf} | awk \'{{{{ if ($8 == "gene") {{{{ print }}}}}}}}\' > {gene_bed}'
             subprocess.run(cmd, shell=True)
     if not (ref_dir / 'rsem_index' / 'rsem_ref.chrlist').exists() or args.rerun_all:
@@ -107,7 +111,7 @@ def extract(args):
     bam_trans = bam_dir / f'{args.id}.Aligned.toTranscriptome.out.bam'
     expr_dir = out_dir / 'expression'
     splice_dir = out_dir / 'splicing'
-    htseqdir = out_dir / 'htseq'
+    stab_dir = out_dir / 'stability'
 
     if not bam.exists() or args.rerun_all:
         fastqs = get_fastq_paths(args)
@@ -120,27 +124,29 @@ def extract(args):
     if not (expr_dir / f'{args.id}.genes.results').exists() or args.rerun_all:
         message('Running RSEM')
         if not args.dry_run:
-            run_rsem(bam_trans, ref_dir, str(expr_dir / args.id), args.threads)
+            run_rsem(bam_trans, args.paired_end, ref_dir, str(expr_dir / args.id), args.threads)
 
-    # junc = splice_dir / f'{args.id}.junc'
-    # if not junc.exists() or args.rerun_all:
-    #     message('Counting splice junctions')
-    #     if not args.dry_run:
-    #         run_junctions(bam, junc)
+    junc = splice_dir / f'{args.id}.junc'
+    if not junc.exists() or args.rerun_all:
+        message('Counting splice junctions')
+        if not args.dry_run:
+            run_junctions(bam, junc)
 
-    # exons = htseqdir / f'{args.id}.consExons.counts.txt'
-    # if not exons.exists() or os.stat(exons).st_size == 0 or args.rerun_all:
-    #     message('Counting constitutive exon reads for RNA stability')
-    #     exon_gtf = ref_dir / 'htseq.consExons.gtf'
-    #     if not args.dry_run:
-    #         run_htseq(bam, 'exon', exon_gtf, exons, args.threads)
+    exons = stab_dir / f'{args.id}.constit_exons.counts.txt'
+    if not exons.exists() or os.stat(exons).st_size == 0 or args.rerun_all:
+        message('Counting constitutive exon reads for RNA stability')
+        exon_gtf = ref_dir / 'constit_exons.gtf'
+        if not args.dry_run:
+            # run_htseq(bam, 'exon', exon_gtf, exons, args.threads)
+            run_featureCounts(bam, args.paired_end, 'exon', exon_gtf, exons, args.threads)
 
-    # introns = htseqdir / f'{args.id}.Introns.counts.txt'
-    # if not introns.exists() or os.stat(introns).st_size == 0 or args.rerun_all:
-    #     message('Counting intron reads for RNA stability')
-    #     intron_gtf = ref_dir / 'htseq.Introns.gtf'
-    #     if not args.dry_run:
-    #         run_htseq(bam, 'intron', intron_gtf, introns, args.threads)
+    introns = stab_dir / f'{args.id}.introns.counts.txt'
+    if not introns.exists() or os.stat(introns).st_size == 0 or args.rerun_all:
+        message('Counting intron reads for RNA stability')
+        intron_gtf = ref_dir / 'introns.gtf'
+        if not args.dry_run:
+            # run_htseq(bam, 'intron', intron_gtf, introns, args.threads)
+            run_featureCounts(bam, args.paired_end, 'intron', intron_gtf, introns, args.threads)
 
 
 def combine(args):
@@ -151,13 +157,13 @@ def combine(args):
     ref_anno = args.ref_anno
     expr_dir = out_dir / 'expression'
     splice_dir = out_dir / 'splicing'
-    htseq_dir = out_dir / 'htseq'
     stab_dir = out_dir / 'stability'
     samples = [x for x in expr_dir.iterdir() if x.match('*.genes.results')]
     samples = [str(x.name).replace('.genes.results', '') for x in samples]
-    assemble_expr_beds(samples, expr_dir, ref_anno, out_dir)
+    # assemble_expr_beds(samples, expr_dir, ref_anno, out_dir)
     # cluster_junctions(samples, splice_dir)
     # assemble_splicing_bed(splice_dir, ref_anno, out_dir)
+    # TODO assemble exon/intron ratios
     # prepare_rembrandts_metadata(samples, stab_dir)
     # run_rembrandts(htseq_dir, stab_dir)
 
@@ -167,17 +173,33 @@ def message(text: str):
     print(f'=== {text} {"=" * max(3, 75 - len(text))}', flush=True)
 
 
-def get_fastq_paths(args) -> Iterator[Path]:
-    """Get FASTQ paths from command line arguments and confirm that the files exist"""
-    if args.fastq is None:
-        fastq_map = pd.read_csv(args.fastq_map, sep='\t', dtype=str, names=['file', 'sample'])
-        fastqs = list(fastq_map.loc[fastq_map['sample'] == args.id, 'file'])
+def get_fastq_paths(args) -> List[List[Path]]:
+    """Get FASTQ paths from command line arguments and confirm that the files exist
+    
+    Returns a list containing one (single-end) or two (paired-end) lists of paths.
+    """
+    if not args.paired_end:
+        if args.fastq_map is not None:
+            fastq_map = pd.read_csv(args.fastq_map, sep='\t', dtype=str, names=['file', 'sample'])
+            fastqs = [list(fastq_map.loc[fastq_map['sample'] == args.id, 'file'])]
+        else:
+            fastqs = [args.fastq]
     else:
-        fastqs = args.fastq
-    for fastq in fastqs:
-        fastq = args.fastq_dir / fastq
-        assert fastq.exists(), f'FASTQ file not found: {fastq}'
-        yield fastq
+        if args.fastq_map is not None:
+            fastq_map = pd.read_csv(args.fastq_map, sep='\t', dtype=str, names=['file1', 'file2', 'sample'])
+            fastqs1 = list(fastq_map.loc[fastq_map['sample'] == args.id, 'file1'])
+            fastqs2 = list(fastq_map.loc[fastq_map['sample'] == args.id, 'file2'])
+            fastqs = [fastqs1, fastqs2]
+        else:
+            fastqs = [args.fastq1, args.fastq2]
+    paths = []
+    for group in fastqs:
+        paths.append([])
+        for fastq in group:
+            path = args.fastq_dir / fastq
+            assert path.exists(), f'FASTQ file not found: {path}'
+            paths[-1].append(path)
+    return paths
 
 
 def prepare_star_index(ref_seq: Path, ref_anno: Path, ref_dir: Path, read_length: int, threads: int = 1):
@@ -188,7 +210,7 @@ def prepare_star_index(ref_seq: Path, ref_anno: Path, ref_dir: Path, read_length
         'STAR',
         '--runMode', 'genomeGenerate',
         '--outTmpDir', str(index_dir / 'tmp'),
-        '--outFileNamePrefix', str(index_dir),  # location of Log.out
+        '--outFileNamePrefix', str(index_dir / 'STAR_'),  # prefix of Log.out
         '--genomeDir', str(index_dir),
         '--genomeFastaFiles', str(ref_seq),
         '--sjdbGTFfile', str(ref_anno),
@@ -215,13 +237,15 @@ def prepare_rsem_reference(ref_seq: Path, ref_anno: Path, ref_dir: Path, threads
     subprocess.run(cmd, check=True)
 
 
-def run_star(fastqs: list, ref_dir: Path, prefix: str, threads: int = 1):
+def run_star(fastqs: List[List[Path]], ref_dir: Path, prefix: str, threads: int = 1):
     """Run STAR alignment"""
+    # Pass an unpacked tuple so paired-end isn't seen as one arg containing space
+    files = tuple([','.join([str(x) for x in group]) for group in fastqs])
     cmd = [
         'STAR',
         '--runMode', 'alignReads',
         '--genomeDir', str(ref_dir / 'star_index'),
-        '--readFilesIn', ','.join([str(x) for x in fastqs]),
+        '--readFilesIn', *files,
         '--readFilesCommand', 'zcat',
         '--twopassMode', 'Basic',
         '--quantMode', 'TranscriptomeSAM',
@@ -233,10 +257,11 @@ def run_star(fastqs: list, ref_dir: Path, prefix: str, threads: int = 1):
     subprocess.run(cmd, check=True)
 
 
-def run_rsem(bam: Path, ref_dir: Path, prefix: str, threads: int = 1):
+def run_rsem(bam: Path, paired: bool, ref_dir: Path, prefix: str, threads: int = 1):
     """Run RSEM to quantify total expression"""
     cmd = [
         'rsem-calculate-expression',
+        '--paired-end' if paired else '',
         '--num-threads', str(threads),
         '--quiet',
         '--estimate-rspd',
@@ -271,13 +296,30 @@ def run_htseq(bam: Path, feature: str, gtf: Path, output: Path, threads: int = 1
         '--format', 'bam',
         '--type', feature,
         '--stranded', 'reverse',
-        '--nprocesses', str(threads),
+        '--nprocesses', str(threads),  # Actually only works for multiple BAM files
         str(bam),
         str(gtf),
-        '>', str(output)
+        '>', str(output),
     ]
     # print(' '.join(cmd))
     # subprocess.run(cmd, stdout=open(output, 'w'))
+    subprocess.run(' '.join(cmd), shell=True)
+    if os.stat(output).st_size == 0:
+        os.remove(output)
+
+
+def run_featureCounts(bam: Path, paired: bool, feature: str, gtf: Path, output: Path, threads: int = 1):
+    """Run featureCounts from subread to get exon or intron counts"""
+    assert feature in {'exon', 'intron'}
+    cmd = [
+        'featureCounts',
+        str(bam),
+        '-p' if paired else '',
+        '-a', str(gtf),
+        '-t', feature,
+        '-T', str(threads),
+        '-o', str(output),
+    ]
     subprocess.run(' '.join(cmd), shell=True)
     if os.stat(output).st_size == 0:
         os.remove(output)
