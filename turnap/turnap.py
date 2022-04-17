@@ -160,10 +160,10 @@ def combine(args):
     stab_dir = out_dir / 'stability'
     samples = [x for x in expr_dir.iterdir() if x.match('*.genes.results')]
     samples = [str(x.name).replace('.genes.results', '') for x in samples]
-    # assemble_expr_beds(samples, expr_dir, ref_anno, out_dir)
-    # cluster_junctions(samples, splice_dir)
-    # assemble_splicing_bed(splice_dir, ref_anno, out_dir)
-    # TODO assemble exon/intron ratios
+    assemble_expr_beds(samples, expr_dir, ref_anno, out_dir)
+    cluster_junctions(samples, splice_dir)
+    assemble_splicing_bed(splice_dir, ref_anno, out_dir)
+    assemble_stability_bed(samples, stab_dir, ref_anno, out_dir)
     # prepare_rembrandts_metadata(samples, stab_dir)
     # run_rembrandts(htseq_dir, stab_dir)
 
@@ -430,6 +430,36 @@ def assemble_splicing_bed(splice_dir: Path, ref_anno: Path, out_dir: Path):
     df['name'] = df['gene_id'] + ':' + df['intron']
     df = df[['#chrom', 'chromStart', 'chromEnd', 'name'] + samples]
     df.to_csv(out_dir / 'splicing.bed', sep='\t', index=False, float_format='%g')
+
+
+def assemble_stability_bed(samples: list, stab_dir: Path, ref_anno: Path, out_dir: Path):
+    """Assemble exon to intron read ratios into mRNA stability BED files"""
+    for i, sample in enumerate(samples):
+        fname_ex = stab_dir / f'{sample}.constit_exons.counts.txt'
+        d_ex = pd.read_csv(fname_ex, sep='\t', index_col='Geneid', skiprows=1)
+        fname_in = stab_dir / f'{sample}.introns.counts.txt'
+        d_in = pd.read_csv(fname_in, sep='\t', index_col='Geneid', skiprows=1)
+        if i == 0:
+            exon = pd.DataFrame(index=d_ex.index)
+            intron = pd.DataFrame(index=d_in.index)
+        else:
+            assert d_ex.index.equals(exon.index)
+            assert d_in.index.equals(intron.index)
+        exon[sample] = d_ex.iloc[:, 5]
+        intron[sample] = d_in.iloc[:, 5]
+        exon.loc[exon[sample] < 10, sample] = np.nan
+        intron.loc[intron[sample] < 10, sample] = np.nan
+    genes = exon.index[np.isin(exon.index, intron.index)]
+    # genes = set(exon.index).intersection(intron.index)
+    assert exon.loc[genes, :].index.equals(intron.loc[genes, :].index)
+    assert exon.columns.equals(intron.columns)
+    df = exon.loc[genes, :] / intron.loc[genes, :]
+    df = df[df.isnull().mean(axis=1) <= 0.5]
+    anno = load_tss(ref_anno)
+    df.index = df.index.rename('gene_id')
+    df = anno.merge(df.reset_index(), on='gene_id', how='inner')
+    df = df.rename(columns={'gene_id': 'name'})
+    df.to_csv(out_dir / 'stability.bed', sep='\t', index=False, float_format='%g')
 
 
 def prepare_rembrandts_metadata(samples: list, stab_dir: Path):
