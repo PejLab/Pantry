@@ -18,11 +18,11 @@
 # -- Project information -----------------------------------------------------
 
 project = 'turnap'
-copyright = '2021, Daniel Munro'
+copyright = '2022, Daniel Munro'
 author = 'Daniel Munro'
 
 # The full version, including alpha/beta/rc tags
-release = '0.1'
+release = '0.0.1'
 
 
 # -- General configuration ---------------------------------------------------

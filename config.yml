@@ -1,0 +1,42 @@
+# Raw RNA-Seq data
+fastq_map: data/geuvadis/fastq_map.txt
+fastq_dir: data/geuvadis
+paired_end: True
+read_length: 75
+
+# Reference files
+ref_genome: data/human_ref/Homo_sapiens.GRCh38.dna.primary_assembly.fa
+ref_anno: data/human_ref/Homo_sapiens.GRCh38.106.gtf
+
+# Project
+project_dir: test
+ref_dir: test/reference
+threads: 4
+
+# Phenotypes
+phenotypes:
+- expression
+# phenotypes:
+# - expression:
+#   - rsem_setup:
+#     run: once
+#   - rsem_run:
+#     run: each
+#   - rsem_assemble:
+#     run: once
+# - splicing:
+#   - lc_get_junctions:
+#     run: each
+#   - lc_cluster_junctions:
+#     run: once
+# - ATS_APA:
+#   - mountainClimber_setup:
+#     run: once
+#   - mountainClimber_get_TUs:
+#     run: each
+#   - mountainClimber_merge_TUs:
+#     run: once
+#   - mountainClimber_get_RU:
+#     run: each
+#   - mountainClimber_assemble:
+#     run: once
