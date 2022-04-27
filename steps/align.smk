@@ -5,9 +5,9 @@ rule star_index:
         ref_anno = ref_anno,
     output:
         # Among other generated files:
-        f'{ref_dir}/star_index/SAindex',
+        ref_dir / 'star_index' / 'SAindex',
     params:
-        index_dir = f'{ref_dir}/star_index',
+        index_dir = ref_dir / 'star_index',
         overhang = read_length - 1,
     resources:
         cpus = threads,
@@ -67,15 +67,15 @@ rule star_align:
     """Align RNA-Seq reads for a sample using STAR."""
     input:
         fastq = fastq_input,
-        index = f'{ref_dir}/star_index/SAindex',
+        index = ref_dir / 'star_index' / 'SAindex',
     output:
-        bam1 = f'{project_dir}/bam/{{sample_id}}.Aligned.sortedByCoord.out.bam',
-        bam2 = f'{project_dir}/bam/{{sample_id}}.Aligned.toTranscriptome.out.bam',
+        bam1 = project_dir / 'bam' / '{sample_id}.Aligned.sortedByCoord.out.bam',
+        bam2 = project_dir / 'bam' / '{sample_id}.Aligned.toTranscriptome.out.bam',
     params:
         fastq_list = fastq_param,
-        index_dir = f'{ref_dir}/star_index',
-        bam_dir = f'{project_dir}/bam',
-        prefix = f'{project_dir}/bam/{{sample_id}}.',
+        index_dir = ref_dir / 'star_index',
+        bam_dir = project_dir / 'bam',
+        prefix = project_dir / 'bam' / '{sample_id}.',
     resources:
         cpus = threads,
     shell:
@@ -91,4 +91,6 @@ rule star_align:
             --outSAMtype BAM SortedByCoordinate \
             --outFileNamePrefix {params.prefix} \
             --runThreadN {resources.cpus}
+        samtools index {output.bam1}
+        samtools index {output.bam2}
         """

@@ -15,7 +15,13 @@ threads: 4
 
 # Phenotypes
 phenotypes:
-- expression
+  expression:
+    files:
+    - expression.log2.bed
+    - expression.tpm.bed
+  splicing:
+    files:
+    - splicing.bed
 # phenotypes:
 # - expression:
 #   - rsem_setup:

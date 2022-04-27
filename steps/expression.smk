@@ -1,13 +1,17 @@
+from gtfparse import read_gtf
+import numpy as np
+import pandas as pd
+
 rule rsem_index:
     """Generate the index for RSEM."""
     input:
         ref_genome = ref_genome,
         ref_anno = ref_anno,
     output:
-        f'{ref_dir}/rsem_index/rsem_ref.transcripts.fa'
+        ref_dir / 'rsem_index' / 'rsem_ref.transcripts.fa'
     params:
-        index_dir = f'{ref_dir}/rsem_index',
-        ref_prefix = f'{ref_dir}/rsem_index/rsem_ref',
+        index_dir = ref_dir / 'rsem_index',
+        ref_prefix = ref_dir / 'rsem_index' / 'rsem_ref',
     resources:
         cpus = threads,
     shell:
@@ -23,15 +27,15 @@ rule rsem_index:
 rule rsem:
     """Quantify expression from a BAM file."""
     input:
-        ref = f'{ref_dir}/rsem_index/rsem_ref.transcripts.fa',
-        bam = f'{project_dir}/bam/{{sample_id}}.Aligned.toTranscriptome.out.bam',
+        ref = ref_dir / 'rsem_index' / 'rsem_ref.transcripts.fa',
+        bam = project_dir / 'bam' / '{sample_id}.Aligned.toTranscriptome.out.bam',
     output:
-        genes = f'{project_dir}/expression/{{sample_id}}.genes.results.gz',
-        isoforms = f'{project_dir}/expression/{{sample_id}}.isoforms.results.gz',
+        genes = project_dir / 'expression' / '{sample_id}.genes.results.gz',
+        isoforms = project_dir / 'expression' / '{sample_id}.isoforms.results.gz',
     params:
-        ref_prefix = f'{ref_dir}/rsem_index/rsem_ref',
-        expr_dir = f'{project_dir}/expression',
-        out_prefix = f'{project_dir}/expression/{{sample_id}}',
+        ref_prefix = ref_dir / 'rsem_index' / 'rsem_ref',
+        expr_dir = project_dir / 'expression',
+        out_prefix = project_dir / 'expression' / '{sample_id}',
         paired_end_flag = '--paired-end' if paired_end else '',
     resources:
         cpus = threads,
@@ -69,16 +73,16 @@ def load_tss(ref_anno: Path) -> pd.DataFrame:
 rule assemble_expression:
     """Assemble RSEM log2 and tpm outputs into expression BED files"""
     input:
-        rsem = lambda w: expand(f'{project_dir}/expression/{{sample_id}}.genes.results.gz', sample_id=samples),
+        rsem = lambda w: expand(str(project_dir / 'expression' / '{sample_id}.genes.results.gz'), sample_id=samples),
         ref_anno = ref_anno,
     output:
-        log2 = f'{project_dir}/expression.log2.bed',
-        tpm = f'{project_dir}/expression.tpm.bed',
+        log2 = project_dir / 'expression.log2.bed',
+        tpm = project_dir / 'expression.tpm.bed',
     params:
-        expr_dir = f'{project_dir}/expression',
+        expr_dir = project_dir / 'expression',
     run:
         for i, sample in enumerate(samples):
-            fname = expr_dir / f'{sample}.genes.results.gz'
+            fname = params.expr_dir / f'{sample}.genes.results.gz'
             d = pd.read_csv(fname, sep='\t', index_col='gene_id')
             if i == 0:
                 log2 = pd.DataFrame(index=d.index)
