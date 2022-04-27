@@ -79,9 +79,10 @@ rule assemble_expression:
         log2 = project_dir / 'expression.log2.bed',
         tpm = project_dir / 'expression.tpm.bed',
     params:
+        samples = samples,
         expr_dir = project_dir / 'expression',
     run:
-        for i, sample in enumerate(samples):
+        for i, sample in enumerate(params.samples):
             fname = params.expr_dir / f'{sample}.genes.results.gz'
             d = pd.read_csv(fname, sep='\t', index_col='gene_id')
             if i == 0:

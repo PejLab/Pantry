@@ -22,6 +22,9 @@ phenotypes:
   splicing:
     files:
     - splicing.bed
+  stability:
+    files:
+    - stability.bed
 # phenotypes:
 # - expression:
 #   - rsem_setup:
