@@ -56,20 +56,6 @@ rule rsem:
         rm -r {params.out_prefix}.stat
         """
 
-def load_tss(ref_anno: Path) -> pd.DataFrame:
-    """Load TSS annotations from GTF file
-    
-    Returns TSS as the first four columns of the BED format, meaning the
-    coordinates are 0-based and chromEnd is just chromStart + 1.
-    """
-    anno = read_gtf(ref_anno)
-    anno = anno.loc[anno['feature'] == 'gene', :]
-    anno['chromEnd'] = np.where(anno['strand'] == '+', anno['start'], anno['end'])
-    anno['chromStart'] = anno['chromEnd'] - 1  # BED coordinates are 0-based
-    anno['#chrom'] = anno['seqname']
-    anno = anno.sort_values(['#chrom', 'chromStart'])
-    return anno[['#chrom', 'chromStart', 'chromEnd', 'gene_id']]
-
 rule assemble_expression:
     """Assemble RSEM log2 and tpm outputs into expression BED files"""
     input:

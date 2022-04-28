@@ -21,12 +21,14 @@ rule run_featureCounts:
     output:
         project_dir / 'stability' / '{sample_id}.{feature_type}.counts.txt',
     params:
+        stab_dir = project_dir / 'stability',
         paired_flag = '-p' if paired_end else '',
         feature_id = lambda w: {'constit_exons': 'exon', 'introns': 'intron'}[w.feature_type],
     resources:
         cpus = threads,
     shell:
         """
+        mkdir -p {params.stab_dir}
         featureCounts \
             {input.bam} \
             {params.paired_flag} \

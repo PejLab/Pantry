@@ -36,6 +36,7 @@ rule cluster_junctions:
     shell:
         # TODO get proper path to script
         """
+        mkdir -p {params.splice_dir}
         printf '%s\\n' {input} > {params.juncfile_list}
         python3 TURNAP/src/leafcutter_cluster_regtools_py3.py \
             --juncfiles {params.juncfile_list} \

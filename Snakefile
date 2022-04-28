@@ -9,6 +9,7 @@ paired_end = config['paired_end']
 project_dir = Path(config['project_dir'])
 ref_genome = Path(config['ref_genome'])
 ref_anno = Path(config['ref_anno'])
+retro_anno = Path(config['retro_anno'])
 ref_dir = project_dir / 'reference'
 threads = config['threads']
 phenotypes = config['phenotypes']
@@ -32,4 +33,19 @@ for phenotype in phenotypes:
 
 rule all:
     input:
-        outputs
+        # outputs
+        expand(project_dir / 'ATS_APA' / '{sample_id}.ru.bed', sample_id=samples)
+
+def load_tss(ref_anno: Path) -> pd.DataFrame:
+    """Load TSS annotations from GTF file
+    
+    Returns TSS as the first four columns of the BED format, meaning the
+    coordinates are 0-based and chromEnd is just chromStart + 1.
+    """
+    anno = read_gtf(ref_anno)
+    anno = anno.loc[anno['feature'] == 'gene', :]
+    anno['chromEnd'] = np.where(anno['strand'] == '+', anno['start'], anno['end'])
+    anno['chromStart'] = anno['chromEnd'] - 1  # BED coordinates are 0-based
+    anno['#chrom'] = anno['seqname']
+    anno = anno.sort_values(['#chrom', 'chromStart'])
+    return anno[['#chrom', 'chromStart', 'chromEnd', 'gene_id']]

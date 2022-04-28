@@ -7,6 +7,7 @@ read_length: 75
 # Reference files
 ref_genome: data/human_ref/Homo_sapiens.GRCh38.dna.primary_assembly.fa
 ref_anno: data/human_ref/Homo_sapiens.GRCh38.106.gtf
+retro_anno: data/human_ref/retro.hg38.v1.nochr.gtf
 
 # Project
 project_dir: test
@@ -25,27 +26,9 @@ phenotypes:
   stability:
     files:
     - stability.bed
-# phenotypes:
-# - expression:
-#   - rsem_setup:
-#     run: once
-#   - rsem_run:
-#     run: each
-#   - rsem_assemble:
-#     run: once
-# - splicing:
-#   - lc_get_junctions:
-#     run: each
-#   - lc_cluster_junctions:
-#     run: once
-# - ATS_APA:
-#   - mountainClimber_setup:
-#     run: once
-#   - mountainClimber_get_TUs:
-#     run: each
-#   - mountainClimber_merge_TUs:
-#     run: once
-#   - mountainClimber_get_RU:
-#     run: each
-#   - mountainClimber_assemble:
-#     run: once
+  retroelements:
+    files:
+    - retroelements.bed
+  # ATS_APA:
+  #   files:
+  #   - ATS_APA.bed
