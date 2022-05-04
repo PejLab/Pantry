@@ -1,5 +1,6 @@
 import yaml
 from pathlib import Path
+from gtfparse import read_gtf
 
 config = yaml.safe_load(open('TURNAP/config.yml'))
 fastq_map = Path(config['fastq_map'])
@@ -33,8 +34,7 @@ for phenotype in phenotypes:
 
 rule all:
     input:
-        # outputs
-        expand(project_dir / 'ATS_APA' / '{sample_id}.ru.bed', sample_id=samples)
+        outputs
 
 def load_tss(ref_anno: Path) -> pd.DataFrame:
     """Load TSS annotations from GTF file

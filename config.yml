@@ -32,3 +32,6 @@ phenotypes:
   # ATS_APA:
   #   files:
   #   - ATS_APA.bed
+  latent:
+    files:
+    - latent.bed
