@@ -75,7 +75,7 @@ rule star_align:
         fastq_list = fastq_param,
         index_dir = ref_dir / 'star_index',
         bam_dir = project_dir / 'bam',
-        prefix = project_dir / 'bam' / '{sample_id}.',
+        prefix = str(project_dir / 'bam' / '{sample_id}.'),
     resources:
         cpus = threads,
     shell:
@@ -92,5 +92,4 @@ rule star_align:
             --outFileNamePrefix {params.prefix} \
             --runThreadN {resources.cpus}
         samtools index {output.bam1}
-        samtools index {output.bam2}
         """

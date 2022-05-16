@@ -8,9 +8,9 @@ rule exons_introns_from_GTF:
     shell:
         """
         sh TURNAP/src/exons_introns_from_gtf.sh \
-             {input.ref_anno} \
-             {output.exon_gtf} \
-             {output.intron_gtf}
+            {input.ref_anno} \
+            {output.exon_gtf} \
+            {output.intron_gtf}
         """
 
 rule run_featureCounts:
@@ -24,6 +24,7 @@ rule run_featureCounts:
         stab_dir = project_dir / 'stability',
         paired_flag = '-p' if paired_end else '',
         feature_id = lambda w: {'constit_exons': 'exon', 'introns': 'intron'}[w.feature_type],
+        # TODO add strandedness parameter
     resources:
         cpus = threads,
     shell:

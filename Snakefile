@@ -35,6 +35,13 @@ for phenotype in phenotypes:
 rule all:
     input:
         outputs
+        # expand(ref_dir / 'rsem_index_ATS_APA' / '{type}.transcripts.fa',
+        #        type=['grp_1.upstream', 'grp_2.upstream', 'grp_1.downstream', 'grp_2.downstream']),
+        # expand(
+        #     project_dir / 'ATS_APA' / '{sample_id}..{type}.isoforms.results.gz',
+        #     sample_id=samples,
+        #     type=['grp_1.upstream', 'grp_2.upstream', 'grp_1.downstream', 'grp_2.downstream']
+        # )
 
 def load_tss(ref_anno: Path) -> pd.DataFrame:
     """Load TSS annotations from GTF file
