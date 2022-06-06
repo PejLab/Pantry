@@ -1,3 +1,6 @@
+localrules:
+    latent_pheno_groups,
+
 rule get_gene_bins:
     """Divide gene features into bins"""
     input:
@@ -43,7 +46,7 @@ rule assemble_latent_bed:
         beds = lambda w: expand(str(project_dir / 'latent' / '{sample_id}.bed.gz'), sample_id=samples),
         ref_anno = ref_anno,
     output:
-        project_dir / 'latent.bed',
+        project_dir / 'unnorm' / 'latent.bed',
     params:
         bedfile_list = project_dir / 'latent' / 'bedfiles.txt',
         n_pcs = 10,
@@ -56,6 +59,34 @@ rule assemble_latent_bed:
             -n {params.n_pcs} \
             -o {output}
         """
+
+rule normalize_latent:
+    """Quantile-normalize values for QTL mapping"""
+    input:
+        project_dir / 'unnorm' / 'latent.bed',
+    output:
+        project_dir / 'latent.bed.gz',
+    params:
+        bed = project_dir / 'latent.bed',
+    shell:
+        """
+        python3 TURNAP/src/normalize_phenotypes.py \
+            --input {input} \
+            --output {params.bed}
+        bgzip {params.bed}
+        """
+
+rule latent_pheno_groups:
+    """Group phenotypes by gene for tensorQTL"""
+    input:
+        project_dir / 'latent.bed.gz',
+    output:
+        project_dir / 'latent.phenotype_groups.txt',
+    run:
+        df = pd.read_csv(input[0], sep='\t', usecols=['name'])
+        df['group'] = df['name'].str.split(':', expand=False).str[0]
+        df.to_csv(output[0], sep='\t', index=False, header=False)
+
 
 # rule get_chrom_lengths:
 #     """Get chromosome lengths from genome FASTA header lines for pyBedGraph"""

@@ -63,8 +63,8 @@ rule assemble_expression:
         rsem = lambda w: expand(str(project_dir / 'expression' / '{sample_id}.genes.results.gz'), sample_id=samples),
         ref_anno = ref_anno,
     output:
-        log2 = project_dir / 'expression.log2.bed',
-        tpm = project_dir / 'expression.tpm.bed',
+        log2 = project_dir / 'unnorm' / 'expression.log2.bed',
+        tpm = project_dir / 'unnorm' / 'expression.tpm.bed',
     params:
         samples = samples,
         expr_dir = project_dir / 'expression',
@@ -86,3 +86,19 @@ rule assemble_expression:
         tpm = tpm.rename(columns={'gene_id': 'name'})
         log2.to_csv(output.log2, sep='\t', index=False, float_format='%g')
         tpm.to_csv(output.tpm, sep='\t', index=False, float_format='%g')
+
+rule normalize_expression:
+    """Quantile-normalize values for QTL mapping"""
+    input:
+        project_dir / 'unnorm' / 'expression.tpm.bed',
+    output:
+        project_dir / 'expression.bed.gz',
+    params:
+        bed = project_dir / 'expression.bed',
+    shell:
+        """
+        python3 TURNAP/src/normalize_phenotypes.py \
+            --input {input} \
+            --output {params.bed}
+        bgzip {params.bed}
+        """

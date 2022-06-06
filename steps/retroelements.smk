@@ -41,7 +41,7 @@ rule assemble_retroelement_bed:
         telescope_files = lambda w: expand(str(project_dir / 'retroelements' / '{sample_id}-telescope_report.tsv'), sample_id=samples),
         retro_anno = retro_anno,
     output:
-        bed = project_dir / 'retroelements.bed',
+        bed = project_dir / 'unnorm' / 'retroelements.bed',
     params:
         samples = samples,
         retro_dir = project_dir / 'retroelements',
@@ -60,3 +60,19 @@ rule assemble_retroelement_bed:
         df.index = df.index.rename('name')
         df = anno.merge(df.reset_index(), on='name', how='inner')
         df.to_csv(output.bed, sep='\t', index=False, float_format='%g')
+
+rule normalize_retroelements:
+    """Quantile-normalize values for QTL mapping"""
+    input:
+        project_dir / 'unnorm' / 'retroelements.bed',
+    output:
+        project_dir / 'retroelements.bed.gz',
+    params:
+        bed = project_dir / 'retroelements.bed',
+    shell:
+        """
+        python3 TURNAP/src/normalize_phenotypes.py \
+            --input {input} \
+            --output {params.bed}
+        bgzip {params.bed}
+        """

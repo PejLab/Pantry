@@ -56,3 +56,11 @@ def load_tss(ref_anno: Path) -> pd.DataFrame:
     anno['#chrom'] = anno['seqname']
     anno = anno.sort_values(['#chrom', 'chromStart'])
     return anno[['#chrom', 'chromStart', 'chromEnd', 'gene_id']]
+
+rule index_bed:
+    input:
+        project_dir / '{pheno}.bed.gz',
+    output:
+        project_dir / '{pheno}.bed.gz.tbi'
+    shell:
+        'tabix {input}'

@@ -1,3 +1,6 @@
+localrules:
+    splicing_pheno_groups,
+
 rule regtools_junctions:
     """Run regtools junctions for LeafCutter"""
     input:
@@ -89,7 +92,7 @@ rule assemble_splicing_bed:
         counts = project_dir / 'splicing' / 'leafcutter_perind_numers.counts.gz',
         ref_anno = ref_anno,
     output:
-        bed = project_dir / 'splicing.bed',
+        bed = project_dir / 'unnorm' / 'splicing.bed',
     run:
         df = pd.read_csv(input.counts, sep=' ')
         samples = list(df.columns)
@@ -108,3 +111,30 @@ rule assemble_splicing_bed:
         df['name'] = df['gene_id'] + ':' + df['intron']
         df = df[['#chrom', 'chromStart', 'chromEnd', 'name'] + samples]
         df.to_csv(output.bed, sep='\t', index=False, float_format='%g')
+
+rule normalize_splicing:
+    """Quantile-normalize values for QTL mapping"""
+    input:
+        project_dir / 'unnorm' / 'splicing.bed',
+    output:
+        project_dir / 'splicing.bed.gz',
+    params:
+        bed = project_dir / 'splicing.bed',
+    shell:
+        """
+        python3 TURNAP/src/normalize_phenotypes.py \
+            --input {input} \
+            --output {params.bed}
+        bgzip {params.bed}
+        """
+
+rule splicing_pheno_groups:
+    """Group phenotypes by gene for tensorQTL"""
+    input:
+        project_dir / 'splicing.bed.gz',
+    output:
+        project_dir / 'splicing.phenotype_groups.txt',
+    run:
+        df = pd.read_csv(input[0], sep='\t', usecols=['name'])
+        df['group'] = df['name'].str.split(':', expand=False).str[0]
+        df.to_csv(output[0], sep='\t', index=False, header=False)

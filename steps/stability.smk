@@ -47,7 +47,7 @@ rule assemble_stability_bed:
         intron = lambda w: expand(str(project_dir / 'stability' / '{sample_id}.introns.counts.txt'), sample_id=samples),
         ref_anno = ref_anno,
     output:
-        bed = project_dir / 'stability.bed',
+        bed = project_dir / 'unnorm' / 'stability.bed',
     params:
         samples = samples,
         stab_dir = project_dir / 'stability',
@@ -78,3 +78,19 @@ rule assemble_stability_bed:
         df = anno.merge(df.reset_index(), on='gene_id', how='inner')
         df = df.rename(columns={'gene_id': 'name'})
         df.to_csv(output.bed, sep='\t', index=False, float_format='%g')
+
+rule normalize_stability:
+    """Quantile-normalize values for QTL mapping"""
+    input:
+        project_dir / 'unnorm' / 'stability.bed',
+    output:
+        project_dir / 'stability.bed.gz',
+    params:
+        bed = project_dir / 'stability.bed',
+    shell:
+        """
+        python3 TURNAP/src/normalize_phenotypes.py \
+            --input {input} \
+            --output {params.bed}
+        bgzip {params.bed}
+        """
