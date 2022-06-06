@@ -2,7 +2,7 @@ import yaml
 from pathlib import Path
 from gtfparse import read_gtf
 
-config = yaml.safe_load(open('TURNAP/config.yml'))
+config = yaml.safe_load(open('config.yml'))
 fastq_map = Path(config['fastq_map'])
 fastq_dir = Path(config['fastq_dir'])
 read_length = config['read_length']

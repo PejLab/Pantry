@@ -27,6 +27,7 @@ rule run_featureCounts:
         # TODO add strandedness parameter
     resources:
         cpus = threads,
+        walltime = 8,
     shell:
         """
         mkdir -p {params.stab_dir}
