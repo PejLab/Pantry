@@ -39,6 +39,7 @@ rule rsem:
         # TODO add strandedness parameter
     resources:
         cpus = threads,
+        walltime = 4,
     shell:
         """
         mkdir -p {params.expr_dir}

@@ -29,9 +29,9 @@ phenotypes:
   retroelements:
     files:
     - retroelements.bed
-  # ATS_APA:
-  #   files:
-  #   - ATS_APA.bed
   latent:
     files:
     - latent.bed
+  # ATS_APA:
+  #   files:
+  #   - ATS_APA.bed

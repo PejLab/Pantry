@@ -10,7 +10,9 @@ rule star_index:
         index_dir = ref_dir / 'star_index',
         overhang = read_length - 1,
     resources:
+        mem_mb = 60000,
         cpus = threads,
+        walltime = 4,
     shell:
         """
         mkdir -p {params.index_dir}
@@ -70,6 +72,7 @@ rule star_align:
         index = ref_dir / 'star_index' / 'SAindex',
     output:
         bam1 = project_dir / 'bam' / '{sample_id}.Aligned.sortedByCoord.out.bam',
+        bai1 = project_dir / 'bam' / '{sample_id}.Aligned.sortedByCoord.out.bam.bai',
         bam2 = project_dir / 'bam' / '{sample_id}.Aligned.toTranscriptome.out.bam',
     params:
         fastq_list = fastq_param,
@@ -77,7 +80,9 @@ rule star_align:
         bam_dir = project_dir / 'bam',
         prefix = str(project_dir / 'bam' / '{sample_id}.'),
     resources:
+        mem_mb = 60000,
         cpus = threads,
+        walltime = 8,
     shell:
         """
         mkdir -p {params.bam_dir}

@@ -6,6 +6,7 @@ rule regtools_junctions:
     output:
         project_dir / 'splicing' / '{sample_id}.junc'
     params:
+        splice_dir = project_dir / 'splicing',
         min_anchor_len = 8,
         min_intron_len = 50,
         max_intron_len = 500000,

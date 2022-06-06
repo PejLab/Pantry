@@ -7,6 +7,8 @@ rule run_telescope:
         project_dir / 'retroelements' / '{sample_id}-telescope_report.tsv',
     params:
         retro_dir = project_dir / 'retroelements',
+    resources:
+        walltime = 8,
     shell:
         """
         mkdir -p {params.retro_dir}
