@@ -8,6 +8,7 @@ rule star_index:
         ref_dir / 'star_index' / 'SAindex',
     params:
         index_dir = ref_dir / 'star_index',
+        unnorm_dir = project_dir / 'unnorm', # TODO: find better rule to make this
         overhang = read_length - 1,
     resources:
         mem_mb = 60000,
@@ -16,6 +17,7 @@ rule star_index:
     shell:
         """
         mkdir -p {params.index_dir}
+        mkdir -p {params.unnorm_dir}
         STAR --runMode genomeGenerate \
             --outTmpDir {params.index_dir}/tmp \
             --outFileNamePrefix {params.index_dir}/STAR_ \

@@ -27,14 +27,22 @@ outputs = []
 for pheno, params in phenotypes.items():
     for f in params['files']:
         outputs.append(project_dir / f)
+    # Used only for QTL mapping for now:
+    params['grouped'] = any(['phenotype_groups' in f for f in params['files']])
+
+# These steps are short and will not be submitted as cluster jobs:
+localrules:
+    index_bed,
 
 include: 'steps/align.smk'
 for phenotype in phenotypes:
     include: f'steps/{phenotype}.smk'
+include: 'steps/qtl.smk'
 
 rule all:
     input:
-        outputs
+        outputs,
+        expand(project_dir / 'qtl' / '{pheno}.cis_independent_qtl.txt.gz', pheno=phenotypes.keys()),
         # expand(ref_dir / 'rsem_index_ATS_APA' / '{type}.transcripts.fa',
         #        type=['grp_1.upstream', 'grp_2.upstream', 'grp_1.downstream', 'grp_2.downstream']),
         # expand(
@@ -55,7 +63,10 @@ def load_tss(ref_anno: Path) -> pd.DataFrame:
     anno['chromStart'] = anno['chromEnd'] - 1  # BED coordinates are 0-based
     anno['#chrom'] = anno['seqname']
     anno = anno.sort_values(['#chrom', 'chromStart'])
-    return anno[['#chrom', 'chromStart', 'chromEnd', 'gene_id']]
+    anno = anno[['#chrom', 'chromStart', 'chromEnd', 'gene_id']]
+    # Rename columns for tensorQTL:
+    anno.columns = ['#chr', 'start', 'end', 'phenotype_id']
+    return anno
 
 rule index_bed:
     input:

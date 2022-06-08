@@ -94,4 +94,6 @@ anno = load_tss(args.gtf)
 df = anno.merge(df, on='gene_id', how='inner')
 df['name'] = df['gene_id'] + ':' + df['PC'].astype(str)
 df = df[['#chrom', 'chromStart', 'chromEnd', 'name'] + samples]
+# Rename columns for tensorQTL:
+df.columns = ['#chr', 'start', 'end', 'phenotype_id'] + samples
 df.to_csv(args.output, sep='\t', index=False, float_format='%g')

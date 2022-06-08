@@ -107,15 +107,17 @@ rule assemble_splicing_bed:
         genes = map_introns_to_genes(df['intron'], exons)
         df = df.merge(genes, on='cluster', how='left')
         anno = load_tss(input.ref_anno)
+        anno = anno.rename(columns={'phenotype_id': 'gene_id'})
         df = anno.merge(df, on='gene_id', how='inner')
-        df['name'] = df['gene_id'] + ':' + df['intron']
-        df = df[['#chrom', 'chromStart', 'chromEnd', 'name'] + samples]
+        df['phenotype_id'] = df['gene_id'] + ':' + df['intron']
+        df = df[['#chr', 'start', 'end', 'phenotype_id'] + samples]
         df.to_csv(output.bed, sep='\t', index=False, float_format='%g')
 
 rule normalize_splicing:
     """Quantile-normalize values for QTL mapping"""
     input:
-        project_dir / 'unnorm' / 'splicing.bed',
+        bed = project_dir / 'unnorm' / 'splicing.bed',
+        samples = project_dir / 'samples.txt',
     output:
         project_dir / 'splicing.bed.gz',
     params:
@@ -123,7 +125,8 @@ rule normalize_splicing:
     shell:
         """
         python3 TURNAP/src/normalize_phenotypes.py \
-            --input {input} \
+            --input {input.bed} \
+            --samples {input.samples} \
             --output {params.bed}
         bgzip {params.bed}
         """
@@ -135,6 +138,6 @@ rule splicing_pheno_groups:
     output:
         project_dir / 'splicing.phenotype_groups.txt',
     run:
-        df = pd.read_csv(input[0], sep='\t', usecols=['name'])
-        df['group'] = df['name'].str.split(':', expand=False).str[0]
+        df = pd.read_csv(input[0], sep='\t', usecols=['phenotype_id'])
+        df['group'] = df['phenotype_id'].str.split(':', expand=False).str[0]
         df.to_csv(output[0], sep='\t', index=False, header=False)

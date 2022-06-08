@@ -63,7 +63,8 @@ rule assemble_latent_bed:
 rule normalize_latent:
     """Quantile-normalize values for QTL mapping"""
     input:
-        project_dir / 'unnorm' / 'latent.bed',
+        bed = project_dir / 'unnorm' / 'latent.bed',
+        samples = project_dir / 'samples.txt',
     output:
         project_dir / 'latent.bed.gz',
     params:
@@ -71,7 +72,8 @@ rule normalize_latent:
     shell:
         """
         python3 TURNAP/src/normalize_phenotypes.py \
-            --input {input} \
+            --input {input.bed} \
+            --samples {input.samples} \
             --output {params.bed}
         bgzip {params.bed}
         """
@@ -83,8 +85,8 @@ rule latent_pheno_groups:
     output:
         project_dir / 'latent.phenotype_groups.txt',
     run:
-        df = pd.read_csv(input[0], sep='\t', usecols=['name'])
-        df['group'] = df['name'].str.split(':', expand=False).str[0]
+        df = pd.read_csv(input[0], sep='\t', usecols=['phenotype_id'])
+        df['group'] = df['phenotype_id'].str.split(':', expand=False).str[0]
         df.to_csv(output[0], sep='\t', index=False, header=False)
 
 

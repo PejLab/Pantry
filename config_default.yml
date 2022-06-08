@@ -18,20 +18,23 @@ threads: 4
 phenotypes:
   expression:
     files:
-    - expression.log2.bed
-    - expression.tpm.bed
+    - expression.bed.gz
+    - expression.bed.gz.tbi
   splicing:
     files:
-    - splicing.bed
+    - splicing.bed.gz
+    - splicing.bed.gz.tbi
+    - splicing.phenotype_groups.txt
   stability:
     files:
-    - stability.bed
+    - stability.bed.gz
+    - stability.bed.gz.tbi
   retroelements:
     files:
-    - retroelements.bed
+    - retroelements.bed.gz
+    - retroelements.bed.gz.tbi
   latent:
     files:
-    - latent.bed
-  # ATS_APA:
-  #   files:
-  #   - ATS_APA.bed
+    - latent.bed.gz
+    - latent.bed.gz.tbi
+    - latent.phenotype_groups.txt

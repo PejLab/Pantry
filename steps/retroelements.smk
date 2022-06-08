@@ -57,14 +57,17 @@ rule assemble_retroelement_bed:
         df = df.fillna(0).astype(int)
         df = df.loc[np.sum(df > 0, axis=1) > 0, :]
         anno = load_retros(input.retro_anno)
-        df.index = df.index.rename('name')
-        df = anno.merge(df.reset_index(), on='name', how='inner')
+        # Rename columns for tensorQTL:
+        anno.columns = ['#chr', 'start', 'end', 'phenotype_id']
+        df.index = df.index.rename('phenotype_id')
+        df = anno.merge(df.reset_index(), on='phenotype_id', how='inner')
         df.to_csv(output.bed, sep='\t', index=False, float_format='%g')
 
 rule normalize_retroelements:
     """Quantile-normalize values for QTL mapping"""
     input:
-        project_dir / 'unnorm' / 'retroelements.bed',
+        bed = project_dir / 'unnorm' / 'retroelements.bed',
+        samples = project_dir / 'samples.txt',
     output:
         project_dir / 'retroelements.bed.gz',
     params:
@@ -72,7 +75,8 @@ rule normalize_retroelements:
     shell:
         """
         python3 TURNAP/src/normalize_phenotypes.py \
-            --input {input} \
+            --input {input.bed} \
+            --samples {input.samples} \
             --output {params.bed}
         bgzip {params.bed}
         """

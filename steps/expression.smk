@@ -80,17 +80,18 @@ rule assemble_expression:
             log2[sample] = np.log2(d['expected_count'] + 1)
             tpm[sample] = d['TPM']
         anno = load_tss(input.ref_anno)
-        log2 = anno.merge(log2.reset_index(), on='gene_id', how='inner')
-        tpm = anno.merge(tpm.reset_index(), on='gene_id', how='inner')
-        log2 = log2.rename(columns={'gene_id': 'name'})
-        tpm = tpm.rename(columns={'gene_id': 'name'})
+        log2.index = log2.index.rename('phenotype_id')
+        tpm.index = tpm.index.rename('phenotype_id')
+        log2 = anno.merge(log2.reset_index(), on='phenotype_id', how='inner')
+        tpm = anno.merge(tpm.reset_index(), on='phenotype_id', how='inner')
         log2.to_csv(output.log2, sep='\t', index=False, float_format='%g')
         tpm.to_csv(output.tpm, sep='\t', index=False, float_format='%g')
 
 rule normalize_expression:
     """Quantile-normalize values for QTL mapping"""
     input:
-        project_dir / 'unnorm' / 'expression.tpm.bed',
+        bed = project_dir / 'unnorm' / 'expression.tpm.bed',
+        samples = project_dir / 'samples.txt',
     output:
         project_dir / 'expression.bed.gz',
     params:
@@ -98,7 +99,8 @@ rule normalize_expression:
     shell:
         """
         python3 TURNAP/src/normalize_phenotypes.py \
-            --input {input} \
+            --input {input.bed} \
+            --samples {input.samples} \
             --output {params.bed}
         bgzip {params.bed}
         """
