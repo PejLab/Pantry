@@ -37,12 +37,13 @@ localrules:
 include: 'steps/align.smk'
 for phenotype in phenotypes:
     include: f'steps/{phenotype}.smk'
+include: 'steps/heritability.smk'
 include: 'steps/qtl.smk'
 
 rule all:
     input:
         outputs,
-        expand(project_dir / 'qtl' / '{pheno}.cis_independent_qtl.txt.gz', pheno=phenotypes.keys()),
+        # expand(project_dir / 'qtl' / '{pheno}.cis_independent_qtl.txt.gz', pheno=phenotypes.keys()),
         # expand(ref_dir / 'rsem_index_ATS_APA' / '{type}.transcripts.fa',
         #        type=['grp_1.upstream', 'grp_2.upstream', 'grp_1.downstream', 'grp_2.downstream']),
         # expand(
