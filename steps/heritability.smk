@@ -7,8 +7,8 @@ rule calculate_heritability_chr:
         project_dir / 'heritability' / '{pheno}_hsq.{chrom}.tsv',
     params:
         geno_prefix = 'data/genotype/GEUVADIS.445_samples.GRCh38.20170504.maf01.filtered.nodup',
-        grm_dir = lambda w: project_dir / 'heritability' / f'grm_{w.chrom}',
-        tmp_dir = lambda w: project_dir / 'heritability' / f'tmp_{w.chrom}',
+        grm_dir = lambda w: project_dir / 'heritability' / f'grm_{w.pheno}_{w.chrom}',
+        tmp_dir = lambda w: project_dir / 'heritability' / f'tmp_{w.pheno}_{w.chrom}',
     shell:
         """
         mkdir -p {params.grm_dir}
@@ -24,7 +24,8 @@ rule calculate_heritability_chr:
         rm -r {params.tmp_dir}
         """
 
-CHROMS=[f'chr{i}' for i in range(1, 23)] + ['chrX']
+# TODO: Get chromosome list automatically from genotypes or BED file
+CHROMS=[f'chr{i}' for i in range(1, 23)] # + ['chrX']
 
 rule combine_heritability_chr:
     """Combine per-chromosome heritability stats into one file"""
