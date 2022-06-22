@@ -74,7 +74,6 @@ rule star_align:
         index = ref_dir / 'star_index' / 'SAindex',
     output:
         bam1 = project_dir / 'bam' / '{sample_id}.Aligned.sortedByCoord.out.bam',
-        bai1 = project_dir / 'bam' / '{sample_id}.Aligned.sortedByCoord.out.bam.bai',
         bam2 = project_dir / 'bam' / '{sample_id}.Aligned.toTranscriptome.out.bam',
     params:
         fastq_list = fastq_param,
@@ -98,5 +97,20 @@ rule star_align:
             --outSAMtype BAM SortedByCoordinate \
             --outFileNamePrefix {params.prefix} \
             --runThreadN {resources.cpus}
-        samtools index {output.bam1}
+        """
+
+rule index_bam:
+    """Index a BAM file."""
+    input:
+        project_dir / 'bam' / '{basename}.bam',
+    output:
+        project_dir / 'bam' / '{basename}.bam.bai',
+    params:
+        add_threads = threads - 1,
+    resources:
+        cpus = threads,
+    shell:
+        # It expects the number of *additional* threads to use beyond the first.
+        """
+        samtools index -@ {params.add_threads} {input}
         """

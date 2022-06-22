@@ -74,7 +74,8 @@ def split_regions(anno: pd.DataFrame, n_bins: int) -> pd.DataFrame:
 
 parser = argparse.ArgumentParser(description='Get gene feature bins from GTF file')
 parser.add_argument('-g', '--gtf', type=Path, required=True, help='GTF file')
-parser.add_argument('-n', '--n-bins', type=int, default=10, help='Number of bins to split each feature into')
+parser.add_argument('-c', '--chromosomes', type=Path, required=True, help='Chromosome lengths file, e.g. chrNameLength.txt from STAR index, to sort chromosomes.')
+parser.add_argument('-n', '--n-bins', type=int, default=10, help='Number of bins to split each feature (exon, intron, etc.) into')
 parser.add_argument('-o', '--output', type=Path, required=True, help='Output file (BED)')
 args = parser.parse_args()
 
@@ -97,9 +98,14 @@ anno = anno.reset_index(drop=True)
 anno = anno.sort_values(by=['gene_id', 'start'])
 bins = split_regions(anno, n_bins=args.n_bins)
 
+# Sort bins using chromosome order from the chromosome lengths file:
+chrom = pd.read_csv(args.chromosomes, sep='\t', header=None, names=['chrom', 'length'])
+chrom = list(chrom['chrom'])
+bins['seqname'] = pd.Categorical(bins['seqname'], categories=chrom, ordered=True)
+bins = bins.sort_values(by=['seqname', 'start'])
+
 # Prepare BED format:
 bins['start'] = bins['start'] - 1
-bins = bins.sort_values(by=['seqname', 'start'])
 bins['name'] = bins['gene_id'] + '_' + bins['start'].astype(str)
 bins = bins[['seqname', 'start', 'end', 'name', 'feature', 'strand']]
 bins.to_csv(args.output, sep='\t', index=False, header=False)

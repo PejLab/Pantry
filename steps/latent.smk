@@ -5,6 +5,7 @@ rule get_gene_bins:
     """Divide gene features into bins"""
     input:
         ref_anno = ref_anno,
+        chrom = ref_dir / 'star_index' / 'chrNameLength.txt',
     output:
         ref_dir / 'gene_bins.bed.gz',
     params:
@@ -13,7 +14,8 @@ rule get_gene_bins:
     shell:
         """
         python3 TURNAP/src/get_gene_bins.py \
-            -g {input} \
+            -g {input.ref_anno} \
+            -c {input.chrom} \
             -n {params.n_bins} \
             -o {params.bed}
         bgzip {params.bed}
@@ -24,7 +26,7 @@ rule bedtools_coverage:
     input:
         bam = project_dir / 'bam' / '{sample_id}.Aligned.sortedByCoord.out.bam',
         bed = ref_dir / 'gene_bins.bed.gz',
-        chr = ref_dir / 'star_index' / 'chrNameLength.txt',
+        chrom = ref_dir / 'star_index' / 'chrNameLength.txt',
     output:
         project_dir / 'latent' / '{sample_id}.bed.gz',
     params:
@@ -36,7 +38,7 @@ rule bedtools_coverage:
         bedtools coverage -split -sorted -counts \
             -a {input.bed} \
             -b {input.bam} \
-            -g {input.chr} \
+            -g {input.chrom} \
             | bgzip -c > {output}
         """
 
