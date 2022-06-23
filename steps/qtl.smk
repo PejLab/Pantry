@@ -17,15 +17,15 @@ rule tensorqtl_perm:
     Outputs the top association per phenotype.
     """
     input:
-        geno = multiext('data/genotype/GEUVADIS.445_samples.GRCh38.20170504.maf01.filtered.nodup', '.bed', '.bim', '.fam'),
+        geno = multiext(GENO, '.bed', '.bim', '.fam'),
         bed = project_dir / '{pheno}.bed.gz',
         bedi = project_dir / '{pheno}.bed.gz.tbi',
-        covar = 'data/genotype/GEUVADIS.445_samples.covariates.txt',
+        covar = COVAR,
         groups = groups_input,
     output:
         project_dir / 'qtl' / '{pheno}.cis_qtl.txt.gz',
     params:
-        geno_prefix = 'data/genotype/GEUVADIS.445_samples.GRCh38.20170504.maf01.filtered.nodup',
+        geno_prefix = GENO,
         qtl_dir = project_dir / 'qtl',
         groups_arg = groups_arg,
     resources:
@@ -47,16 +47,16 @@ rule tensorqtl_perm:
 rule tensorqtl_independent:
     """Use stepwise regression to identify multiple conditionally independent cis-QTLs per phenotype."""
     input:
-        geno = multiext('data/genotype/GEUVADIS.445_samples.GRCh38.20170504.maf01.filtered.nodup', '.bed', '.bim', '.fam'),
+        geno = multiext(GENO, '.bed', '.bim', '.fam'),
         bed = project_dir / '{pheno}.bed.gz',
         bedi = project_dir / '{pheno}.bed.gz.tbi',
-        covar = 'data/genotype/GEUVADIS.445_samples.covariates.txt',
+        covar = COVAR,
         groups = groups_input,
         cis = project_dir / 'qtl' / '{pheno}.cis_qtl.txt.gz',
     output:
         project_dir / 'qtl' / '{pheno}.cis_independent_qtl.txt.gz',
     params:
-        geno_prefix = 'data/genotype/GEUVADIS.445_samples.GRCh38.20170504.maf01.filtered.nodup',
+        geno_prefix = GENO,
         groups_arg = groups_arg,
     resources:
         walltime = 20,

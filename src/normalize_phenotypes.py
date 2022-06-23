@@ -81,10 +81,10 @@ args = parser.parse_args()
 
 df = pd.read_csv(args.input, sep="\t", dtype={"#chr": str, "start": int, "end": int, "phenotype_id": str})
 
-# TODO: Temporary, improve or remove this
-chrs = [str(i) for i in range(1, 23)] + ['X']
-df = df[df["#chr"].isin(chrs)]
-df["#chr"] = df["#chr"].apply(lambda x: "chr" + x)
+# # TODO: Temporary, improve or remove this
+# chrs = [str(i) for i in range(1, 23)] + ['X']
+# df = df[df["#chr"].isin(chrs)]
+# df["#chr"] = df["#chr"].apply(lambda x: "chr" + x)
 
 if args.samples is not None:
     with open(args.samples) as f:

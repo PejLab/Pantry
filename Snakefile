@@ -15,6 +15,15 @@ ref_dir = project_dir / 'reference'
 threads = config['threads']
 phenotypes = config['phenotypes']
 
+# TODO: Get chromosome list automatically from genotypes or BED file.
+# Currently only used for heritability and qtl.
+# CHROMS = [f'chr{i}' for i in range(1, 23)] # + ['chrX']
+# GENO = 'data/genotype/GEUVADIS.445_samples.GRCh38.20170504.maf01.filtered.nodup'
+# COVAR = 'data/genotype/GEUVADIS.445_samples.covariates.txt'
+CHROMS = [str(x) for x in range(1, 21)] + ['X']
+GENO = 'data_Brain/geno'
+COVAR = 'data_Brain/covar.txt'
+
 # Get samples, preserving order for outputs in case it's meaningful
 with open(fastq_map, 'r') as f:
     tmp = [line.split('\t')[-1] for line in f.read().splitlines()]
@@ -44,7 +53,7 @@ rule all:
     input:
         outputs,
         expand(project_dir / 'heritability' / '{pheno}_hsq.tsv', pheno=phenotypes.keys()),
-        # expand(project_dir / 'qtl' / '{pheno}.cis_independent_qtl.txt.gz', pheno=phenotypes.keys()),
+        expand(project_dir / 'qtl' / '{pheno}.cis_independent_qtl.txt.gz', pheno=phenotypes.keys()),
 
 def load_tss(ref_anno: Path) -> pd.DataFrame:
     """Load TSS annotations from GTF file

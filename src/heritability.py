@@ -30,7 +30,7 @@ parser.add_argument('--tmp-dir', type=Path, help='The directory that intermediat
 parser.add_argument('--output', '-o', type=Path, help='The output file (TSV).')
 args = parser.parse_args()
 
-df = pd.read_csv(args.bed, sep='\t', index_col='phenotype_id')
+df = pd.read_csv(args.bed, sep='\t', index_col='phenotype_id', dtype={'#chr': str, 'start': int, 'end': int})
 if args.chrom:
     df = df[df['#chr'] == args.chrom]
 pos = df[['#chr', 'end']].copy()
@@ -61,6 +61,7 @@ for pheno in phenos:
             '--to-bp', str(pos_max),
             '--pheno', f'{prefix}.pheno',
             '--keep', f'{prefix}.pheno',
+            '--mind', '0.1', # Samples with higher missingness rate are removed. Added to avoid "Sample(s) present with no genotype data"
             '--make-grm-bin',
             '--out', grm,
             '--allow-extra-chr',

@@ -35,6 +35,12 @@ if args.groups is not None:
 else:
     groups = None
 
+# Remove phenotypes on chromosomes not present in genotypes to avoid error
+chroms = variant_df['chrom'].unique()
+keep = pheno_pos['chr'].isin(chroms)
+pheno = pheno.loc[keep]
+pheno_pos = pheno_pos.loc[keep]
+
 if args.mode == "cis":
     d = cis.map_cis(genotype_df, variant_df, pheno, pheno_pos, covar, group_s=groups, random_tiebreak=True)
     tensorqtl.calculate_qvalues(d, qvalue_lambda=0.85)
