@@ -99,7 +99,13 @@ anno = anno.sort_values(by=['gene_id', 'start'])
 bins = split_regions(anno, n_bins=args.n_bins)
 
 # Sort bins using chromosome order from the chromosome lengths file:
-chrom = pd.read_csv(args.chromosomes, sep='\t', header=None, names=['chrom', 'length'])
+chrom = pd.read_csv(
+    args.chromosomes,
+    sep='\t',
+    header=None,
+    names=['chrom', 'length'],
+    dtype={'chrom': str, 'length': int}
+)
 chrom = list(chrom['chrom'])
 bins['seqname'] = pd.Categorical(bins['seqname'], categories=chrom, ordered=True)
 bins = bins.sort_values(by=['seqname', 'start'])

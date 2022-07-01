@@ -6,6 +6,7 @@ rule star_index:
     output:
         # Among other generated files:
         ref_dir / 'star_index' / 'SAindex',
+        ref_dir / 'star_index' / 'chrNameLength.txt',
     params:
         index_dir = ref_dir / 'star_index',
         unnorm_dir = project_dir / 'unnorm', # TODO: find better rule to make this

@@ -52,8 +52,8 @@ include: 'steps/qtl.smk'
 rule all:
     input:
         outputs,
-        expand(project_dir / 'heritability' / '{pheno}_hsq.tsv', pheno=phenotypes.keys()),
-        expand(project_dir / 'qtl' / '{pheno}.cis_independent_qtl.txt.gz', pheno=phenotypes.keys()),
+        # expand(project_dir / 'heritability' / '{pheno}_hsq.tsv', pheno=phenotypes.keys()),
+        # expand(project_dir / 'qtl' / '{pheno}.cis_independent_qtl.txt.gz', pheno=phenotypes.keys()),
 
 def load_tss(ref_anno: Path) -> pd.DataFrame:
     """Load TSS annotations from GTF file
