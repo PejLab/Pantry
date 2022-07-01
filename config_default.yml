@@ -1,17 +1,17 @@
 # Raw RNA-Seq data
-fastq_map: data/geuvadis/fastq_map.txt
-fastq_dir: data/geuvadis
+fastq_map: TURNAP/test/input/fastq_map.txt
+fastq_dir: TURNAP/test/input/fastq
 paired_end: True
 read_length: 75
 
 # Reference files
-ref_genome: data/human_ref/Homo_sapiens.GRCh38.dna.primary_assembly.fa
-ref_anno: data/human_ref/Homo_sapiens.GRCh38.106.gtf
-retro_anno: data/human_ref/retro.hg38.v1.nochr.gtf
+ref_genome: TURNAP/test/input/ref/Homo_sapiens.GRCh38.dna.primary_assembly.chr1_0-1Mb.fa
+ref_anno: TURNAP/test/input/ref/Homo_sapiens.GRCh38.106.chr1_0-1Mb.gtf
+retro_anno: TURNAP/test/input/ref/retro.hg38.v1.nochr.chr1_0-1Mb.gtf
 
 # Project
-project_dir: test
-ref_dir: test/reference
+project_dir: TURNAP/test/output
+ref_dir: TURNAP/test/output/ref
 threads: 4
 
 # Phenotypes
