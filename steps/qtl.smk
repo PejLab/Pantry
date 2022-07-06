@@ -17,15 +17,15 @@ rule tensorqtl_perm:
     Outputs the top association per phenotype.
     """
     input:
-        geno = multiext(GENO, '.bed', '.bim', '.fam'),
+        geno = multiext(geno_prefix, '.bed', '.bim', '.fam'),
         bed = project_dir / '{pheno}.bed.gz',
         bedi = project_dir / '{pheno}.bed.gz.tbi',
-        covar = COVAR,
+        covar = covar_file,
         groups = groups_input,
     output:
         project_dir / 'qtl' / '{pheno}.cis_qtl.txt.gz',
     params:
-        geno_prefix = GENO,
+        geno_prefix = geno_prefix,
         qtl_dir = project_dir / 'qtl',
         groups_arg = groups_arg,
     resources:
@@ -47,16 +47,16 @@ rule tensorqtl_perm:
 rule tensorqtl_independent:
     """Use stepwise regression to identify multiple conditionally independent cis-QTLs per phenotype."""
     input:
-        geno = multiext(GENO, '.bed', '.bim', '.fam'),
+        geno = multiext(geno_prefix, '.bed', '.bim', '.fam'),
         bed = project_dir / '{pheno}.bed.gz',
         bedi = project_dir / '{pheno}.bed.gz.tbi',
-        covar = COVAR,
+        covar = covar_file,
         groups = groups_input,
         cis = project_dir / 'qtl' / '{pheno}.cis_qtl.txt.gz',
     output:
         project_dir / 'qtl' / '{pheno}.cis_independent_qtl.txt.gz',
     params:
-        geno_prefix = GENO,
+        geno_prefix = geno_prefix,
         groups_arg = groups_arg,
     resources:
         walltime = 20,

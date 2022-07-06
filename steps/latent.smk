@@ -66,7 +66,7 @@ rule normalize_latent:
     """Quantile-normalize values for QTL mapping"""
     input:
         bed = project_dir / 'unnorm' / 'latent.bed',
-        samples = project_dir / 'samples.txt',
+        samples = samples_file,
     output:
         project_dir / 'latent.bed.gz',
     params:
@@ -86,11 +86,14 @@ rule latent_pheno_groups:
         project_dir / 'latent.bed.gz',
     output:
         project_dir / 'latent.phenotype_groups.txt',
-    run:
-        df = pd.read_csv(input[0], sep='\t', usecols=['phenotype_id'])
-        df['group'] = df['phenotype_id'].str.split(':', expand=False).str[0]
-        df.to_csv(output[0], sep='\t', index=False, header=False)
-
+    shell:
+        """
+        gzcat {input} \
+            | tail -n +2 \
+            | cut -f4 \
+            | awk '{{ g=$1; sub(/:.*$/, "", g); print $1 "\t" g }}' \
+            > {output}
+        """
 
 # rule get_chrom_lengths:
 #     """Get chromosome lengths from genome FASTA header lines for pyBedGraph"""

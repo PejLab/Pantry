@@ -1,6 +1,3 @@
-import numpy as np
-import pandas as pd
-
 rule rsem_index:
     """Generate the index for RSEM."""
     input:
@@ -57,41 +54,35 @@ rule rsem:
         rm -r {params.out_prefix}.stat
         """
 
-rule assemble_expression:
+rule assemble_expression_bed:
     """Assemble RSEM log2 and tpm outputs into expression BED files"""
     input:
         rsem = lambda w: expand(str(project_dir / 'expression' / '{sample_id}.genes.results.gz'), sample_id=samples),
+        samples = samples_file,
         ref_anno = ref_anno,
     output:
         log2 = project_dir / 'unnorm' / 'expression.log2.bed',
         tpm = project_dir / 'unnorm' / 'expression.tpm.bed',
     params:
-        samples = samples,
+        # samples = samples,
         expr_dir = project_dir / 'expression',
-    run:
-        for i, sample in enumerate(params.samples):
-            fname = params.expr_dir / f'{sample}.genes.results.gz'
-            d = pd.read_csv(fname, sep='\t', index_col='gene_id')
-            if i == 0:
-                log2 = pd.DataFrame(index=d.index)
-                tpm = pd.DataFrame(index=d.index)
-            else:
-                assert d.index.equals(log2.index)
-            log2[sample] = np.log2(d['expected_count'] + 1)
-            tpm[sample] = d['TPM']
-        anno = load_tss(input.ref_anno)
-        log2.index = log2.index.rename('phenotype_id')
-        tpm.index = tpm.index.rename('phenotype_id')
-        log2 = anno.merge(log2.reset_index(), on='phenotype_id', how='inner')
-        tpm = anno.merge(tpm.reset_index(), on='phenotype_id', how='inner')
-        log2.to_csv(output.log2, sep='\t', index=False, float_format='%g')
-        tpm.to_csv(output.tpm, sep='\t', index=False, float_format='%g')
+    shell:
+        """
+        python3 TURNAP/src/assemble_bed.py \
+            --type expression \
+            --input-dir {params.expr_dir} \
+            --samples {input.samples} \
+            --ref_anno {input.ref_anno} \
+            --output {output.log2} \
+            --output2 {output.tpm}
+        """
+
 
 rule normalize_expression:
     """Quantile-normalize values for QTL mapping"""
     input:
         bed = project_dir / 'unnorm' / 'expression.tpm.bed',
-        samples = project_dir / 'samples.txt',
+        samples = samples_file,
     output:
         project_dir / 'expression.bed.gz',
     params:

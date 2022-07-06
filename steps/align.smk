@@ -11,6 +11,7 @@ rule star_index:
         index_dir = ref_dir / 'star_index',
         unnorm_dir = project_dir / 'unnorm', # TODO: find better rule to make this
         overhang = read_length - 1,
+        genomeSAindexNbases = int(np.log2(genome_size) / 2 - 1),
     resources:
         mem_mb = 60000,
         cpus = threads,
@@ -26,6 +27,7 @@ rule star_index:
             --genomeFastaFiles {input.ref_genome} \
             --sjdbGTFfile {input.ref_anno} \
             --sjdbOverhang {params.overhang} \
+            --genomeSAindexNbases {params.genomeSAindexNbases} \
             --runThreadN {resources.cpus}
         """
 
@@ -91,7 +93,7 @@ rule star_align:
         STAR --runMode alignReads \
             --genomeDir {params.index_dir} \
             --readFilesIn {params.fastq_list} \
-            --readFilesCommand zcat \
+            --readFilesCommand gzcat \
             --twopassMode Basic \
             --quantMode TranscriptomeSAM \
             --outSAMstrandField intronMotif \

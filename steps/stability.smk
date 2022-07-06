@@ -45,44 +45,28 @@ rule assemble_stability_bed:
     input:
         exon = lambda w: expand(str(project_dir / 'stability' / '{sample_id}.constit_exons.counts.txt'), sample_id=samples),
         intron = lambda w: expand(str(project_dir / 'stability' / '{sample_id}.introns.counts.txt'), sample_id=samples),
+        samples = samples_file,
         ref_anno = ref_anno,
     output:
         bed = project_dir / 'unnorm' / 'stability.bed',
     params:
-        samples = samples,
+        # samples = samples,
         stab_dir = project_dir / 'stability',
-    run:
-        for i, sample in enumerate(params.samples):
-            fname_ex = params.stab_dir / f'{sample}.constit_exons.counts.txt'
-            d_ex = pd.read_csv(fname_ex, sep='\t', index_col='Geneid', skiprows=1)
-            fname_in = params.stab_dir / f'{sample}.introns.counts.txt'
-            d_in = pd.read_csv(fname_in, sep='\t', index_col='Geneid', skiprows=1)
-            if i == 0:
-                exon = pd.DataFrame(index=d_ex.index)
-                intron = pd.DataFrame(index=d_in.index)
-            else:
-                assert d_ex.index.equals(exon.index)
-                assert d_in.index.equals(intron.index)
-            exon[sample] = d_ex.iloc[:, 5]
-            intron[sample] = d_in.iloc[:, 5]
-            exon.loc[exon[sample] < 10, sample] = np.nan
-            intron.loc[intron[sample] < 10, sample] = np.nan
-        genes = exon.index[np.isin(exon.index, intron.index)]
-        # genes = set(exon.index).intersection(intron.index)
-        assert exon.loc[genes, :].index.equals(intron.loc[genes, :].index)
-        assert exon.columns.equals(intron.columns)
-        df = exon.loc[genes, :] / intron.loc[genes, :]
-        df = df[df.isnull().mean(axis=1) <= 0.5]
-        anno = load_tss(input.ref_anno)
-        df.index = df.index.rename('phenotype_id')
-        df = anno.merge(df.reset_index(), on='phenotype_id', how='inner')
-        df.to_csv(output.bed, sep='\t', index=False, float_format='%g')
+    shell:
+        """
+        python3 TURNAP/src/assemble_bed.py \
+            --type stability \
+            --input-dir {params.stab_dir} \
+            --samples {input.samples} \
+            --ref_anno {input.ref_anno} \
+            --output {output.bed}
+        """
 
 rule normalize_stability:
     """Quantile-normalize values for QTL mapping"""
     input:
         bed = project_dir / 'unnorm' / 'stability.bed',
-        samples = project_dir / 'samples.txt',
+        samples = samples_file,
     output:
         project_dir / 'stability.bed.gz',
     params:
