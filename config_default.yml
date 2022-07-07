@@ -1,23 +1,24 @@
 # Project
-project_dir: TURNAP/test/output
-ref_dir: TURNAP/test/output/ref
+project_dir: test/output
+ref_dir: test/output/ref
+code_dir: .
 threads: 4
 
 # Raw RNA-Seq data
-fastq_map: TURNAP/test/input/fastq_map.txt
-fastq_dir: TURNAP/test/input/fastq
+fastq_map: test/input/fastq_map.txt
+fastq_dir: test/input/fastq
 paired_end: True
 read_length: 75
 
 # Reference files
-ref_genome: TURNAP/test/input/ref/Homo_sapiens.GRCh38.dna.primary_assembly.chr1_0-1Mb.fa
-ref_anno: TURNAP/test/input/ref/Homo_sapiens.GRCh38.106.chr1_0-1Mb.gtf
-retro_anno: TURNAP/test/input/ref/retro.hg38.v1.nochr.chr1_0-1Mb.gtf
+ref_genome: test/input/ref/Homo_sapiens.GRCh38.dna.primary_assembly.chr1_0-1Mb.fa
+ref_anno: test/input/ref/Homo_sapiens.GRCh38.106.chr1_0-1Mb.gtf
+retro_anno: test/input/ref/retro.hg38.v1.nochr.chr1_0-1Mb.gtf
 
 # Files and info for downstream analysis
 # TODO: Get chromosome list automatically from genotypes or BED file.
 chroms: [chr1, chr2, chr3, chr4, chr5, chr6, chr7, chr8, chr9, chr10, chr11, chr12, chr13, chr14, chr15, chr16, chr17, chr18, chr19, chr20, chr21, chr22]
-samples_file: TURNAP/test/input/samples.txt
+samples_file: test/input/samples.txt
 geno_prefix: path/to/plink/bed/bim/fam/genotypes
 covar_file: path/to/covar/file.txt
 

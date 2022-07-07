@@ -6,6 +6,7 @@ rule calculate_heritability_chr:
     output:
         project_dir / 'heritability' / '{pheno}_hsq.{chrom}.tsv',
     params:
+        code_dir = code_dir,
         geno_prefix = geno_prefix,
         grm_dir = lambda w: project_dir / 'heritability' / f'grm_{w.pheno}_{w.chrom}',
         tmp_dir = lambda w: project_dir / 'heritability' / f'tmp_{w.pheno}_{w.chrom}',
@@ -13,7 +14,7 @@ rule calculate_heritability_chr:
         """
         mkdir -p {params.grm_dir}
         mkdir -p {params.tmp_dir}
-        python3 TURNAP/src/heritability.py \
+        python3 {params.code_dir}/src/heritability.py \
             --bed {input.bed} \
             --geno {params.geno_prefix} \
             --chrom {wildcards.chrom} \

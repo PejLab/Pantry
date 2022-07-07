@@ -64,11 +64,13 @@ rule assemble_expression_bed:
         log2 = project_dir / 'unnorm' / 'expression.log2.bed',
         tpm = project_dir / 'unnorm' / 'expression.tpm.bed',
     params:
-        # samples = samples,
+        unnorm_dir = project_dir / 'unnorm',
+        code_dir = code_dir,
         expr_dir = project_dir / 'expression',
     shell:
         """
-        python3 TURNAP/src/assemble_bed.py \
+        mkdir -p {params.unnorm_dir}
+        python3 {params.code_dir}/src/assemble_bed.py \
             --type expression \
             --input-dir {params.expr_dir} \
             --samples {input.samples} \
@@ -86,10 +88,11 @@ rule normalize_expression:
     output:
         project_dir / 'expression.bed.gz',
     params:
+        code_dir = code_dir,
         bed = project_dir / 'expression.bed',
     shell:
         """
-        python3 TURNAP/src/normalize_phenotypes.py \
+        python3 {params.code_dir}/src/normalize_phenotypes.py \
             --input {input.bed} \
             --samples {input.samples} \
             --output {params.bed}

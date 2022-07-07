@@ -28,11 +28,13 @@ rule assemble_retroelement_bed:
     output:
         bed = project_dir / 'unnorm' / 'retroelements.bed',
     params:
-        # samples = samples,
+        unnorm_dir = project_dir / 'unnorm',
+        code_dir = code_dir,
         retro_dir = project_dir / 'retroelements',
     shell:
         """
-        python3 TURNAP/src/assemble_bed.py \
+        mkdir -p {params.unnorm_dir}
+        python3 {params.code_dir}/src/assemble_bed.py \
             --type retroelements \
             --input-dir {params.retro_dir} \
             --samples {input.samples} \
@@ -48,10 +50,11 @@ rule normalize_retroelements:
     output:
         project_dir / 'retroelements.bed.gz',
     params:
+        code_dir = code_dir,
         bed = project_dir / 'retroelements.bed',
     shell:
         """
-        python3 TURNAP/src/normalize_phenotypes.py \
+        python3 {params.code_dir}/src/normalize_phenotypes.py \
             --input {input.bed} \
             --samples {input.samples} \
             --output {params.bed}

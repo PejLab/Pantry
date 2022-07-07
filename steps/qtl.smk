@@ -56,6 +56,7 @@ rule tensorqtl_independent:
     output:
         project_dir / 'qtl' / '{pheno}.cis_independent_qtl.txt.gz',
     params:
+        code_dir = code_dir,
         geno_prefix = geno_prefix,
         groups_arg = groups_arg,
     resources:
@@ -64,7 +65,7 @@ rule tensorqtl_independent:
     shell:
         """
         module load cuda
-        python3 TURNAP/src/run_tensorqtl.py \
+        python3 {params.code_dir}/src/run_tensorqtl.py \
             {params.geno_prefix} \
             {input.bed} \
             {output} \

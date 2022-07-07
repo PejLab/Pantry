@@ -1,10 +1,11 @@
 from pathlib import Path
-import yaml
 from gtfparse import read_gtf
 import numpy as np
 import pandas as pd
 
-config = yaml.safe_load(open('config.yml'))
+if len(config.keys()) == 0:
+    raise Exception('No config file provided.')
+
 fastq_map = Path(config['fastq_map'])
 fastq_dir = Path(config['fastq_dir'])
 samples_file = Path(config['samples_file'])
@@ -15,6 +16,7 @@ ref_genome = Path(config['ref_genome'])
 ref_anno = Path(config['ref_anno'])
 retro_anno = Path(config['retro_anno'])
 ref_dir = project_dir / 'reference'
+code_dir = Path(config['code_dir'])
 threads = config['threads']
 phenotypes = config['phenotypes']
 genome_size = config['genome_size'] # TODO: compute from fasta file

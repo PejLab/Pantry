@@ -34,15 +34,15 @@ rule cluster_junctions:
         project_dir / 'splicing' / 'leafcutter_perind_numers.counts.gz',
     params:
         juncfile_list = project_dir / 'splicing' / 'juncfiles.txt',
+        code_dir = code_dir,
         splice_dir = project_dir / 'splicing',
         max_intron_len = 100000,
         min_clust_reads = 30,
         min_clust_ratio = 0.001,
     shell:
-        # TODO get proper path to script
         """
         printf '%s\\n' {input} > {params.juncfile_list}
-        python3 TURNAP/src/leafcutter_cluster_regtools_py3.py \
+        python3 {params.code_dir}/src/leafcutter_cluster_regtools_py3.py \
             --juncfiles {params.juncfile_list} \
             --rundir {params.splice_dir} \
             --maxintronlen {params.max_intron_len} \
@@ -58,9 +58,13 @@ rule assemble_splicing_bed:
         ref_anno = ref_anno,
     output:
         bed = project_dir / 'unnorm' / 'splicing.bed',
+    params:
+        unnorm_dir = project_dir / 'unnorm',
+        code_dir = code_dir,
     shell:
         """
-        python3 TURNAP/src/assemble_bed.py \
+        mkdir -p {params.unnorm_dir}
+        python3 {params.code_dir}/src/assemble_bed.py \
             --type splicing \
             --input {input.counts} \
             --ref_anno {input.ref_anno} \
@@ -75,10 +79,11 @@ rule normalize_splicing:
     output:
         project_dir / 'splicing.bed.gz',
     params:
+        code_dir = code_dir,
         bed = project_dir / 'splicing.bed',
     shell:
         """
-        python3 TURNAP/src/normalize_phenotypes.py \
+        python3 {params.code_dir}/src/normalize_phenotypes.py \
             --input {input.bed} \
             --samples {input.samples} \
             --output {params.bed}
