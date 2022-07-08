@@ -2,6 +2,7 @@ rule run_telescope:
     """Run telescope to get retroelement read counts"""
     input:
         bam = project_dir / 'bam' / '{sample_id}.Aligned.sortedByCoord.out.bam',
+        bai = project_dir / 'bam' / '{sample_id}.Aligned.sortedByCoord.out.bam.bai',
         retro_anno = retro_anno,
     output:
         project_dir / 'retroelements' / '{sample_id}-telescope_report.tsv',
