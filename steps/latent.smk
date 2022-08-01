@@ -54,7 +54,7 @@ rule assemble_latent_bed:
         unnorm_dir = project_dir / 'unnorm',
         code_dir = code_dir,
         bedfile_list = project_dir / 'latent' / 'bedfiles.txt',
-        n_pcs = 10,
+        var_expl = 0.95,
     shell:
         """
         mkdir -p {params.unnorm_dir}
@@ -62,7 +62,7 @@ rule assemble_latent_bed:
         python3 {params.code_dir}/src/get_PC_features.py \
             -i {params.bedfile_list} \
             -g {input.ref_anno} \
-            -n {params.n_pcs} \
+            -v {params.var_expl} \
             -o {output}
         """
 
