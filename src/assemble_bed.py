@@ -84,8 +84,11 @@ def assemble_expression(sample_ids: list, expr_dir: Path, ref_anno: Path, bed_lo
             tpm = pd.DataFrame(index=d.index)
         else:
             assert d.index.equals(log2.index)
-        log2[sample] = np.log2(d['expected_count'].copy() + 1)
-        tpm[sample] = d['TPM'].copy()
+        # log2[sample] = np.log2(d['expected_count'].copy() + 1)
+        # tpm[sample] = d['TPM'].copy()
+        # Avoid 'PerformanceWarning: DataFrame is highly fragmented' warning:
+        log2.insert(len(log2.columns), sample, np.log2(d['expected_count'].copy() + 1))
+        tpm.insert(len(tpm.columns), sample, d['TPM'].copy())
     anno = load_tss(ref_anno)
     log2.index = log2.index.rename('phenotype_id')
     tpm.index = tpm.index.rename('phenotype_id')
@@ -147,8 +150,11 @@ def assemble_stability(sample_ids: list, stab_dir: Path, ref_anno: Path, bed: Pa
         else:
             assert d_ex.index.equals(exon.index)
             assert d_in.index.equals(intron.index)
-        exon[sample] = d_ex.iloc[:, 5].copy()
-        intron[sample] = d_in.iloc[:, 5].copy()
+        # exon[sample] = d_ex.iloc[:, 5].copy()
+        # intron[sample] = d_in.iloc[:, 5].copy()
+        # Avoid 'PerformanceWarning: DataFrame is highly fragmented' warning:
+        exon.insert(len(exon.columns), sample, d_ex.iloc[:, 5].copy())
+        intron.insert(len(intron.columns), sample, d_in.iloc[:, 5].copy())
         exon.loc[exon[sample] < 10, sample] = np.nan
         intron.loc[intron[sample] < 10, sample] = np.nan
     genes = exon.index[np.isin(exon.index, intron.index)]
