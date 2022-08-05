@@ -26,12 +26,13 @@ geno_prefix = config['geno_prefix']
 covar_file = Path(config['covar_file'])
 
 # Get samples, preserving order for outputs in case it's meaningful
-with open(fastq_map, 'r') as f:
-    tmp = [line.split('\t')[-1] for line in f.read().splitlines()]
-    samples = []
-    for s in tmp:
-        if s not in samples:
-            samples.append(s)
+# with open(fastq_map, 'r') as f:
+#     tmp = [line.split('\t')[-1] for line in f.read().splitlines()]
+#     samples = []
+#     for s in tmp:
+#         if s not in samples:
+#             samples.append(s)
+samples = pd.read_csv(samples_file, sep='\t', header=None)[0].tolist()
 
 outputs = []
 for pheno, params in phenotypes.items():
