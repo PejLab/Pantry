@@ -76,19 +76,27 @@ def map_introns_to_genes(introns: list, exons: pd.DataFrame) -> pd.DataFrame:
 
 def assemble_expression(sample_ids: list, expr_dir: Path, ref_anno: Path, bed_log2: Path, bed_tpm: Path):
     """Assemble RSEM log2 and tpm outputs into expression BED files"""
+    log2 = []
+    tpm = []
     for i, sample in enumerate(sample_ids):
         fname = expr_dir / f'{sample}.genes.results.gz'
         d = pd.read_csv(fname, sep='\t', index_col='gene_id')
-        if i == 0:
-            log2 = pd.DataFrame(index=d.index)
-            tpm = pd.DataFrame(index=d.index)
-        else:
-            assert d.index.equals(log2.index)
+        # if i == 0:
+        #     log2 = pd.DataFrame(index=d.index)
+        #     tpm = pd.DataFrame(index=d.index)
+        # else:
+        #     assert d.index.equals(log2.index)
         # log2[sample] = np.log2(d['expected_count'].copy() + 1)
         # tpm[sample] = d['TPM'].copy()
         # Avoid 'PerformanceWarning: DataFrame is highly fragmented' warning:
-        log2.insert(len(log2.columns), sample, np.log2(d['expected_count'].copy() + 1))
-        tpm.insert(len(tpm.columns), sample, d['TPM'].copy())
+        d_l = np.log2(d['expected_count'] + 1)
+        d_t = d['TPM']
+        d_l.name = sample
+        d_t.name = sample
+        log2.append(d_l)
+        tpm.append(d_t)
+    log2 = pd.concat(log2, axis=1)
+    tpm = pd.concat(tpm, axis=1)        
     anno = load_tss(ref_anno)
     log2.index = log2.index.rename('phenotype_id')
     tpm.index = tpm.index.rename('phenotype_id')
@@ -139,24 +147,32 @@ def assemble_splicing(counts: Path, ref_anno: Path, bed: Path):
 
 def assemble_stability(sample_ids: list, stab_dir: Path, ref_anno: Path, bed: Path):
     """Assemble exon to intron read ratios into mRNA stability BED file"""
+    exon = []
+    intron = []
     for i, sample in enumerate(sample_ids):
         fname_ex = stab_dir / f'{sample}.constit_exons.counts.txt'
         d_ex = pd.read_csv(fname_ex, sep='\t', index_col='Geneid', skiprows=1)
         fname_in = stab_dir / f'{sample}.introns.counts.txt'
         d_in = pd.read_csv(fname_in, sep='\t', index_col='Geneid', skiprows=1)
-        if i == 0:
-            exon = pd.DataFrame(index=d_ex.index)
-            intron = pd.DataFrame(index=d_in.index)
-        else:
-            assert d_ex.index.equals(exon.index)
-            assert d_in.index.equals(intron.index)
+        # if i == 0:
+        #     exon = pd.DataFrame(index=d_ex.index)
+        #     intron = pd.DataFrame(index=d_in.index)
+        # else:
+        #     assert d_ex.index.equals(exon.index)
+        #     assert d_in.index.equals(intron.index)
         # exon[sample] = d_ex.iloc[:, 5].copy()
         # intron[sample] = d_in.iloc[:, 5].copy()
         # Avoid 'PerformanceWarning: DataFrame is highly fragmented' warning:
-        exon.insert(len(exon.columns), sample, d_ex.iloc[:, 5].copy())
-        intron.insert(len(intron.columns), sample, d_in.iloc[:, 5].copy())
-        exon.loc[exon[sample] < 10, sample] = np.nan
-        intron.loc[intron[sample] < 10, sample] = np.nan
+        d_ex = d_ex.iloc[:, 5]
+        d_in = d_in.iloc[:, 5]
+        d_ex.name = sample
+        d_in.name = sample
+        d_ex[d_ex < 10] = np.nan
+        d_in[d_in < 10] = np.nan
+        exon.append(d_ex)
+        intron.append(d_in)
+    exon = pd.concat(exon, axis=1)
+    intron = pd.concat(intron, axis=1)
     genes = exon.index[np.isin(exon.index, intron.index)]
     # genes = set(exon.index).intersection(intron.index)
     assert exon.loc[genes, :].index.equals(intron.loc[genes, :].index)
