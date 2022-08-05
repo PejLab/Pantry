@@ -74,9 +74,9 @@ def map_introns_to_genes(introns: list, exons: pd.DataFrame) -> pd.DataFrame:
     clust_genes = clust_genes.reset_index().explode('gene_id')
     return clust_genes
 
-def assemble_expression(samples: list, expr_dir: Path, ref_anno: Path, bed_log2: Path, bed_tpm: Path):
+def assemble_expression(sample_ids: list, expr_dir: Path, ref_anno: Path, bed_log2: Path, bed_tpm: Path):
     """Assemble RSEM log2 and tpm outputs into expression BED files"""
-    for i, sample in enumerate(samples):
+    for i, sample in enumerate(sample_ids):
         fname = expr_dir / f'{sample}.genes.results.gz'
         d = pd.read_csv(fname, sep='\t', index_col='gene_id')
         if i == 0:
@@ -84,8 +84,8 @@ def assemble_expression(samples: list, expr_dir: Path, ref_anno: Path, bed_log2:
             tpm = pd.DataFrame(index=d.index)
         else:
             assert d.index.equals(log2.index)
-        log2[sample] = np.log2(d['expected_count'] + 1)
-        tpm[sample] = d['TPM']
+        log2[sample] = np.log2(d['expected_count'].copy() + 1)
+        tpm[sample] = d['TPM'].copy()
     anno = load_tss(ref_anno)
     log2.index = log2.index.rename('phenotype_id')
     tpm.index = tpm.index.rename('phenotype_id')
@@ -94,9 +94,9 @@ def assemble_expression(samples: list, expr_dir: Path, ref_anno: Path, bed_log2:
     log2.to_csv(bed_log2, sep='\t', index=False, float_format='%g')
     tpm.to_csv(bed_tpm, sep='\t', index=False, float_format='%g')
 
-def assemble_retroelements(samples: list, retro_dir: Path, retro_anno: Path, bed: Path):
+def assemble_retroelements(sample_ids: list, retro_dir: Path, retro_anno: Path, bed: Path):
     """Assemble telescope output files into retroelement expression BED file"""
-    for i, sample in enumerate(samples):
+    for i, sample in enumerate(sample_ids):
         fname = retro_dir / f'{sample}-telescope_report.tsv'
         d = pd.read_csv(fname, sep='\t', index_col='transcript', skiprows=1)
         d = d.rename(columns={'final_count': sample})[[sample]]
@@ -116,12 +116,12 @@ def assemble_retroelements(samples: list, retro_dir: Path, retro_anno: Path, bed
 def assemble_splicing(counts: Path, ref_anno: Path, bed: Path):
     """Convert leafcutter output into splicing BED file"""
     df = pd.read_csv(counts, sep=' ')
-    samples = list(df.columns)
+    sample_ids = list(df.columns)
     df.index = df.index.rename('intron')
     df = df.reset_index()
     # df = df.rename(columns={'chrom': 'name'})
     df['cluster'] = df['intron'].str.extract(r'clu_(\d+)_', expand=False)
-    for col in samples:
+    for col in sample_ids:
     #     df[col] = pd.eval(df[col])  # convert fraction string to float
         df[col] = df.groupby('cluster', group_keys=False).apply(lambda g: g[col] / g[col].sum())
     exons = load_exons(ref_anno)
@@ -131,12 +131,12 @@ def assemble_splicing(counts: Path, ref_anno: Path, bed: Path):
     anno = anno.rename(columns={'phenotype_id': 'gene_id'})
     df = anno.merge(df, on='gene_id', how='inner')
     df['phenotype_id'] = df['gene_id'] + ':' + df['intron']
-    df = df[['#chr', 'start', 'end', 'phenotype_id'] + samples]
+    df = df[['#chr', 'start', 'end', 'phenotype_id'] + sample_ids]
     df.to_csv(bed, sep='\t', index=False, float_format='%g')
 
-def assemble_stability(samples: list, stab_dir: Path, ref_anno: Path, bed: Path):
+def assemble_stability(sample_ids: list, stab_dir: Path, ref_anno: Path, bed: Path):
     """Assemble exon to intron read ratios into mRNA stability BED file"""
-    for i, sample in enumerate(samples):
+    for i, sample in enumerate(sample_ids):
         fname_ex = stab_dir / f'{sample}.constit_exons.counts.txt'
         d_ex = pd.read_csv(fname_ex, sep='\t', index_col='Geneid', skiprows=1)
         fname_in = stab_dir / f'{sample}.introns.counts.txt'
@@ -147,8 +147,8 @@ def assemble_stability(samples: list, stab_dir: Path, ref_anno: Path, bed: Path)
         else:
             assert d_ex.index.equals(exon.index)
             assert d_in.index.equals(intron.index)
-        exon[sample] = d_ex.iloc[:, 5]
-        intron[sample] = d_in.iloc[:, 5]
+        exon[sample] = d_ex.iloc[:, 5].copy()
+        intron[sample] = d_in.iloc[:, 5].copy()
         exon.loc[exon[sample] < 10, sample] = np.nan
         intron.loc[intron[sample] < 10, sample] = np.nan
     genes = exon.index[np.isin(exon.index, intron.index)]
