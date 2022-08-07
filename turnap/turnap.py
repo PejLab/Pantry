@@ -5,17 +5,16 @@ def validate_config(config: dict):
     if len(config.keys()) == 0:
         raise Exception('No config file provided.')
     fields = [
+        'project_dir',
+        'threads',
         'fastq_map',
         'fastq_dir',
-        'samples_file',
-        'read_length',
         'paired_end',
-        'project_dir',
+        'read_length',
         'ref_genome',
         'ref_anno',
         'retro_anno',
-        'code_dir',
-        'threads',
+        'samples_file',
         'phenotypes',
         'genome_size',
         'chroms',

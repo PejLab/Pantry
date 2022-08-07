@@ -1,0 +1,73 @@
+from pathlib import Path
+from gtfparse import read_gtf
+import numpy as np
+import pandas as pd
+import turnap
+
+configfile: 'config.yaml'
+
+turnap.validate_config(config)
+
+project_dir = Path(config['project_dir'])
+interm_dir = project_dir / 'intermediate'
+ref_dir = interm_dir / 'reference'
+output_dir = project_dir / 'output'
+threads = config['threads']
+
+fastq_map = Path(config['fastq_map'])
+fastq_dir = Path(config['fastq_dir'])
+paired_end = config['paired_end']
+read_length = config['read_length']
+
+ref_genome = Path(config['ref_genome'])
+ref_anno = Path(config['ref_anno'])
+retro_anno = Path(config['retro_anno'])
+
+samples_file = Path(config['samples_file'])
+phenotypes = config['phenotypes']
+genome_size = config['genome_size'] # TODO: compute from fasta file
+
+# Currently only used for heritability and qtl:
+chroms = [str(x) for x in config['chroms']]
+geno_prefix = config['geno_prefix']
+covar_file = Path(config['covar_file'])
+
+# Get samples, preserving order for outputs in case it's meaningful
+# with open(fastq_map, 'r') as f:
+#     tmp = [line.split('\t')[-1] for line in f.read().splitlines()]
+#     samples = []
+#     for s in tmp:
+#         if s not in samples:
+#             samples.append(s)
+samples = pd.read_csv(samples_file, sep='\t', header=None)[0].tolist()
+
+outputs = []
+for pheno, params in phenotypes.items():
+    for f in params['files']:
+        outputs.append(output_dir / f)
+    # Used only for QTL mapping for now:
+    params['grouped'] = any(['phenotype_groups' in f for f in params['files']])
+
+# These steps are short and will not be submitted as cluster jobs:
+localrules:
+    index_bed,
+
+include: 'steps/align.smk'
+for phenotype in phenotypes:
+    include: f'steps/{phenotype}.smk'
+include: 'steps/heritability.smk'
+include: 'steps/qtl.smk'
+
+rule all:
+    input:
+        outputs,
+        # expand(output_dir / 'heritability' / '{pheno}_hsq.tsv', pheno=phenotypes.keys()),
+        # expand(output_dir / 'qtl' / '{pheno}.cis_independent_qtl.txt.gz', pheno=phenotypes.keys()),
+
+rule index_bed:
+    input:
+        output_dir / '{pheno}.bed.gz',
+    output:
+        output_dir / '{pheno}.bed.gz.tbi'
+    shell:
+        'tabix {input}'

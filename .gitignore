@@ -1,5 +1,8 @@
 __pycache__
 .snakemake
 .vscode
-test
+Project/input/*
+Project/intermediate/*
+Project/output/*
 .DS_Store
+TURNAP.egg-info

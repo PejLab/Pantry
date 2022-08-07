@@ -12,7 +12,9 @@ Installation
 Code
 ====
 
-The commands and code to run the steps are given in `Snakemake <https://snakemake.github.io/>`_ files, located by default in ``steps/``. This package includes sensible defaults for a set of tools, but you can edit the commands and add new phenotypes.
+The ``Project/`` directory is a template for a project. To run TURNAP on a dataset, copy the contents of ``Project/`` to a new directory that you can write to. Your project directory now contains all the data processing code, so that if you modify it or add custom phenotypes, you have a record of it that stays with the results and is not automatically changed by package updates or other projects.
+
+The commands and code to run the steps are given in `Snakemake <https://snakemake.github.io/>`_ files, located by default in ``Project/steps/``. This package includes sensible defaults for a set of tools, but you can edit the commands and add new phenotypes.
 
 The goal of a project is to generate phenotype tables for a set of samples. Each tool could involve any combination of:
 
@@ -26,44 +28,59 @@ Each file in ``steps/`` contains all of these steps for one phenotype. Snakemake
 Config file
 ===========
 
-The config file is a file in YAML format specifying general parameters, input files, and phenotypes to generate. This is the default config:
+The config file is a file in YAML format specifying general parameters, input files, and phenotypes to generate. This is the example config, which is for a small example dataset:
 
 .. code-block:: yaml
 
+   # Project
+   project_dir: .
+   threads: 4
+
    # Raw RNA-Seq data
-   fastq_map: data/geuvadis/fastq_map.txt
-   fastq_dir: data/geuvadis
+   fastq_map: input/fastq_map.txt
+   fastq_dir: input/fastq
    paired_end: True
    read_length: 75
 
    # Reference files
-   ref_genome: data/human_ref/Homo_sapiens.GRCh38.dna.primary_assembly.fa
-   ref_anno: data/human_ref/Homo_sapiens.GRCh38.106.gtf
-   retro_anno: data/human_ref/retro.hg38.v1.nochr.gtf
+   ref_genome: input/ref/Homo_sapiens.GRCh38.dna.primary_assembly.chr1_0-1Mb.fa
+   ref_anno: input/ref/Homo_sapiens.GRCh38.106.chr1_0-1Mb.gtf
+   retro_anno: input/ref/retro.hg38.v1.nochr.chr1_0-1Mb.gtf
 
-   # Project
-   project_dir: test
-   ref_dir: test/reference
-   threads: 4
+   # Files and info for downstream analysis
+   # TODO: Get chromosome list automatically from genotypes or BED file.
+   chroms: [chr1, chr2, chr3, chr4, chr5, chr6, chr7, chr8, chr9, chr10, chr11, chr12, chr13, chr14, chr15, chr16, chr17, chr18, chr19, chr20, chr21, chr22]
+   samples_file: input/samples.txt
+   geno_prefix: path/to/plink/bed/bim/fam/genotypes
+   covar_file: path/to/covar/file.txt
+
+   # Other parameters:
+   genome_size: 1000000
 
    # Phenotypes
    phenotypes:
    expression:
       files:
-      - expression.log2.bed
-      - expression.tpm.bed
+      - expression.bed.gz
+      - expression.bed.gz.tbi
    splicing:
       files:
-      - splicing.bed
+      - splicing.bed.gz
+      - splicing.bed.gz.tbi
+      - splicing.phenotype_groups.txt
    stability:
       files:
-      - stability.bed
+      - stability.bed.gz
+      - stability.bed.gz.tbi
    retroelements:
       files:
-      - retroelements.bed
+      - retroelements.bed.gz
+      - retroelements.bed.gz.tbi
    latent:
       files:
-      - latent.bed
+      - latent.bed.gz
+      - latent.bed.gz.tbi
+      - latent.phenotype_groups.txt
 
 Input files
 ===========
@@ -107,9 +124,20 @@ A GTF file containing the gene, exon, and other annotations, compatible with the
 Running from the command line
 =============================
 
-Phenotypes are computed by running one subprocess per phenotype category per sample. Within the specified output directory, one directory will be created for each phenotype category, containing intermediate (often per-sample) files from each program.
+Phenotypes are usually computed by running one subprocess per phenotype category per sample. Within the specified output directory, one directory will be created for each phenotype category, containing intermediate (often per-sample) files from each program. These data will then be combined into one BED file per phenotype group so that QTL mapping can be run separately for each.
 
-These data will then be combined into one BED file per phenotype group so that QTL mapping can be run separately for each.
+All this is done using Snakemake, so general guides to using Snakemake can be found online to learn its features. For example, you can specify a profile that determines how steps get run, and is different from the project config file described above. Here is an example profile config for use on a computing cluster with slurm scheduling:
+
+``~/.config/snakemake/slurm/config.yaml``:
+
+.. code-block:: yaml
+
+   use-conda: true
+   cluster: "sbatch -t {resources.walltime}:00:00 --mem={resources.mem_mb} -c {resources.cpus} {resources.partition} --mail-type=FAIL --mail-user=dmunro@scripps.edu"
+   default-resources: [walltime=1, mem_mb=4000, cpus=1, partition=""]
+   # partition should be e.g. "--partition=gpu"
+
+Resources are specified within some of the snakemake rules, which are plugged into this command and automatically submitted as cluster jobs.
 
 Output files
 ============
@@ -117,11 +145,11 @@ Output files
 BED output files
 ----------------
 
-The `BED <https://genome.ucsc.edu/FAQ/FAQformat.html#format1>`_ files include four annotation columns, ``chrom``, ``chromStart``, ``chromEnd``, and ``name``, followed by one column per sample containing the phenotype values. There may be one phenotype per gene (e.g. expression) or multiple (e.g. splicing), but in either case the coordinates indicate the transcription start site of the phenotype's gene. This ensures that the same cis-window variants are tested for all phenotypes of the same gene.
+The `BED <https://genome.ucsc.edu/FAQ/FAQformat.html#format1>`_ files include four annotation columns, ``chr``, ``start``, ``end``, and ``phenotype_id``, followed by one column per sample containing the phenotype values. There may be one phenotype per gene (e.g. expression) or multiple (e.g. splicing), but in either case the coordinates indicate the transcription start site of the phenotype's gene. This ensures that the same cis-window variants are tested for all phenotypes of the same gene.
 
 ::
 
-   #chrom	chromStart	chromEnd	name	HG00315	HG00106	NA18489
+   #chr	start	end	phenotype_id	HG00315	HG00106	NA18489
    1	29569	29570	ENSG00000227232:1:17055:17233:clu_1_-	0.671533	0.654321	0.673716
    1	29569	29570	ENSG00000227232:1:17055:17606:clu_1_-	0.0340633	0.037037	0.0241692
    1	29569	29570	ENSG00000227232:1:17368:17606:clu_1_-	0.294404	0.308642	0.302115
@@ -133,6 +161,21 @@ The `BED <https://genome.ucsc.edu/FAQ/FAQformat.html#format1>`_ files include fo
    1	778668	778669	ENSG00000228327:1:736619:740129:clu_2_-	0.137681	0	0.0945946
    ...
 
+Phenotype groups
+----------------
+
+For phenotypes categories in which multiple phenotypes are produced per gene (e.g., splice junctions), a file is produced that specifies which gene each phenotype belongs to. This is used by tensorQTL for grouped testing:
+
+::
+
+   ENSG00000227232:1:17055:17233:clu_4_-	ENSG00000227232
+   ENSG00000227232:1:17055:17606:clu_4_-	ENSG00000227232
+   ...
+   ENSG00000227232:1:18379:24738:clu_5_-	ENSG00000227232
+   ENSG00000279457:1:187577:187755:clu_6_-	ENSG00000279457
+   ENSG00000279457:1:187577:188130:clu_6_-	ENSG00000279457
+   ...
+
 Running
 =======
 
@@ -141,11 +184,18 @@ We suggest these steps to run TURNAP.
 1. Run the included test data
 -----------------------------
 
-This will require installation of all programs used in the snakefiles. `Miniconda <https://docs.conda.io/en/latest/miniconda.html>`_ is recommended for easy installation and management of all these programs. Once you think you have everything installed, try running on the included test data, which is small:
+This will require installation of all programs used in the snakefiles. `Miniconda <https://docs.conda.io/en/latest/miniconda.html>`_ is recommended for easy installation and management of all these programs. A conda environment specification is provided in ``conda_env.yaml``:
 
 .. code-block:: shell
 
-   snakemake -s TURNAP/Snakefile -c1
+   conda env create -n TURNAP --file conda_env.yaml
+
+Once you think you have everything installed, try running on the included test data, which is small:
+
+.. code-block:: shell
+
+   cd Project
+   snakemake -j1
 
 1. Run with your data
 ---------------------
