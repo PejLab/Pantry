@@ -2,9 +2,9 @@ from pathlib import Path
 from gtfparse import read_gtf
 import numpy as np
 import pandas as pd
+import turnap
 
-if len(config.keys()) == 0:
-    raise Exception('No config file provided.')
+turnap.validate_config(config)
 
 fastq_map = Path(config['fastq_map'])
 fastq_dir = Path(config['fastq_dir'])
