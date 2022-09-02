@@ -29,6 +29,20 @@ phenotypes:
     files:
     - expression.bed.gz
     - expression.bed.gz.tbi
+  isoforms:
+    files:
+    - isoforms.bed.gz
+    - isoforms.bed.gz.tbi
+    - isoforms.phenotype_groups.txt
+  latent:
+    files:
+    - latent.bed.gz
+    - latent.bed.gz.tbi
+    - latent.phenotype_groups.txt
+  retroelements:
+    files:
+    - retroelements.bed.gz
+    - retroelements.bed.gz.tbi
   splicing:
     files:
     - splicing.bed.gz
@@ -38,12 +52,3 @@ phenotypes:
     files:
     - stability.bed.gz
     - stability.bed.gz.tbi
-  retroelements:
-    files:
-    - retroelements.bed.gz
-    - retroelements.bed.gz.tbi
-  latent:
-    files:
-    - latent.bed.gz
-    - latent.bed.gz.tbi
-    - latent.phenotype_groups.txt

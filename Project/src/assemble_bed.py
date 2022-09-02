@@ -75,7 +75,7 @@ def map_introns_to_genes(introns: list, exons: pd.DataFrame) -> pd.DataFrame:
     return clust_genes
 
 def assemble_expression(sample_ids: list, expr_dir: Path, ref_anno: Path, bed_log2: Path, bed_tpm: Path):
-    """Assemble RSEM log2 and tpm outputs into expression BED files"""
+    """Assemble RSEM gene-level log2 and tpm outputs into expression BED files"""
     log2 = []
     tpm = []
     for i, sample in enumerate(sample_ids):
@@ -104,6 +104,31 @@ def assemble_expression(sample_ids: list, expr_dir: Path, ref_anno: Path, bed_lo
     tpm = anno.merge(tpm.reset_index(), on='phenotype_id', how='inner')
     log2.to_csv(bed_log2, sep='\t', index=False, float_format='%g')
     tpm.to_csv(bed_tpm, sep='\t', index=False, float_format='%g')
+
+def assemble_isoforms(sample_ids: list, expr_dir: Path, ref_anno: Path, bed: Path):
+    """Assemble RSEM isoform abundance into a BED file"""
+    pct = []
+    for i, sample in enumerate(sample_ids):
+        fname = expr_dir / f'{sample}.isoforms.results.gz'
+        d = pd.read_csv(fname, sep='\t')
+        d['phenotype_id'] = d['gene_id'] + ':' + d['transcript_id']
+        d = d.set_index('phenotype_id')
+        if i == 0:
+            groups = d['gene_id'].reset_index()
+        d = d['IsoPct']
+        d.name = sample
+        pct.append(d)
+    df = pd.concat(pct, axis=1)
+    df = df.reset_index()
+    # Add gene_id and use its TSS for all of its isoforms:
+    df = df.merge(groups, on='phenotype_id', how='left')
+    # Remove genes with only one isoform since this is relative abundance:
+    df = df.groupby('gene_id').filter(lambda x: len(x) > 1)
+    anno = load_tss(ref_anno)
+    anno = anno.rename(columns={'phenotype_id': 'gene_id'})
+    df = anno.merge(df, on='gene_id', how='inner')
+    df = df[['#chr', 'start', 'end', 'phenotype_id'] + sample_ids]
+    df.to_csv(bed, sep='\t', index=False, float_format='%g')
 
 def assemble_retroelements(sample_ids: list, retro_dir: Path, retro_anno: Path, bed: Path):
     """Assemble telescope output files into retroelement expression BED file"""
@@ -185,7 +210,7 @@ def assemble_stability(sample_ids: list, stab_dir: Path, ref_anno: Path, bed: Pa
     df.to_csv(bed, sep='\t', index=False, float_format='%g')
 
 parser = argparse.ArgumentParser(description='Assemble data into an RNA phenotype BED file')
-parser.add_argument('--type', choices=['expression', 'retroelements', 'splicing', 'stability'], required=True, help='Type of data to assemble')
+parser.add_argument('--type', choices=['expression', 'isoforms', 'retroelements', 'splicing', 'stability'], required=True, help='Type of data to assemble')
 parser.add_argument('--input', type=Path, required=False, help='Input file, for phenotype groups in which all data is already in a single file')
 parser.add_argument('--input-dir', type=Path, required=False, help='Directory containing input files, for phenotype groups with per-sample input files')
 parser.add_argument('--samples', type=Path, required=False, help='File listing sample IDs, for phenotype groups with per-sample input files')
@@ -199,6 +224,8 @@ if args.samples is not None:
 
 if args.type == 'expression':
     assemble_expression(samples, args.input_dir, args.ref_anno, args.output, args.output2)
+elif args.type == 'isoforms':
+    assemble_isoforms(samples, args.input_dir, args.ref_anno, args.output)
 elif args.type == 'retroelements':
     assemble_retroelements(samples, args.input_dir, args.ref_anno, args.output)
 elif args.type == 'splicing':

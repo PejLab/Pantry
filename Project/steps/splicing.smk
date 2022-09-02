@@ -98,7 +98,7 @@ rule splicing_pheno_groups:
         output_dir / 'splicing.phenotype_groups.txt',
     shell:
         """
-        gzcat {input} \
+        zcat < {input} \
             | tail -n +2 \
             | cut -f4 \
             | awk '{{ g=$1; sub(/:.*$/, "", g); print $1 "\t" g }}' \

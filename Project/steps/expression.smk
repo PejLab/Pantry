@@ -55,7 +55,7 @@ rule rsem:
         """
 
 rule assemble_expression_bed:
-    """Assemble RSEM log2 and tpm outputs into expression BED files"""
+    """Assemble RSEM gene-level log2 and tpm outputs into expression BED files"""
     input:
         rsem = lambda w: expand(str(interm_dir / 'expression' / '{sample_id}.genes.results.gz'), sample_id=samples),
         samples = samples_file,
@@ -79,7 +79,6 @@ rule assemble_expression_bed:
             --output2 {output.tpm}
         """
 
-
 rule normalize_expression:
     """Quantile-normalize values for QTL mapping"""
     input:
@@ -98,3 +97,4 @@ rule normalize_expression:
             --output {params.bed}
         bgzip {params.bed}
         """
+

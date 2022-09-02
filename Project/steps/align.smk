@@ -91,7 +91,7 @@ rule star_align:
         STAR --runMode alignReads \
             --genomeDir {params.index_dir} \
             --readFilesIn {params.fastq_list} \
-            --readFilesCommand zcat \
+            --readFilesCommand 'zcat < ' \
             --twopassMode Basic \
             --quantMode TranscriptomeSAM \
             --outSAMstrandField intronMotif \
