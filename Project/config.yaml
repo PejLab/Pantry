@@ -11,6 +11,7 @@ read_length: 75
 # Reference files
 ref_genome: input/ref/Homo_sapiens.GRCh38.dna.primary_assembly.chr1_0-1Mb.fa
 ref_anno: input/ref/Homo_sapiens.GRCh38.106.chr1_0-1Mb.gtf
+ref_cdna: 'input/ref/Homo_sapiens.GRCh38.cdna.all.fa.gz'
 retro_anno: input/ref/retro.hg38.v1.nochr.chr1_0-1Mb.gtf
 
 # Files and info for downstream analysis
@@ -25,15 +26,33 @@ genome_size: 1000000
 
 # Phenotypes
 phenotypes:
+  ATS_APA:
+    files:
+    - ATS_APA.grp_1.upstream.bed.gz
+    - ATS_APA.grp_1.upstream.bed.gz.tbi
+    - ATS_APA.grp_1.upstream.phenotype_groups.txt
+    - ATS_APA.grp_1.contained.bed.gz
+    - ATS_APA.grp_1.contained.bed.gz.tbi
+    - ATS_APA.grp_1.contained.phenotype_groups.txt
+    - ATS_APA.grp_1.downstream.bed.gz
+    - ATS_APA.grp_1.downstream.bed.gz.tbi
+    - ATS_APA.grp_1.downstream.phenotype_groups.txt
+    - ATS_APA.grp_2.upstream.bed.gz
+    - ATS_APA.grp_2.upstream.bed.gz.tbi
+    - ATS_APA.grp_2.upstream.phenotype_groups.txt
+    - ATS_APA.grp_2.contained.bed.gz
+    - ATS_APA.grp_2.contained.bed.gz.tbi
+    - ATS_APA.grp_2.contained.phenotype_groups.txt
+    - ATS_APA.grp_2.downstream.bed.gz
+    - ATS_APA.grp_2.downstream.bed.gz.tbi
+    - ATS_APA.grp_2.downstream.phenotype_groups.txt
   expression:
     files:
-    - expression.bed.gz
-    - expression.bed.gz.tbi
-  isoforms:
-    files:
-    - isoforms.bed.gz
-    - isoforms.bed.gz.tbi
-    - isoforms.phenotype_groups.txt
+    - expression.genes.bed.gz
+    - expression.genes.bed.gz.tbi
+    - expression.isoforms.bed.gz
+    - expression.isoforms.bed.gz.tbi
+    - expression.isoforms.phenotype_groups.txt
   latent:
     files:
     - latent.bed.gz

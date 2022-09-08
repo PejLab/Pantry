@@ -45,8 +45,8 @@ rule run_featureCounts:
 rule assemble_stability_bed:
     """Assemble exon to intron read ratios into mRNA stability BED file"""
     input:
-        exon = lambda w: expand(str(interm_dir / 'stability' / '{sample_id}.constit_exons.counts.txt'), sample_id=samples),
-        intron = lambda w: expand(str(interm_dir / 'stability' / '{sample_id}.introns.counts.txt'), sample_id=samples),
+        exon = expand(str(interm_dir / 'stability' / '{sample_id}.constit_exons.counts.txt'), sample_id=samples),
+        intron = expand(str(interm_dir / 'stability' / '{sample_id}.introns.counts.txt'), sample_id=samples),
         samples = samples_file,
         ref_anno = ref_anno,
     output:

@@ -46,7 +46,7 @@ rule bedtools_coverage:
 rule assemble_latent_bed:
     """Run PCA on feature bin coverage and create BED file"""
     input:
-        beds = lambda w: expand(str(interm_dir / 'latent' / '{sample_id}.bed.gz'), sample_id=samples),
+        beds = expand(str(interm_dir / 'latent' / '{sample_id}.bed.gz'), sample_id=samples),
         ref_anno = ref_anno,
     output:
         interm_dir / 'unnorm' / 'latent.bed',

@@ -35,6 +35,12 @@ def load_exons(ref_anno: Path) -> pd.DataFrame:
     anno['exonEnd'] = np.where(anno['strand'] == '+', anno['end'], anno['start'])
     return anno[['gene_id', 'chrom', 'exonStart', 'exonEnd']]
 
+def transcript_to_gene_map(ref_anno: Path) -> pd.DataFrame:
+    """Load transcript IDs and corresponding gene IDs from GTF file"""
+    anno = read_gtf(ref_anno)
+    anno = anno.loc[anno['feature'] == 'transcript', :]
+    return anno[['gene_id', 'transcript_id']]
+
 def load_retros(retro_anno: Path) -> pd.DataFrame:
     """Load retroelement annotations
     
@@ -74,61 +80,55 @@ def map_introns_to_genes(introns: list, exons: pd.DataFrame) -> pd.DataFrame:
     clust_genes = clust_genes.reset_index().explode('gene_id')
     return clust_genes
 
-def assemble_expression(sample_ids: list, expr_dir: Path, ref_anno: Path, bed_log2: Path, bed_tpm: Path):
-    """Assemble RSEM gene-level log2 and tpm outputs into expression BED files"""
-    log2 = []
-    tpm = []
+def assemble_ATS_APA(sample_ids: list, kallisto_dir: Path, units: str, ref_anno: Path, bed: Path):
+    """Assemble txrevise-based kallisto outputs into isoform-level BED file"""
+    df = []
     for i, sample in enumerate(sample_ids):
-        fname = expr_dir / f'{sample}.genes.results.gz'
-        d = pd.read_csv(fname, sep='\t', index_col='gene_id')
-        # if i == 0:
-        #     log2 = pd.DataFrame(index=d.index)
-        #     tpm = pd.DataFrame(index=d.index)
-        # else:
-        #     assert d.index.equals(log2.index)
-        # log2[sample] = np.log2(d['expected_count'].copy() + 1)
-        # tpm[sample] = d['TPM'].copy()
-        # Avoid 'PerformanceWarning: DataFrame is highly fragmented' warning:
-        d_l = np.log2(d['expected_count'] + 1)
-        d_t = d['TPM']
-        d_l.name = sample
-        d_t.name = sample
-        log2.append(d_l)
-        tpm.append(d_t)
-    log2 = pd.concat(log2, axis=1)
-    tpm = pd.concat(tpm, axis=1)        
-    anno = load_tss(ref_anno)
-    log2.index = log2.index.rename('phenotype_id')
-    tpm.index = tpm.index.rename('phenotype_id')
-    log2 = anno.merge(log2.reset_index(), on='phenotype_id', how='inner')
-    tpm = anno.merge(tpm.reset_index(), on='phenotype_id', how='inner')
-    log2.to_csv(bed_log2, sep='\t', index=False, float_format='%g')
-    tpm.to_csv(bed_tpm, sep='\t', index=False, float_format='%g')
-
-def assemble_isoforms(sample_ids: list, expr_dir: Path, ref_anno: Path, bed: Path):
-    """Assemble RSEM isoform abundance into a BED file"""
-    pct = []
-    for i, sample in enumerate(sample_ids):
-        fname = expr_dir / f'{sample}.isoforms.results.gz'
-        d = pd.read_csv(fname, sep='\t')
-        d['phenotype_id'] = d['gene_id'] + ':' + d['transcript_id']
-        d = d.set_index('phenotype_id')
-        if i == 0:
-            groups = d['gene_id'].reset_index()
-        d = d['IsoPct']
+        fname = kallisto_dir / sample / 'abundance.tsv'
+        d = pd.read_csv(fname, sep='\t', index_col='target_id')
+        d = d[units] # est_counts or tpm
         d.name = sample
-        pct.append(d)
-    df = pd.concat(pct, axis=1)
+        df.append(d)
+    df = pd.concat(df, axis=1)
+    df.index = df.index.rename('phenotype_id')
+    # This assumes target_id is e.g. {gene_id}.grp_1.downstream.{transcript_id}
+    df['gene_id'] = df.index.str.split('.').str[0]
     df = df.reset_index()
-    # Add gene_id and use its TSS for all of its isoforms:
-    df = df.merge(groups, on='phenotype_id', how='left')
-    # Remove genes with only one isoform since this is relative abundance:
-    df = df.groupby('gene_id').filter(lambda x: len(x) > 1)
+    # Use gene's TSS for all of its isoforms:
     anno = load_tss(ref_anno)
     anno = anno.rename(columns={'phenotype_id': 'gene_id'})
-    df = anno.merge(df, on='gene_id', how='inner')
+    df = anno.merge(df.reset_index(), on='gene_id', how='inner')
     df = df[['#chr', 'start', 'end', 'phenotype_id'] + sample_ids]
     df.to_csv(bed, sep='\t', index=False, float_format='%g')
+
+def assemble_expression(sample_ids: list, kallisto_dir: Path, units: str, ref_anno: Path, bed_iso: Path, bed_gene: Path):
+    """Assemble kallisto est_counts or tpm outputs into isoform- and gene-level BED files"""
+    df = []
+    for i, sample in enumerate(sample_ids):
+        fname = kallisto_dir / sample / 'abundance.tsv'
+        d = pd.read_csv(fname, sep='\t', index_col='target_id')
+        d = d[units] # est_counts or tpm
+        d.name = sample
+        df.append(d)
+    df = pd.concat(df, axis=1)
+    # This assumes that Ensembl cDNA was used for kallisto:
+    # Strip off the version number from the transcript_id:
+    df['transcript_id'] = df.index.str.split('.').str[0]
+    # Add gene_id and use its TSS for all of its isoforms:
+    gene_map = transcript_to_gene_map(ref_anno)
+    df = df.merge(gene_map, on='transcript_id', how='inner')
+    # Also get gene-level expression:
+    df_gene = df.drop('transcript_id', axis=1).groupby('gene_id').sum()
+    anno = load_tss(ref_anno)
+    anno = anno.rename(columns={'phenotype_id': 'gene_id'})
+    df = anno.merge(df.reset_index(), on='gene_id', how='inner')
+    df['phenotype_id'] = df['gene_id'] + ':' + df['transcript_id']
+    df = df[['#chr', 'start', 'end', 'phenotype_id'] + sample_ids]
+    df.to_csv(bed_iso, sep='\t', index=False, float_format='%g')
+    df_gene = anno.merge(df_gene.reset_index(), on='gene_id', how='inner')
+    df_gene = df_gene.rename(columns={'gene_id': 'phenotype_id'})
+    df_gene = df_gene[['#chr', 'start', 'end', 'phenotype_id'] + sample_ids]
+    df_gene.to_csv(bed_gene, sep='\t', index=False, float_format='%g')
 
 def assemble_retroelements(sample_ids: list, retro_dir: Path, retro_anno: Path, bed: Path):
     """Assemble telescope output files into retroelement expression BED file"""
@@ -210,7 +210,7 @@ def assemble_stability(sample_ids: list, stab_dir: Path, ref_anno: Path, bed: Pa
     df.to_csv(bed, sep='\t', index=False, float_format='%g')
 
 parser = argparse.ArgumentParser(description='Assemble data into an RNA phenotype BED file')
-parser.add_argument('--type', choices=['expression', 'isoforms', 'retroelements', 'splicing', 'stability'], required=True, help='Type of data to assemble')
+parser.add_argument('--type', choices=['ATS_APA', 'expression', 'retroelements', 'splicing', 'stability'], required=True, help='Type of data to assemble')
 parser.add_argument('--input', type=Path, required=False, help='Input file, for phenotype groups in which all data is already in a single file')
 parser.add_argument('--input-dir', type=Path, required=False, help='Directory containing input files, for phenotype groups with per-sample input files')
 parser.add_argument('--samples', type=Path, required=False, help='File listing sample IDs, for phenotype groups with per-sample input files')
@@ -222,10 +222,10 @@ args = parser.parse_args()
 if args.samples is not None:
     samples = pd.read_csv(args.samples, sep='\t', header=None)[0].tolist()
 
-if args.type == 'expression':
-    assemble_expression(samples, args.input_dir, args.ref_anno, args.output, args.output2)
-elif args.type == 'isoforms':
-    assemble_isoforms(samples, args.input_dir, args.ref_anno, args.output)
+if args.type == 'ATS_APA':
+    assemble_ATS_APA(samples, args.input_dir, 'tpm', args.ref_anno, args.output)
+elif args.type == 'expression':
+    assemble_expression(samples, args.input_dir, 'tpm', args.ref_anno, args.output, args.output2)
 elif args.type == 'retroelements':
     assemble_retroelements(samples, args.input_dir, args.ref_anno, args.output)
 elif args.type == 'splicing':

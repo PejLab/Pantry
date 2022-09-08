@@ -23,7 +23,7 @@ rule run_telescope:
 rule assemble_retroelement_bed:
     """Assemble telescope output files into retroelement expression BED file"""
     input:
-        telescope_files = lambda w: expand(str(interm_dir / 'retroelements' / '{sample_id}-telescope_report.tsv'), sample_id=samples),
+        telescope_files = expand(str(interm_dir / 'retroelements' / '{sample_id}-telescope_report.tsv'), sample_id=samples),
         samples = samples_file,
         retro_anno = retro_anno,
     output:

@@ -29,7 +29,7 @@ rule regtools_junctions:
 rule cluster_junctions:
     """Cluster splice junctions with common boundaries"""
     input:
-        lambda w: expand(str(interm_dir / 'splicing' / '{sample_id}.junc'), sample_id=samples),
+        expand(str(interm_dir / 'splicing' / '{sample_id}.junc'), sample_id=samples),
     output:
         interm_dir / 'splicing' / 'leafcutter_perind_numers.counts.gz',
     params:

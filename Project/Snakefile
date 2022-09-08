@@ -22,6 +22,7 @@ read_length = config['read_length']
 ref_genome = Path(config['ref_genome'])
 ref_anno = Path(config['ref_anno'])
 retro_anno = Path(config['retro_anno'])
+ref_cdna = Path(config['ref_cdna'])
 
 samples_file = Path(config['samples_file'])
 phenotypes = config['phenotypes']
@@ -52,12 +53,6 @@ for pheno, params in phenotypes.items():
 localrules:
     index_bed,
 
-include: 'steps/align.smk'
-for phenotype in phenotypes:
-    include: f'steps/{phenotype}.smk'
-include: 'steps/heritability.smk'
-include: 'steps/qtl.smk'
-
 rule all:
     input:
         outputs,
@@ -71,3 +66,28 @@ rule index_bed:
         output_dir / '{pheno}.bed.gz.tbi'
     shell:
         'tabix {input}'
+
+def fastqs_kallisto(wildcards) -> list:
+    """Get the list of FASTQ file paths for a sample.
+
+    If paired_end is True, file pairs are adjacent in the list, e.g.
+    [sampleA_1.fq.gz sampleA_2.fq.gz sampleB_1.fq.gz sampleB_2.fq.gz].
+    """
+    paths = []
+    with open(fastq_map, 'r') as f:
+        for line in f.read().splitlines():
+            if paired_end:
+                fastq1, fastq2, s_id = line.split('\t')
+            else:
+                fastq1, s_id = line.split('\t')
+            if s_id == wildcards.sample_id:
+                paths.append(str(fastq_dir / fastq1))
+                if paired_end:
+                    paths.append(str(fastq_dir / fastq2))
+    return paths
+
+include: 'steps/align.smk'
+for phenotype in phenotypes:
+    include: f'steps/{phenotype}.smk'
+include: 'steps/heritability.smk'
+include: 'steps/qtl.smk'

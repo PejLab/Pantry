@@ -13,6 +13,7 @@ def validate_config(config: dict):
         'read_length',
         'ref_genome',
         'ref_anno',
+        'ref_cdna',
         'retro_anno',
         'samples_file',
         'phenotypes',

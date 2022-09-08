@@ -14,3 +14,7 @@ dependencies:
   - star
   - subread
   - telescope
+  - kallisto
+  - txrevise
+  - r-optparse
+  - gffread
