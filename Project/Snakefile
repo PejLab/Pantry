@@ -53,6 +53,7 @@ for pheno, params in phenotypes.items():
 localrules:
     index_bed,
 
+# These are the target files to be generated (or regenerated if outdated):
 rule all:
     input:
         outputs,

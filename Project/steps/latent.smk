@@ -9,12 +9,11 @@ rule get_gene_bins:
     output:
         ref_dir / 'gene_bins.bed.gz',
     params:
-        project_dir = project_dir,
         n_bins = 10,
         bed = ref_dir / 'gene_bins.bed',
     shell:
         """
-        python3 {params.project_dir}/src/get_gene_bins.py \
+        python3 scripts/get_gene_bins.py \
             -g {input.ref_anno} \
             -c {input.chrom} \
             -n {params.n_bins} \
@@ -52,14 +51,13 @@ rule assemble_latent_bed:
         interm_dir / 'unnorm' / 'latent.bed',
     params:
         unnorm_dir = interm_dir / 'unnorm',
-        project_dir = project_dir,
         bedfile_list = interm_dir / 'latent' / 'bedfiles.txt',
         var_expl = 0.95,
     shell:
         """
         mkdir -p {params.unnorm_dir}
         printf '%s\\n' {input.beds} > {params.bedfile_list}
-        python3 {params.project_dir}/src/get_PC_features.py \
+        python3 scripts/get_PC_features.py \
             -i {params.bedfile_list} \
             -g {input.ref_anno} \
             -v {params.var_expl} \
@@ -74,11 +72,10 @@ rule normalize_latent:
     output:
         output_dir / 'latent.bed.gz',
     params:
-        project_dir = project_dir,
         bed = output_dir / 'latent.bed',
     shell:
         """
-        python3 {params.project_dir}/src/normalize_phenotypes.py \
+        python3 scripts/normalize_phenotypes.py \
             --input {input.bed} \
             --samples {input.samples} \
             --output {params.bed}

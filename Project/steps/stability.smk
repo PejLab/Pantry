@@ -5,11 +5,9 @@ rule exons_introns_from_GTF:
     output:
         exon_gtf = ref_dir / 'constit_exons.gtf',
         intron_gtf = ref_dir / 'introns.gtf',
-    params:
-        project_dir = project_dir,
     shell:
         """
-        sh {params.project_dir}/src/exons_introns_from_gtf.sh \
+        sh scripts/exons_introns_from_gtf.sh \
             {input.ref_anno} \
             {output.exon_gtf} \
             {output.intron_gtf}
@@ -53,12 +51,11 @@ rule assemble_stability_bed:
         bed = interm_dir / 'unnorm' / 'stability.bed',
     params:
         unnorm_dir = interm_dir / 'unnorm',
-        project_dir = project_dir,
         stab_dir = interm_dir / 'stability',
     shell:
         """
         mkdir -p {params.unnorm_dir}
-        python3 {params.project_dir}/src/assemble_bed.py \
+        python3 scripts/assemble_bed.py \
             --type stability \
             --input-dir {params.stab_dir} \
             --samples {input.samples} \
@@ -74,11 +71,10 @@ rule normalize_stability:
     output:
         output_dir / 'stability.bed.gz',
     params:
-        project_dir = project_dir,
         bed = output_dir / 'stability.bed',
     shell:
         """
-        python3 {params.project_dir}/src/normalize_phenotypes.py \
+        python3 scripts/normalize_phenotypes.py \
             --input {input.bed} \
             --samples {input.samples} \
             --output {params.bed}

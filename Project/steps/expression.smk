@@ -57,12 +57,11 @@ rule assemble_expression_bed:
         gene = interm_dir / 'unnorm' / 'expression.genes.bed',
     params:
         unnorm_dir = interm_dir / 'unnorm',
-        project_dir = project_dir,
         expr_dir = interm_dir / 'expression',
     shell:
         """
         mkdir -p {params.unnorm_dir}
-        python3 {params.project_dir}/src/assemble_bed.py \
+        python3 scripts/assemble_bed.py \
             --type expression \
             --input-dir {params.expr_dir} \
             --samples {input.samples} \
@@ -79,11 +78,10 @@ rule normalize_expression:
     output:
         output_dir / 'expression.{level}.bed.gz',
     params:
-        project_dir = project_dir,
         bed = str(output_dir / 'expression.{level}.bed'),
     shell:
         """
-        python3 {params.project_dir}/src/normalize_phenotypes.py \
+        python3 scripts/normalize_phenotypes.py \
             --input {input.bed} \
             --samples {input.samples} \
             --output {params.bed}

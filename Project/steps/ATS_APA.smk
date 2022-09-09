@@ -14,7 +14,7 @@ rule txrevise_extract_tags:
         tags = ref_dir / 'txrevise' / 'transcript_tags.txt',
     shell:
         """
-        python3 src/txrevise/extractTranscriptTags.py \
+        python3 scripts/txrevise/extractTranscriptTags.py \
             --gtf <(gzip -c {input}) \
             > {output.tags}
         """
@@ -28,7 +28,7 @@ rule txrevise_prepare_annotations:
         ref_dir / 'txrevise' / 'txrevise_annotations.rds',
     shell:
         """
-        Rscript src/txrevise/prepareAnnotations.R \
+        Rscript scripts/txrevise/prepareAnnotations.R \
             --gtf {input.gtf} \
             --tags {input.tags} \
             --out {output}
@@ -50,7 +50,7 @@ rule txrevise_construct_events:
         outdir = ref_dir / 'txrevise' / 'batch',
     shell:
         """
-        Rscript src/txrevise/constructEvents.R \
+        Rscript scripts/txrevise/constructEvents.R \
             --annot {input} \
             --batch {params.batch_str} \
             --out {params.outdir}
@@ -140,12 +140,11 @@ rule assemble_ATS_APA_bed:
         interm_dir / 'unnorm' / 'ATS_APA.{type}.bed',
     params:
         unnorm_dir = str(interm_dir / 'unnorm'),
-        project_dir = project_dir,
         atsapa_type_dir = str(interm_dir / 'ATS_APA' / '{type}'),
     shell:
         """
         mkdir -p {params.unnorm_dir}
-        python3 {params.project_dir}/src/assemble_bed.py \
+        python3 scripts/assemble_bed.py \
             --type ATS_APA \
             --input-dir {params.atsapa_type_dir} \
             --samples {input.samples} \
@@ -161,11 +160,10 @@ rule normalize_ATS_APA:
     output:
         output_dir / 'ATS_APA.{type}.bed.gz',
     params:
-        project_dir = project_dir,
         bed = str(output_dir / 'ATS_APA.{type}.bed'),
     shell:
         """
-        python3 {params.project_dir}/src/normalize_phenotypes.py \
+        python3 scripts/normalize_phenotypes.py \
             --input {input.bed} \
             --samples {input.samples} \
             --output {params.bed}

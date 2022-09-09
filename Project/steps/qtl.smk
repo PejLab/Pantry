@@ -27,7 +27,6 @@ rule tensorqtl_perm:
     params:
         geno_prefix = geno_prefix,
         qtl_dir = output_dir / 'qtl',
-        project_dir = project_dir,
         groups_arg = groups_arg,
     resources:
         walltime = 12,
@@ -36,7 +35,7 @@ rule tensorqtl_perm:
         """
         module load cuda
         mkdir -p {params.qtl_dir}
-        python3 {params.project_dir}/src/run_tensorqtl.py \
+        python3 scripts/run_tensorqtl.py \
             {params.geno_prefix} \
             {input.bed} \
             {output} \
@@ -57,7 +56,6 @@ rule tensorqtl_independent:
     output:
         output_dir / 'qtl' / '{pheno}.cis_independent_qtl.txt.gz',
     params:
-        project_dir = project_dir,
         geno_prefix = geno_prefix,
         groups_arg = groups_arg,
     resources:
@@ -66,7 +64,7 @@ rule tensorqtl_independent:
     shell:
         """
         module load cuda
-        python3 {params.project_dir}/src/run_tensorqtl.py \
+        python3 scripts/run_tensorqtl.py \
             {params.geno_prefix} \
             {input.bed} \
             {output} \
