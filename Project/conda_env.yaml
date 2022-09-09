@@ -1,12 +1,16 @@
-name: rnapheno
+name: pantry
 channels:
   - conda-forge
   - bioconda
   - defaults
 dependencies:
   - bedtools
+  - gffread  # for txrevise
+  - graphviz  # for plotting pipeline diagrams
   - gtfparse
+  - kallisto
   - pysam=0.16.0.1
+  - r-optparse  # for txrevise
   - regtools
   - rsem
   - scikit-learn
@@ -14,7 +18,4 @@ dependencies:
   - star
   - subread
   - telescope
-  - kallisto
   - txrevise
-  - r-optparse
-  - gffread
