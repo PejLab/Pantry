@@ -16,7 +16,7 @@ rule exons_introns_from_GTF:
 rule run_featureCounts:
     """Run featureCounts from subread to get exon or intron read counts"""
     input:
-        bam = interm_dir / 'bam' / '{sample_id}.Aligned.sortedByCoord.out.bam',
+        bam = lambda w: bam_map[w.sample_id],
         gtf = ref_dir / '{feature_type}.gtf',
     output:
         interm_dir / 'stability' / '{sample_id}.{feature_type}.counts.txt',
@@ -25,8 +25,8 @@ rule run_featureCounts:
         paired_flag = '-p' if paired_end else '',
         feature_id = lambda w: {'constit_exons': 'exon', 'introns': 'intron'}[w.feature_type],
         # TODO add strandedness parameter
+    threads: 8
     resources:
-        cpus = threads,
         walltime = 8,
     shell:
         """
@@ -36,7 +36,7 @@ rule run_featureCounts:
             {params.paired_flag} \
             -a {input.gtf} \
             -t {params.feature_id} \
-            -T {resources.cpus} \
+            -T {threads} \
             -o {output}
         """
 

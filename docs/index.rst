@@ -32,10 +32,6 @@ The config file is a file in YAML format specifying general parameters, input fi
 
 .. code-block:: yaml
 
-   # Project
-   project_dir: .
-   threads: 4
-
    # Raw RNA-Seq data
    fastq_map: input/fastq_map.txt
    fastq_dir: input/fastq
@@ -133,8 +129,8 @@ All this is done using Snakemake, so general guides to using Snakemake can be fo
 .. code-block:: yaml
 
    use-conda: true
-   cluster: "sbatch -t {resources.walltime}:00:00 --mem={resources.mem_mb} -c {resources.cpus} {resources.partition} --mail-type=FAIL --mail-user=dmunro@scripps.edu"
-   default-resources: [walltime=1, mem_mb=4000, cpus=1, partition=""]
+   cluster: "sbatch -t {resources.walltime}:00:00 --mem={resources.mem_mb} -c {threads} {resources.partition} --mail-type=FAIL --mail-user=dmunro@scripps.edu"
+   default-resources: [walltime=1, mem_mb=4000, partition=""]
    # partition should be e.g. "--partition=gpu"
 
 Resources are specified within some of the snakemake rules, which are plugged into this command and automatically submitted as cluster jobs.

@@ -24,7 +24,7 @@ rule get_gene_bins:
 rule bedtools_coverage:
     """Get RNA-Seq read coverage for feature bins"""
     input:
-        bam = interm_dir / 'bam' / '{sample_id}.Aligned.sortedByCoord.out.bam',
+        bam = lambda w: bam_map[w.sample_id],
         bed = ref_dir / 'gene_bins.bed.gz',
         chrom = ref_dir / 'star_index' / 'chrNameLength.txt',
     output:

@@ -4,27 +4,113 @@ import numpy as np
 import pandas as pd
 import turnap
 
+def load_fastq_map(map_file: Path, fastq_dir: Path, paired_end) -> dict:
+    """Load the FASTQ file paths for each sample.
+
+    If paired_end is True, each dictionary value is a tuple of two lists of
+    paths, otherwise each value is a list of paths.
+    """
+    paths = {}
+    with open(map_file, 'r') as f:
+        for line in f.read().splitlines():
+            if paired_end:
+                fastq1, fastq2, sample_id = line.split('\t')
+                if sample_id not in paths:
+                    paths[sample_id] = ([], [])
+                paths[sample_id][0].append(str(fastq_dir / fastq1))
+                paths[sample_id][1].append(str(fastq_dir / fastq2))
+            else:
+                fastq, sample_id = line.split('\t')
+                if sample_id not in paths:
+                    paths[sample_id] = []
+                paths[sample_id].append(str(fastq_dir / fastq))
+    return paths
+
+def new_fastq_map(samples: list, fastq_dir: Path, paired_end: bool) -> dict:
+    """Get the list(s) of FASTQ file paths to be created.
+    
+    This is used when FASTQ files are produced from input BAM files.
+    If paired_end is True, each dictionary value is a tuple of two lists of
+    paths, otherwise each value is a list of paths.
+    """
+    paths = {}
+    for sample_id in samples:
+        if paired_end:
+            paths[sample_id] = ([], [])
+            paths[sample_id][0].append(fastq_dir / f'{sample_id}_1.fastq.gz')
+            paths[sample_id][1].append(fastq_dir / f'{sample_id}_2.fastq.gz')
+        else:
+            paths[sample_id] = [fastq_dir / f'{sample_id}.fastq.gz']
+    return paths
+
+def load_bam_map(map_file: Path, bam_dir: Path) -> dict:
+    """Load the BAM file path for each sample."""
+    paths = {}
+    with open(map_file, 'r') as f:
+        for line in f.read().splitlines():
+            bam, sample_id = line.split('\t')
+            assert sample_id not in paths, "Only one BAM file allowed per sample."
+            paths[sample_id] = bam_dir / bam
+    return paths
+
+def new_bam_map(samples: list, bam_dir: Path) -> dict:
+    """Get the list of BAM file paths to be created.
+    
+    This is used when BAM files are produced from input FASTQ files using STAR.
+    """
+    paths = {}
+    for sample_id in samples:
+        paths[sample_id] = bam_dir / f'{sample_id}.Aligned.sortedByCoord.out.bam'
+    return paths
+
+def fastq_inputs(wildcards) -> list:
+    """Get the list of FASTQ file paths for a sample.
+
+    If paired_end is True, file pairs are adjacent in the list, e.g.
+    [runA_1.fq.gz runA_2.fq.gz runB_1.fq.gz runB_2.fq.gz].
+    """
+    fastqs = fastq_map[wildcards.sample_id]
+    if paired_end:
+        paths = []
+        for i in range(len(fastqs[0])):
+            paths.append(fastqs[0][i])
+            paths.append(fastqs[1][i])
+        return paths
+    else:
+        return fastqs
+
+
 configfile: 'config.yaml'
 
 turnap.validate_config(config)
 
-project_dir = Path(config['project_dir'])
-interm_dir = project_dir / 'intermediate'
+interm_dir = Path('intermediate')
 ref_dir = interm_dir / 'reference'
-output_dir = project_dir / 'output'
-threads = config['threads']
+output_dir = Path('output')
 
-fastq_map = Path(config['fastq_map'])
-fastq_dir = Path(config['fastq_dir'])
+samples_file = Path(config['samples_file'])
+samples = pd.read_csv(samples_file, sep='\t', header=None)[0].tolist()
+
 paired_end = config['paired_end']
 read_length = config['read_length']
+if 'fastq_dir' in config:
+    fastq_dir = Path(config['fastq_dir'])
+    fastq_map = load_fastq_map(Path(config['fastq_map']), fastq_dir, paired_end)
+else:
+    fastq_dir = interm_dir / 'fastq'
+    fastq_map = new_fastq_map(samples, fastq_dir, paired_end)
+if 'bam_dir' in config:
+    bam_dir = Path(config['bam_dir'])
+    bam_map = load_bam_map(Path(config['bam_map']), bam_dir)
+else:
+    bam_dir = interm_dir / 'bam'
+    bam_map = new_bam_map(samples, bam_dir)
 
 ref_genome = Path(config['ref_genome'])
 ref_anno = Path(config['ref_anno'])
 retro_anno = Path(config['retro_anno'])
 ref_cdna = Path(config['ref_cdna'])
 
-samples_file = Path(config['samples_file'])
 phenotypes = config['phenotypes']
 genome_size = config['genome_size'] # TODO: compute from fasta file
 
@@ -33,15 +119,6 @@ chroms = [str(x) for x in config['chroms']]
 geno_prefix = config['geno_prefix']
 covar_file = Path(config['covar_file'])
 
-# Get samples, preserving order for outputs in case it's meaningful
-# with open(fastq_map, 'r') as f:
-#     tmp = [line.split('\t')[-1] for line in f.read().splitlines()]
-#     samples = []
-#     for s in tmp:
-#         if s not in samples:
-#             samples.append(s)
-samples = pd.read_csv(samples_file, sep='\t', header=None)[0].tolist()
-
 outputs = []
 for pheno, params in phenotypes.items():
     for f in params['files']:
@@ -49,7 +126,8 @@ for pheno, params in phenotypes.items():
     # Used only for QTL mapping for now:
     params['grouped'] = any(['phenotype_groups' in f for f in params['files']])
 
-# These steps are short and will not be submitted as cluster jobs:
+# List short steps here so they will not be submitted as cluster jobs:
+# (These can be specified on a per-file basis)
 localrules:
     index_bed,
 
@@ -60,6 +138,30 @@ rule all:
         # expand(output_dir / 'heritability' / '{pheno}_hsq.tsv', pheno=phenotypes.keys()),
         # expand(output_dir / 'qtl' / '{pheno}.cis_independent_qtl.txt.gz', pheno=phenotypes.keys()),
 
+if 'bam_dir' not in config:
+    include: 'steps/align.smk'
+elif 'fastq_dir' not in config:
+    include: 'steps/unalign.smk'
+for phenotype in phenotypes:
+    include: f'steps/{phenotype}.smk'
+include: 'steps/heritability.smk'
+include: 'steps/qtl.smk'
+
+rule index_bam:
+    """Index a BAM file."""
+    input:
+        '{basename}.bam',
+    output:
+        '{basename}.bam.bai',
+    params:
+        add_threads = lambda w, threads: threads - 1,
+    threads: 8
+    shell:
+        # It expects the number of *additional* threads to use beyond the first.
+        """
+        samtools index -@ {params.add_threads} {input}
+        """
+
 rule index_bed:
     input:
         output_dir / '{pheno}.bed.gz',
@@ -68,27 +170,3 @@ rule index_bed:
     shell:
         'tabix {input}'
 
-def fastqs_kallisto(wildcards) -> list:
-    """Get the list of FASTQ file paths for a sample.
-
-    If paired_end is True, file pairs are adjacent in the list, e.g.
-    [sampleA_1.fq.gz sampleA_2.fq.gz sampleB_1.fq.gz sampleB_2.fq.gz].
-    """
-    paths = []
-    with open(fastq_map, 'r') as f:
-        for line in f.read().splitlines():
-            if paired_end:
-                fastq1, fastq2, s_id = line.split('\t')
-            else:
-                fastq1, s_id = line.split('\t')
-            if s_id == wildcards.sample_id:
-                paths.append(str(fastq_dir / fastq1))
-                if paired_end:
-                    paths.append(str(fastq_dir / fastq2))
-    return paths
-
-include: 'steps/align.smk'
-for phenotype in phenotypes:
-    include: f'steps/{phenotype}.smk'
-include: 'steps/heritability.smk'
-include: 'steps/qtl.smk'

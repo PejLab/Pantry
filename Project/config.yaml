@@ -1,10 +1,8 @@
-# Project
-project_dir: .
-threads: 4
-
 # Raw RNA-Seq data
-fastq_map: input/fastq_map.txt
 fastq_dir: input/fastq
+fastq_map: input/fastq_map.txt
+bam_dir: input/bam
+bam_map: input/bam_map.txt
 paired_end: True
 read_length: 75
 

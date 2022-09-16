@@ -11,9 +11,9 @@ rule star_index:
         index_dir = ref_dir / 'star_index',
         overhang = read_length - 1,
         genomeSAindexNbases = int(np.log2(genome_size) / 2 - 1),
+    threads: 16
     resources:
         mem_mb = 60000,
-        cpus = threads,
         walltime = 4,
     shell:
         """
@@ -26,64 +26,35 @@ rule star_index:
             --sjdbGTFfile {input.ref_anno} \
             --sjdbOverhang {params.overhang} \
             --genomeSAindexNbases {params.genomeSAindexNbases} \
-            --runThreadN {resources.cpus}
+            --runThreadN {threads}
         """
 
-def fastqs(sample_id: str) -> list:
-    """Get the list of FASTQ file paths for a sample.
-
-    If paired_end is True, return a list of two lists of corresponding paths.
-    """
-    paths = [[], []] if paired_end else []
-    with open(fastq_map, 'r') as f:
-        for line in f.read().splitlines():
-            if paired_end:
-                fastq1, fastq2, s_id = line.split('\t')
-                if s_id == sample_id:
-                    paths[0].append(str(fastq_dir / fastq1))
-                    paths[1].append(str(fastq_dir / fastq2))
-            else:
-                fastq, s_id = line.split('\t')
-                if s_id == sample_id:
-                    paths.append(str(fastq_dir / fastq))
-    return paths
-
-def fastq_input(wildcards):
-    """Get the FASTQ file/s for a sample.
-
-    This is the input list for the star_align rule, so if paired_end is True,
-    concatenate into one list of files.
-    """
-    files = fastqs(wildcards.sample_id)
-    return files[0] + files[1] if paired_end else files
-
-def fastq_param(wildcards, input):
+def fastq_star_param(wildcards):
     """Get a string listing the fastq input files, with two lists if paired_end.
     
     This is the string supplied directly to the STAR command.
     """
+    files = fastq_map[wildcards.sample_id]
     if paired_end:
-        files = fastqs(wildcards.sample_id)
         return ' '.join([','.join(files[0]), ','.join(files[1])])
     else:
-        return ','.join(input.fastq)
+        return ','.join(files)
 
 rule star_align:
     """Align RNA-Seq reads for a sample using STAR."""
     input:
-        fastq = fastq_input,
+        fastq = fastq_inputs,
         index = ref_dir / 'star_index' / 'SAindex',
     output:
-        bam1 = interm_dir / 'bam' / '{sample_id}.Aligned.sortedByCoord.out.bam',
-        bam2 = interm_dir / 'bam' / '{sample_id}.Aligned.toTranscriptome.out.bam',
+        interm_dir / 'bam' / '{sample_id}.Aligned.sortedByCoord.out.bam',
     params:
-        fastq_list = fastq_param,
+        fastq_list = fastq_star_param,
         index_dir = ref_dir / 'star_index',
         bam_dir = interm_dir / 'bam',
         prefix = str(interm_dir / 'bam' / '{sample_id}.'),
+    threads: 16
     resources:
         mem_mb = 60000,
-        cpus = threads,
         walltime = 8,
     shell:
         """
@@ -93,25 +64,8 @@ rule star_align:
             --readFilesIn {params.fastq_list} \
             --readFilesCommand 'zcat < ' \
             --twopassMode Basic \
-            --quantMode TranscriptomeSAM \
             --outSAMstrandField intronMotif \
             --outSAMtype BAM SortedByCoordinate \
             --outFileNamePrefix {params.prefix} \
-            --runThreadN {resources.cpus}
-        """
-
-rule index_bam:
-    """Index a BAM file."""
-    input:
-        interm_dir / 'bam' / '{basename}.bam',
-    output:
-        interm_dir / 'bam' / '{basename}.bam.bai',
-    params:
-        add_threads = threads - 1,
-    resources:
-        cpus = threads,
-    shell:
-        # It expects the number of *additional* threads to use beyond the first.
-        """
-        samtools index -@ {params.add_threads} {input}
+            --runThreadN {threads}
         """

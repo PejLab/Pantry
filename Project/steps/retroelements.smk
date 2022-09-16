@@ -1,8 +1,8 @@
 rule run_telescope:
     """Run telescope to get retroelement read counts"""
     input:
-        bam = interm_dir / 'bam' / '{sample_id}.Aligned.sortedByCoord.out.bam',
-        bai = interm_dir / 'bam' / '{sample_id}.Aligned.sortedByCoord.out.bam.bai',
+        bam = lambda w: bam_map[w.sample_id],
+        bai = lambda w: f'{bam_map[w.sample_id]}.bai',
         retro_anno = retro_anno,
     output:
         interm_dir / 'retroelements' / '{sample_id}-telescope_report.tsv',

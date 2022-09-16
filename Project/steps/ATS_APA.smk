@@ -107,7 +107,7 @@ rule ATS_APA_kallisto:
     """Quantify expression using annotations from txrevise."""
     input:
         index = ref_dir / 'txrevise' / 'txrevise.{type}.idx',
-        fastq = fastqs_kallisto,
+        fastq = fastq_inputs,
     output:
         h5 = interm_dir / 'ATS_APA' / '{type}' / '{sample_id}' / 'abundance.h5',
         tsv = interm_dir / 'ATS_APA' / '{type}' / '{sample_id}' / 'abundance.tsv',
@@ -117,8 +117,7 @@ rule ATS_APA_kallisto:
         out_dir = str(interm_dir / 'ATS_APA' / '{type}' / '{sample_id}'),
         single_end_flag = '' if paired_end else '--single',
         # TODO add strandedness parameter
-    resources:
-        cpus = threads,
+    threads: 8
     shell:
         """
         mkdir -p {params.atsapa_type_dir}
@@ -126,7 +125,7 @@ rule ATS_APA_kallisto:
             --index {input.index} \
             --output-dir {params.out_dir} \
             {params.single_end_flag} \
-            --threads {resources.cpus} \
+            --threads {threads} \
             {input.fastq}
         """
 

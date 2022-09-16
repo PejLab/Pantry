@@ -19,27 +19,25 @@ rule kallisto:
     """Quantify expression from FASTQ files using kallisto."""
     input:
         index = ref_dir / 'kallisto.idx',
-        # bam = interm_dir / 'bam' / '{sample_id}.Aligned.toTranscriptome.out.bam',
-        fastq = fastqs_kallisto,
+        fastq = fastq_inputs,
     output:
-        h5 = interm_dir / 'kallisto' / '{sample_id}' / 'abundance.h5',
-        tsv = interm_dir / 'kallisto' / '{sample_id}' / 'abundance.tsv',
-        json = interm_dir / 'kallisto' / '{sample_id}' / 'run_info.json',
+        h5 = interm_dir / 'expression' / '{sample_id}' / 'abundance.h5',
+        tsv = interm_dir / 'expression' / '{sample_id}' / 'abundance.tsv',
+        json = interm_dir / 'expression' / '{sample_id}' / 'run_info.json',
     params:
-        kallisto_dir = interm_dir / 'kallisto',
-        out_dir = str(interm_dir / 'kallisto' / '{sample_id}'),
+        expr_dir = interm_dir / 'expression',
+        out_dir = str(interm_dir / 'expression' / '{sample_id}'),
         single_end_flag = '' if paired_end else '--single',
         # TODO add strandedness parameter
-    resources:
-        cpus = threads,
+    threads: 8
     shell:
         """
-        mkdir -p {params.kallisto_dir}
+        mkdir -p {params.expr_dir}
         kallisto quant \
             --index {input.index} \
             --output-dir {params.out_dir} \
             {params.single_end_flag} \
-            --threads {resources.cpus} \
+            --threads {threads} \
             {input.fastq}
         """
 
