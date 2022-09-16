@@ -138,10 +138,7 @@ rule all:
         # expand(output_dir / 'heritability' / '{pheno}_hsq.tsv', pheno=phenotypes.keys()),
         # expand(output_dir / 'qtl' / '{pheno}.cis_independent_qtl.txt.gz', pheno=phenotypes.keys()),
 
-if 'bam_dir' not in config:
-    include: 'steps/align.smk'
-elif 'fastq_dir' not in config:
-    include: 'steps/unalign.smk'
+include: 'steps/align.smk'
 for phenotype in phenotypes:
     include: f'steps/{phenotype}.smk'
 include: 'steps/heritability.smk'
@@ -158,11 +155,10 @@ rule index_bam:
     threads: 8
     shell:
         # It expects the number of *additional* threads to use beyond the first.
-        """
-        samtools index -@ {params.add_threads} {input}
-        """
+        'samtools index -@ {params.add_threads} {input}'
 
 rule index_bed:
+    """Index a BED file."""
     input:
         output_dir / '{pheno}.bed.gz',
     output:
@@ -170,3 +166,11 @@ rule index_bed:
     shell:
         'tabix {input}'
 
+rule index_fasta:
+    """Index a FASTA file, e.g. to get chromosome lengths from reference genome."""
+    input:
+        '{basename}.fa',
+    output:
+        '{basename}.fa.fai',
+    shell:
+        'samtools faidx {input}'

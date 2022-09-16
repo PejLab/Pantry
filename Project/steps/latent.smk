@@ -1,11 +1,21 @@
 localrules:
+    get_chrom_lengths,
     latent_pheno_groups,
+
+rule get_chrom_lengths:
+    """Get chromosome lengths from genome FASTA index for bedtools"""
+    input:
+        lambda w: f'{ref_genome}.fai',
+    output:
+        ref_dir / 'chr_lengths.genome',
+    shell:
+        'cut -f1,2 {input} > {output}'
 
 rule get_gene_bins:
     """Divide gene features into bins"""
     input:
         ref_anno = ref_anno,
-        chrom = ref_dir / 'star_index' / 'chrNameLength.txt',
+        chrom = ref_dir / 'chr_lengths.genome',
     output:
         ref_dir / 'gene_bins.bed.gz',
     params:
@@ -26,7 +36,7 @@ rule bedtools_coverage:
     input:
         bam = lambda w: bam_map[w.sample_id],
         bed = ref_dir / 'gene_bins.bed.gz',
-        chrom = ref_dir / 'star_index' / 'chrNameLength.txt',
+        chrom = ref_dir / 'chr_lengths.genome',
     output:
         interm_dir / 'latent' / '{sample_id}.bed.gz',
     params:
@@ -97,18 +107,6 @@ rule latent_pheno_groups:
             > {output}
         """
 
-# rule get_chrom_lengths:
-#     """Get chromosome lengths from genome FASTA header lines for pyBedGraph"""
-#     input:
-#         ref_genome,
-#     output:
-#         ref_dir / 'chr_lengths.genome',
-#     shell:
-#         """
-#         grep '^>' {input} \
-#             | sed 's/^>//' | tr ':' ' ' | tr ' ' '\t' | cut -f1,8 \
-#             > {output}
-#         """
 
 # rule get_genome_coverage:
 #     """Get RNA-Seq read coverage"""

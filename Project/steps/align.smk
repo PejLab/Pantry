@@ -69,3 +69,24 @@ rule star_align:
             --outFileNamePrefix {params.prefix} \
             --runThreadN {threads}
         """
+
+rule bam_to_fastq:
+    """Extract reads from BAM file for tool requiring unmapped reads as input"""
+    input:
+        bam = lambda w: bam_map[w.sample_id],
+    output:
+        fastq1 = interm_dir / 'fastq' / '{sample_id}_1.fastq.gz',
+        fastq2 = interm_dir / 'fastq' / '{sample_id}_2.fastq.gz',
+    params:
+        fastq_dir = interm_dir / 'fastq',
+        add_threads = lambda w, threads: threads - 1,
+    threads: 8
+    shell:
+        """
+        mkdir -p {params.fastq_dir}
+        samtools fastq \
+            -1 {output.fastq1} \
+            -2 {output.fastq2} \
+            --threads {params.add_threads} \
+            {input.bam}
+        """
