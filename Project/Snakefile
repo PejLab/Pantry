@@ -37,10 +37,10 @@ def new_fastq_map(samples: list, fastq_dir: Path, paired_end: bool) -> dict:
     for sample_id in samples:
         if paired_end:
             paths[sample_id] = ([], [])
-            paths[sample_id][0].append(fastq_dir / f'{sample_id}_1.fastq.gz')
-            paths[sample_id][1].append(fastq_dir / f'{sample_id}_2.fastq.gz')
+            paths[sample_id][0].append(fastq_dir / f'{sample_id}.PE1.fastq.gz')
+            paths[sample_id][1].append(fastq_dir / f'{sample_id}.PE2.fastq.gz')
         else:
-            paths[sample_id] = [fastq_dir / f'{sample_id}.fastq.gz']
+            paths[sample_id] = [fastq_dir / f'{sample_id}.SE.fastq.gz']
     return paths
 
 def load_bam_map(map_file: Path, bam_dir: Path) -> dict:
