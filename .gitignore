@@ -5,5 +5,5 @@ Project/input/*
 Project/intermediate/*
 Project/output/*
 .DS_Store
-TURNAP.egg-info
+Pantry.egg-info
 build

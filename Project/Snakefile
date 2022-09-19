@@ -2,7 +2,7 @@ from pathlib import Path
 from gtfparse import read_gtf
 import numpy as np
 import pandas as pd
-import turnap
+import pantry
 
 def load_fastq_map(map_file: Path, fastq_dir: Path, paired_end) -> dict:
     """Load the FASTQ file paths for each sample.
@@ -82,7 +82,7 @@ def fastq_inputs(wildcards) -> list:
 
 configfile: 'config.yaml'
 
-turnap.validate_config(config)
+pantry.validate_config(config)
 
 interm_dir = Path('intermediate')
 ref_dir = interm_dir / 'reference'

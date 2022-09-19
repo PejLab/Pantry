@@ -1,1 +1,1 @@
-from .turnap import validate_config
+from .pantry import validate_config
