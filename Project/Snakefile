@@ -114,11 +114,6 @@ ref_cdna = Path(config['ref_cdna'])
 phenotypes = config['phenotypes']
 genome_size = config['genome_size'] # TODO: compute from fasta file
 
-# Currently only used for heritability and qtl:
-chroms = [str(x) for x in config['chroms']]
-geno_prefix = config['geno_prefix']
-covar_file = Path(config['covar_file'])
-
 outputs = []
 for pheno, params in phenotypes.items():
     for f in params['files']:
@@ -141,8 +136,6 @@ rule all:
 include: 'steps/align.smk'
 for phenotype in phenotypes:
     include: f'steps/{phenotype}.smk'
-include: 'steps/heritability.smk'
-include: 'steps/qtl.smk'
 
 rule index_bam:
     """Index a BAM file."""

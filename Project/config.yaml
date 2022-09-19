@@ -1,28 +1,32 @@
-# Raw RNA-Seq data
-fastq_dir: input/fastq
-fastq_map: input/fastq_map.txt
-bam_dir: input/bam
-bam_map: input/bam_map.txt
+## Raw RNA-Seq data
 paired_end: True
 read_length: 75
+# Input data can include FASTQ files, BAM files, or both
+# Point to FASTQ files if they exist, otherwise comment out or remove these, and FASTQ files will be generated from BAM files:
+fastq_dir: input/fastq
+fastq_map: input/fastq_map.txt
+# Point to BAM files if they exist, otherwise comment out or remove these, and BAM files will be generated from FASTQ files:
+bam_dir: input/bam
+bam_map: input/bam_map.txt
 
-# Reference files
+## Reference files
+# Download and unzip genome, e.g. http://ftp.ensembl.org/pub/release-106/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz
 ref_genome: input/ref/Homo_sapiens.GRCh38.dna.primary_assembly.chr1_0-1Mb.fa
+# Download and unzip gene annotations, e.g. http://ftp.ensembl.org/pub/release-106/gtf/homo_sapiens/Homo_sapiens.GRCh38.106.gtf.gz
 ref_anno: input/ref/Homo_sapiens.GRCh38.106.chr1_0-1Mb.gtf
 ref_cdna: 'input/ref/Homo_sapiens.GRCh38.cdna.all.fa.gz'
+# Download retroelement annotations if available, e.g. https://github.com/mlbendall/telescope_annotation_db/tree/master/builds/retro.hg38.v1
+# Make sure chromosome names match those in the reference genome, e.g. '1' instead of 'chr1'
 retro_anno: input/ref/retro.hg38.v1.nochr.chr1_0-1Mb.gtf
 
-# Files and info for downstream analysis
-# TODO: Get chromosome list automatically from genotypes or BED file.
-chroms: [chr1, chr2, chr3, chr4, chr5, chr6, chr7, chr8, chr9, chr10, chr11, chr12, chr13, chr14, chr15, chr16, chr17, chr18, chr19, chr20, chr21, chr22]
+## Samples to include:
 samples_file: input/samples.txt
-geno_prefix: path/to/plink/bed/bim/fam/genotypes
-covar_file: path/to/covar/file.txt
-
-# Other parameters:
+## Approximate size of the genome in bp, e.g. 3e9 for full human genome
 genome_size: 1000000
 
-# Phenotypes
+## Phenotypes
+# List the phenotypes to extract, with list of expected output files for each.
+# A snakefile will be loaded for each phenotype, steps/{phenotype}.smk
 phenotypes:
   ATS_APA:
     files:

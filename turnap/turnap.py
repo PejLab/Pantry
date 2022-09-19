@@ -14,9 +14,6 @@ def validate_config(config: dict):
         'samples_file',
         'phenotypes',
         'genome_size',
-        'chroms',
-        'geno_prefix',
-        'covar_file',
     ]
     for field in fields:
         if field not in config.keys():
