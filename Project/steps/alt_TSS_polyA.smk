@@ -1,5 +1,5 @@
 localrules:
-    ATS_APA_pheno_groups,
+    alt_TSS_polyA_pheno_groups,
 
 TXREVISE_N_BATCHES = 10
 
@@ -79,13 +79,13 @@ rule txrevise_make_one:
     shell:
         "echo 'Done!' > {output}"
 
-rule ATS_APA_transcript_seqs:
+rule alt_TSS_polyA_transcript_seqs:
     """Generate transcript sequences from txrevise annotations for kallisto."""
     input:
         ref_genome = ref_genome,
-        gff3 = ref_dir / 'txrevise' / 'txrevise.{type}.gff3',
+        gff3 = ref_dir / 'txrevise' / 'txrevise.{group}.{position}.gff3',
     output:
-        ref_dir / 'txrevise' / 'txrevise.{type}.fa',
+        ref_dir / 'txrevise' / 'txrevise.{group}.{position}.fa',
     shell:
         """
         gffread \
@@ -94,33 +94,33 @@ rule ATS_APA_transcript_seqs:
             {input.gff3}
         """
 
-rule ATS_APA_kallisto_index:
+rule alt_TSS_polyA_kallisto_index:
     """Generate the index for kallisto using annotations from txrevise."""
     input:
-        ref_dir / 'txrevise' / 'txrevise.{type}.fa',
+        ref_dir / 'txrevise' / 'txrevise.{group}.{position}.fa',
     output:
-        ref_dir / 'txrevise' / 'txrevise.{type}.idx',
+        ref_dir / 'txrevise' / 'txrevise.{group}.{position}.idx',
     shell:
         'kallisto index --index {output} {input}'
 
-rule ATS_APA_kallisto:
+rule alt_TSS_polyA_kallisto:
     """Quantify expression using annotations from txrevise."""
     input:
-        index = ref_dir / 'txrevise' / 'txrevise.{type}.idx',
+        index = ref_dir / 'txrevise' / 'txrevise.{group}.{position}.idx',
         fastq = fastq_inputs,
     output:
-        h5 = interm_dir / 'ATS_APA' / '{type}' / '{sample_id}' / 'abundance.h5',
-        tsv = interm_dir / 'ATS_APA' / '{type}' / '{sample_id}' / 'abundance.tsv',
-        json = interm_dir / 'ATS_APA' / '{type}' / '{sample_id}' / 'run_info.json',
+        h5 = interm_dir / 'alt_TSS_polyA' / '{group}.{position}' / '{sample_id}' / 'abundance.h5',
+        tsv = interm_dir / 'alt_TSS_polyA' / '{group}.{position}' / '{sample_id}' / 'abundance.tsv',
+        json = interm_dir / 'alt_TSS_polyA' / '{group}.{position}' / '{sample_id}' / 'run_info.json',
     params:
-        atsapa_type_dir = str(interm_dir / 'ATS_APA' / '{type}'),
-        out_dir = str(interm_dir / 'ATS_APA' / '{type}' / '{sample_id}'),
+        alt_group_pos_dir = str(interm_dir / 'alt_TSS_polyA' / '{group}.{position}'),
+        out_dir = str(interm_dir / 'alt_TSS_polyA' / '{group}.{position}' / '{sample_id}'),
         single_end_flag = '' if paired_end else '--single',
         # TODO add strandedness parameter
     threads: 8
     shell:
         """
-        mkdir -p {params.atsapa_type_dir}
+        mkdir -p {params.alt_group_pos_dir}
         kallisto quant \
             --index {input.index} \
             --output-dir {params.out_dir} \
@@ -129,37 +129,44 @@ rule ATS_APA_kallisto:
             {input.fastq}
         """
 
-rule assemble_ATS_APA_bed:
-    """Assemble kallisto log2 and tpm outputs into ATS/APA BED files"""
+rule assemble_alt_TSS_polyA_bed:
+    """Assemble kallisto log2 and tpm outputs into alt TSS/polyA BED files"""
     input:
-        kallisto = expand(str(interm_dir / 'ATS_APA' / '{{type}}' / '{sample_id}' / 'abundance.tsv'), sample_id=samples),
+        kallisto = lambda w: expand(
+            str(interm_dir / 'alt_TSS_polyA' / 'grp_{grp}.{position}' / '{sample_id}' / 'abundance.tsv'),
+            grp=[1, 2],
+            position=dict(TSS='upstream', polyA='downstream')[w.type],
+            sample_id=samples
+        ),
         samples = samples_file,
         ref_anno = ref_anno,
     output:
-        interm_dir / 'unnorm' / 'ATS_APA.{type}.bed',
+        interm_dir / 'unnorm' / 'alt_{type}.bed',
     params:
         unnorm_dir = str(interm_dir / 'unnorm'),
-        atsapa_type_dir = str(interm_dir / 'ATS_APA' / '{type}'),
+        alt_group1_pos_dir = lambda w: str(interm_dir / 'alt_TSS_polyA' / f"grp_1.{dict(TSS='upstream', polyA='downstream')[w.type]}"),
+        alt_group2_pos_dir = lambda w: str(interm_dir / 'alt_TSS_polyA' / f"grp_2.{dict(TSS='upstream', polyA='downstream')[w.type]}"),
     shell:
         """
         mkdir -p {params.unnorm_dir}
         python3 scripts/assemble_bed.py \
-            --type ATS_APA \
-            --input-dir {params.atsapa_type_dir} \
+            --type alt_TSS_polyA \
+            --input-dir {params.alt_group1_pos_dir} \
+            --input-dir2 {params.alt_group2_pos_dir} \
             --samples {input.samples} \
             --ref_anno {input.ref_anno} \
             --output {output}
         """
 
-rule normalize_ATS_APA:
+rule normalize_alt_TSS_polyA:
     """Quantile-normalize values for QTL mapping"""
     input:
-        bed = interm_dir / 'unnorm' / 'ATS_APA.{type}.bed',
+        bed = interm_dir / 'unnorm' / 'alt_{type}.bed',
         samples = samples_file,
     output:
-        output_dir / 'ATS_APA.{type}.bed.gz',
+        output_dir / 'alt_{type}.bed.gz',
     params:
-        bed = str(output_dir / 'ATS_APA.{type}.bed'),
+        bed = str(output_dir / 'alt_{type}.bed'),
     shell:
         """
         python3 scripts/normalize_phenotypes.py \
@@ -169,12 +176,12 @@ rule normalize_ATS_APA:
         bgzip {params.bed}
         """
 
-rule ATS_APA_pheno_groups:
+rule alt_TSS_polyA_pheno_groups:
     """Group phenotypes by gene for tensorQTL"""
     input:
-        output_dir / 'ATS_APA.{type}.bed.gz',
+        output_dir / 'alt_{type}.bed.gz',
     output:
-        output_dir / 'ATS_APA.{type}.phenotype_groups.txt',
+        output_dir / 'alt_{type}.phenotype_groups.txt',
     shell:
         """
         zcat < {input} \

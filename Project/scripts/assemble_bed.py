@@ -20,7 +20,7 @@ def load_tss(ref_anno: Path) -> pd.DataFrame:
     anno = anno.sort_values(['#chrom', 'chromStart'])
     anno = anno[['#chrom', 'chromStart', 'chromEnd', 'gene_id']]
     # Rename columns for tensorQTL:
-    anno.columns = ['#chr', 'start', 'end', 'phenotype_id']
+    anno.columns = ['#chr', 'start', 'end', 'gene_id']
     return anno
 
 def load_exons(ref_anno: Path) -> pd.DataFrame:
@@ -53,9 +53,11 @@ def load_retros(retro_anno: Path) -> pd.DataFrame:
     anno = anno.groupby(['gene_id', 'seqname']).median().astype(int).reset_index()
     # assert len(anno['gene_id'].unique()) == len(anno['gene_id'])
     anno['chromStart'] = anno['chromEnd'] - 1  # BED coordinates are 0-based
-    anno = anno.rename(columns={'seqname': '#chrom', 'gene_id': 'name'})
-    anno = anno.sort_values(['#chrom', 'chromStart'])
-    return anno[['#chrom', 'chromStart', 'chromEnd', 'name']]
+    anno = anno[['seqname', 'chromStart', 'chromEnd', 'gene_id']]
+    # Rename columns for tensorQTL:
+    anno.columns = ['#chr', 'start', 'end', 'phenotype_id']
+    anno = anno.sort_values(['#chr', 'start'])
+    return anno
 
 def map_introns_to_genes(introns: list, exons: pd.DataFrame) -> pd.DataFrame:
     """Map de novo splice junctions to genes based on known exon boundaries"""
@@ -80,47 +82,67 @@ def map_introns_to_genes(introns: list, exons: pd.DataFrame) -> pd.DataFrame:
     clust_genes = clust_genes.reset_index().explode('gene_id')
     return clust_genes
 
-def assemble_ATS_APA(sample_ids: list, kallisto_dir: Path, units: str, ref_anno: Path, bed: Path):
-    """Assemble txrevise-based kallisto outputs into isoform-level BED file"""
-    df = []
+def load_kallisto(sample_ids: list, kallisto_dir: Path, units: str) -> pd.DataFrame:
+    """Assemble kallisto est_counts or tpm outputs into a table"""
+    counts = []
     for i, sample in enumerate(sample_ids):
         fname = kallisto_dir / sample / 'abundance.tsv'
         d = pd.read_csv(fname, sep='\t', index_col='target_id')
         d = d[units] # est_counts or tpm
         d.name = sample
-        df.append(d)
-    df = pd.concat(df, axis=1)
-    df.index = df.index.rename('phenotype_id')
+        # Store in lists and concat all at once to avoid 'PerformanceWarning: DataFrame is highly fragmented' warning
+        counts.append(d)
+    return pd.concat(counts, axis=1)
+
+def assemble_alt_TSS_polyA(sample_ids: list, group1_dir: Path, group2_dir: Path, units: str, ref_anno: Path, bed: Path):
+    """Assemble txrevise-based kallisto outputs into BED file
+    
+    By default, txrevise produces two sets of annotations per annotation type.
+    Relative TSS/polyA site usage should be calculated within each set, and
+    can then be combined to produce a single BED file.
+    """
+    df1 = load_kallisto(sample_ids, group1_dir, units)
+    df2 = load_kallisto(sample_ids, group2_dir, units)
     # This assumes target_id is e.g. {gene_id}.grp_1.downstream.{transcript_id}
-    df['gene_id'] = df.index.str.split('.').str[0]
+    df1['gene_id'] = df1.index.str.split('.').str[0]
+    df2['gene_id'] = df2.index.str.split('.').str[0]
+    # Calculate proportion of each transcript in each gene_id:
+    gene_ids = df1['gene_id'] # groupby/apply removes gene_id, so save it to add back
+    df1 = df1.groupby('gene_id').apply(lambda x: x / x.sum(axis=0))
+    df1['gene_id'] = gene_ids
+    gene_ids = df2['gene_id']
+    df2 = df2.groupby('gene_id').apply(lambda x: x / x.sum(axis=0))
+    df2['gene_id'] = gene_ids
+    df = pd.concat([df1, df2], axis=0)
+    df.index = df.index.rename('phenotype_id')
     df = df.reset_index()
     # Use gene's TSS for all of its isoforms:
     anno = load_tss(ref_anno)
-    anno = anno.rename(columns={'phenotype_id': 'gene_id'})
     df = anno.merge(df.reset_index(), on='gene_id', how='inner')
     df = df[['#chr', 'start', 'end', 'phenotype_id'] + sample_ids]
     df.to_csv(bed, sep='\t', index=False, float_format='%g')
 
 def assemble_expression(sample_ids: list, kallisto_dir: Path, units: str, ref_anno: Path, bed_iso: Path, bed_gene: Path):
-    """Assemble kallisto est_counts or tpm outputs into isoform- and gene-level BED files"""
-    df = []
-    for i, sample in enumerate(sample_ids):
-        fname = kallisto_dir / sample / 'abundance.tsv'
-        d = pd.read_csv(fname, sep='\t', index_col='target_id')
-        d = d[units] # est_counts or tpm
-        d.name = sample
-        df.append(d)
-    df = pd.concat(df, axis=1)
+    """Assemble kallisto est_counts or tpm outputs into isoform- and gene-level BED files
+    
+    Isoform counts are normalized to relative abundance in each gene.
+    """
+    df = load_kallisto(sample_ids, kallisto_dir, units)
     # This assumes that Ensembl cDNA was used for kallisto:
     # Strip off the version number from the transcript_id:
-    df['transcript_id'] = df.index.str.split('.').str[0]
+    df.index = df.index.str.split('.').str[0]
+    df.index = df.index.rename('transcript_id')
     # Add gene_id and use its TSS for all of its isoforms:
     gene_map = transcript_to_gene_map(ref_anno)
-    df = df.merge(gene_map, on='transcript_id', how='inner')
+    df = df.reset_index().merge(gene_map, on='transcript_id', how='inner')
     # Also get gene-level expression:
     df_gene = df.drop('transcript_id', axis=1).groupby('gene_id').sum()
+    # Calculate proportion of each transcript in each gene_id:
+    df = df.set_index('transcript_id')
+    gene_ids = df['gene_id'] # groupby/apply removes gene_id, so save it to add back
+    df = df.groupby('gene_id').apply(lambda x: x / x.sum(axis=0))
+    df['gene_id'] = gene_ids
     anno = load_tss(ref_anno)
-    anno = anno.rename(columns={'phenotype_id': 'gene_id'})
     df = anno.merge(df.reset_index(), on='gene_id', how='inner')
     df['phenotype_id'] = df['gene_id'] + ':' + df['transcript_id']
     df = df[['#chr', 'start', 'end', 'phenotype_id'] + sample_ids]
@@ -143,8 +165,6 @@ def assemble_retroelements(sample_ids: list, retro_dir: Path, retro_anno: Path, 
     df = df.fillna(0).astype(int)
     df = df.loc[np.sum(df > 0, axis=1) > 0, :]
     anno = load_retros(retro_anno)
-    # Rename columns for tensorQTL:
-    anno.columns = ['#chr', 'start', 'end', 'phenotype_id']
     df.index = df.index.rename('phenotype_id')
     df = anno.merge(df.reset_index(), on='phenotype_id', how='inner')
     df.to_csv(bed, sep='\t', index=False, float_format='%g')
@@ -164,40 +184,28 @@ def assemble_splicing(counts: Path, ref_anno: Path, bed: Path):
     genes = map_introns_to_genes(df['intron'], exons)
     df = df.merge(genes, on='cluster', how='left')
     anno = load_tss(ref_anno)
-    anno = anno.rename(columns={'phenotype_id': 'gene_id'})
     df = anno.merge(df, on='gene_id', how='inner')
     df['phenotype_id'] = df['gene_id'] + ':' + df['intron']
     df = df[['#chr', 'start', 'end', 'phenotype_id'] + sample_ids]
     df.to_csv(bed, sep='\t', index=False, float_format='%g')
 
+def load_featureCounts(sample_ids: list, counts_dir: Path, feature: str, min_count: int = 10) -> pd.DataFrame:
+    """Assemble featureCounts outputs into a table"""
+    counts = []
+    for i, sample in enumerate(sample_ids):
+        fname_ex = counts_dir / f'{sample}.{feature}.counts.txt'
+        d = pd.read_csv(fname_ex, sep='\t', index_col='Geneid', skiprows=1)
+        d = d.iloc[:, 5]
+        d.name = sample
+        d[d < min_count] = np.nan
+        # Store in lists and concat all at once to avoid 'PerformanceWarning: DataFrame is highly fragmented' warning
+        counts.append(d)
+    return pd.concat(counts, axis=1)
+
 def assemble_stability(sample_ids: list, stab_dir: Path, ref_anno: Path, bed: Path):
     """Assemble exon to intron read ratios into mRNA stability BED file"""
-    exon = []
-    intron = []
-    for i, sample in enumerate(sample_ids):
-        fname_ex = stab_dir / f'{sample}.constit_exons.counts.txt'
-        d_ex = pd.read_csv(fname_ex, sep='\t', index_col='Geneid', skiprows=1)
-        fname_in = stab_dir / f'{sample}.introns.counts.txt'
-        d_in = pd.read_csv(fname_in, sep='\t', index_col='Geneid', skiprows=1)
-        # if i == 0:
-        #     exon = pd.DataFrame(index=d_ex.index)
-        #     intron = pd.DataFrame(index=d_in.index)
-        # else:
-        #     assert d_ex.index.equals(exon.index)
-        #     assert d_in.index.equals(intron.index)
-        # exon[sample] = d_ex.iloc[:, 5].copy()
-        # intron[sample] = d_in.iloc[:, 5].copy()
-        # Avoid 'PerformanceWarning: DataFrame is highly fragmented' warning:
-        d_ex = d_ex.iloc[:, 5]
-        d_in = d_in.iloc[:, 5]
-        d_ex.name = sample
-        d_in.name = sample
-        d_ex[d_ex < 10] = np.nan
-        d_in[d_in < 10] = np.nan
-        exon.append(d_ex)
-        intron.append(d_in)
-    exon = pd.concat(exon, axis=1)
-    intron = pd.concat(intron, axis=1)
+    exon = load_featureCounts(sample_ids, stab_dir, 'constit_exons')
+    intron = load_featureCounts(sample_ids, stab_dir, 'introns')
     genes = exon.index[np.isin(exon.index, intron.index)]
     # genes = set(exon.index).intersection(intron.index)
     assert exon.loc[genes, :].index.equals(intron.loc[genes, :].index)
@@ -205,14 +213,16 @@ def assemble_stability(sample_ids: list, stab_dir: Path, ref_anno: Path, bed: Pa
     df = exon.loc[genes, :] / intron.loc[genes, :]
     df = df[df.isnull().mean(axis=1) <= 0.5]
     anno = load_tss(ref_anno)
+    anno = anno.rename(columns={'gene_id': 'phenotype_id'})
     df.index = df.index.rename('phenotype_id')
     df = anno.merge(df.reset_index(), on='phenotype_id', how='inner')
     df.to_csv(bed, sep='\t', index=False, float_format='%g')
 
 parser = argparse.ArgumentParser(description='Assemble data into an RNA phenotype BED file')
-parser.add_argument('--type', choices=['ATS_APA', 'expression', 'retroelements', 'splicing', 'stability'], required=True, help='Type of data to assemble')
+parser.add_argument('--type', choices=['alt_TSS_polyA', 'expression', 'retroelements', 'splicing', 'stability'], required=True, help='Type of data to assemble')
 parser.add_argument('--input', type=Path, required=False, help='Input file, for phenotype groups in which all data is already in a single file')
 parser.add_argument('--input-dir', type=Path, required=False, help='Directory containing input files, for phenotype groups with per-sample input files')
+parser.add_argument('--input-dir2', type=Path, required=False, help='Second input directory, for phenotype groups with per-sample input files in two directories')
 parser.add_argument('--samples', type=Path, required=False, help='File listing sample IDs, for phenotype groups with per-sample input files')
 parser.add_argument('--ref_anno', type=Path, required=True, help='Reference annotation file')
 parser.add_argument('--output', type=Path, required=True, help='Output file ("*.bed")')
@@ -222,8 +232,8 @@ args = parser.parse_args()
 if args.samples is not None:
     samples = pd.read_csv(args.samples, sep='\t', header=None)[0].tolist()
 
-if args.type == 'ATS_APA':
-    assemble_ATS_APA(samples, args.input_dir, 'tpm', args.ref_anno, args.output)
+if args.type == 'alt_TSS_polyA':
+    assemble_alt_TSS_polyA(samples, args.input_dir, args.input_dir2, 'tpm', args.ref_anno, args.output)
 elif args.type == 'expression':
     assemble_expression(samples, args.input_dir, 'tpm', args.ref_anno, args.output, args.output2)
 elif args.type == 'retroelements':

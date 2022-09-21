@@ -25,36 +25,24 @@ samples_file: input/samples.txt
 genome_size: 1000000
 
 ## Phenotypes
-# List the phenotypes to extract, with list of expected output files for each.
-# A snakefile will be loaded for each phenotype, steps/{phenotype}.smk
+# List the phenotype categories to extract, with list of expected output files for each.
+# A snakefile will be loaded for each category, steps/{phenotype}.smk
 phenotypes:
-  ATS_APA:
+  alt_TSS_polyA:
     files:
-    - ATS_APA.grp_1.upstream.bed.gz
-    - ATS_APA.grp_1.upstream.bed.gz.tbi
-    - ATS_APA.grp_1.upstream.phenotype_groups.txt
-    - ATS_APA.grp_1.contained.bed.gz
-    - ATS_APA.grp_1.contained.bed.gz.tbi
-    - ATS_APA.grp_1.contained.phenotype_groups.txt
-    - ATS_APA.grp_1.downstream.bed.gz
-    - ATS_APA.grp_1.downstream.bed.gz.tbi
-    - ATS_APA.grp_1.downstream.phenotype_groups.txt
-    - ATS_APA.grp_2.upstream.bed.gz
-    - ATS_APA.grp_2.upstream.bed.gz.tbi
-    - ATS_APA.grp_2.upstream.phenotype_groups.txt
-    - ATS_APA.grp_2.contained.bed.gz
-    - ATS_APA.grp_2.contained.bed.gz.tbi
-    - ATS_APA.grp_2.contained.phenotype_groups.txt
-    - ATS_APA.grp_2.downstream.bed.gz
-    - ATS_APA.grp_2.downstream.bed.gz.tbi
-    - ATS_APA.grp_2.downstream.phenotype_groups.txt
+    - alt_TSS.bed.gz
+    - alt_TSS.bed.gz.tbi
+    - alt_TSS.phenotype_groups.txt
+    - alt_polyA.bed.gz
+    - alt_polyA.bed.gz.tbi
+    - alt_polyA.phenotype_groups.txt
   expression:
     files:
-    - expression.genes.bed.gz
-    - expression.genes.bed.gz.tbi
-    - expression.isoforms.bed.gz
-    - expression.isoforms.bed.gz.tbi
-    - expression.isoforms.phenotype_groups.txt
+    - expression.bed.gz
+    - expression.bed.gz.tbi
+    - isoforms.bed.gz
+    - isoforms.bed.gz.tbi
+    - isoforms.phenotype_groups.txt
   latent:
     files:
     - latent.bed.gz

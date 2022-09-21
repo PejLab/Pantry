@@ -1,5 +1,5 @@
 localrules:
-    expression_isoforms_pheno_groups,
+    isoforms_pheno_groups,
 
 rule kallisto_index:
     """Generate the index for kallisto."""
@@ -51,8 +51,8 @@ rule assemble_expression_bed:
         samples = samples_file,
         ref_anno = ref_anno,
     output:
-        iso = interm_dir / 'unnorm' / 'expression.isoforms.bed',
-        gene = interm_dir / 'unnorm' / 'expression.genes.bed',
+        iso = interm_dir / 'unnorm' / 'isoforms.bed',
+        gene = interm_dir / 'unnorm' / 'expression.bed',
     params:
         unnorm_dir = interm_dir / 'unnorm',
         expr_dir = interm_dir / 'expression',
@@ -71,12 +71,12 @@ rule assemble_expression_bed:
 rule normalize_expression:
     """Quantile-normalize values for QTL mapping"""
     input:
-        bed = interm_dir / 'unnorm' / 'expression.{level}.bed',
+        bed = interm_dir / 'unnorm' / 'expression.bed',
         samples = samples_file,
     output:
-        output_dir / 'expression.{level}.bed.gz',
+        output_dir / 'expression.bed.gz',
     params:
-        bed = str(output_dir / 'expression.{level}.bed'),
+        bed = str(output_dir / 'expression.bed'),
     shell:
         """
         python3 scripts/normalize_phenotypes.py \
@@ -86,12 +86,30 @@ rule normalize_expression:
         bgzip {params.bed}
         """
 
-rule expression_isoforms_pheno_groups:
+rule normalize_isoforms:
+    """Quantile-normalize values for QTL mapping"""
+    input:
+        bed = interm_dir / 'unnorm' / 'isoforms.bed',
+        samples = samples_file,
+    output:
+        output_dir / 'isoforms.bed.gz',
+    params:
+        bed = str(output_dir / 'isoforms.bed'),
+    shell:
+        """
+        python3 scripts/normalize_phenotypes.py \
+            --input {input.bed} \
+            --samples {input.samples} \
+            --output {params.bed}
+        bgzip {params.bed}
+        """
+
+rule isoforms_pheno_groups:
     """Group phenotypes by gene for tensorQTL"""
     input:
-        output_dir / 'expression.isoforms.bed.gz',
+        output_dir / 'isoforms.bed.gz',
     output:
-        output_dir / 'expression.isoforms.phenotype_groups.txt',
+        output_dir / 'isoforms.phenotype_groups.txt',
     shell:
         """
         zcat < {input} \
