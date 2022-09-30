@@ -9,12 +9,11 @@ A project is specified with a config file containing general parameters, e.g. pa
 Installation
 ============
 
-It is recommended to install Pantry by cloning or downloading the repository, since you will then need to copy the project template directory for your own analysis:
+It is recommended to install Pantry by cloning or downloading the repository, since you will then need to copy the project template directory for your own analysis. Hold off on installing the Pantry Python package until the conda environment has been activated.
 
 .. code-block:: shell
 
    git clone https://github.com/daniel-munro/Pantry.git
-   pip3 install -e Pantry
 
 
 Code
@@ -168,7 +167,9 @@ This will require installation of all programs used in the snakefiles. `Minicond
 
 .. code-block:: shell
 
-   conda env create -n Pantry --file conda_env.yaml
+   conda env create -n pantry --file conda_env.yaml
+   conda activate pantry
+   pip3 install -e Pantry
 
 Once you think you have everything installed, try running on the included test data, which is small:
 

@@ -10,7 +10,6 @@ def validate_config(config: dict):
         'ref_genome',
         'ref_anno',
         'ref_cdna',
-        'retro_anno',
         'samples_file',
         'phenotypes',
         'genome_size',

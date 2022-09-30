@@ -1,8 +1,8 @@
 name: pantry
-channels:
-  - conda-forge
-  - bioconda
-  - defaults
+# channels:
+#   - conda-forge
+#   - bioconda
+#   - defaults
 dependencies:
   - bedtools
   - gffread  # for txrevise
@@ -18,4 +18,4 @@ dependencies:
   - star
   - subread
   - telescope
-  - txrevise
+  - r-txrevise
