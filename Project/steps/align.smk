@@ -70,6 +70,21 @@ rule star_align:
             --runThreadN {threads}
         """
 
+rule shrink_bam:
+    """Remove SEQ and QUAL fields from BAM file to reduce size."""
+    input:
+        interm_dir / 'bam' / '{sample_id}.Aligned.sortedByCoord.out.bam',
+    output:
+        interm_dir / 'bam' / '{sample_id}.bam',
+    shell:
+        """
+        samtools view -h {input} \
+            | awk -v OFS="\t" '{{if (substr($0, 1, 1) != "@") {{$10="*"; $11="*"}}; print ;}}' \
+            | samtools view -h -b \
+            > {output} \
+            && rm {input}
+        """
+
 rule bam_to_fastq_paired_end:
     """Extract reads from BAM file for tool requiring unmapped reads as input"""
     input:
