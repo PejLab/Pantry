@@ -1,7 +1,7 @@
 localrules:
     alt_TSS_polyA_pheno_groups,
 
-TXREVISE_N_BATCHES = 10
+TXREVISE_N_BATCHES = 100
 
 rule txrevise_extract_tags:
     """Extract transcript tags from the GTF file
@@ -48,6 +48,8 @@ rule txrevise_construct_events:
     params:
         batch_str = "'{batch} {n_batches}'",
         outdir = ref_dir / 'txrevise' / 'batch',
+    resources:
+        walltime = 16,
     shell:
         """
         Rscript scripts/txrevise/constructEvents.R \
@@ -117,7 +119,9 @@ rule alt_TSS_polyA_kallisto:
         out_dir = str(interm_dir / 'alt_TSS_polyA' / '{group}.{position}' / '{sample_id}'),
         single_end_flag = '' if paired_end else '--single',
         # TODO add strandedness parameter
-    threads: 8
+    threads: 16
+    resources:
+        walltime = 8,
     shell:
         """
         mkdir -p {params.alt_group_pos_dir}
