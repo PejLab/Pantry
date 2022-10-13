@@ -16,18 +16,19 @@ def norm_counts_over_gene(counts: pd.DataFrame) -> pd.DataFrame:
     counts = counts.div(counts.sum(axis=0), axis=1) * total
     return counts
 
-def pca(counts: pd.DataFrame, var_expl: float = 0.95, n_pcs: int = None) -> pd.DataFrame:
+def pca(counts: pd.DataFrame, var_expl: float = 0.95, n_pcs_max: int = 50) -> pd.DataFrame:
     """Perform PCA on normalized coverage for one gene
     
-    Returns enough PCs to explain var_expl variance, or supply n_pcs to return a fixed number of PCs.
+    Returns enough PCs to explain var_expl variance and/or caps the number at n_pcs_max if either or both are provided.
     """
-    n_comp = var_expl if n_pcs is None else min(args.n_pcs, *counts.shape)
     samples = counts.columns
     x = counts.values.T
     # Center and scale the data:
     x = (x - x.mean(axis=0)) / x.std(axis=0)
-    pca = PCA(n_components=n_comp)
+    pca = PCA(n_components=var_expl) if var_expl is not None else PCA()
     mat = pca.fit_transform(x).T
+    if n_pcs_max is not None and n_pcs_max < mat.shape[0]:
+        mat = mat[:n_pcs_max, :]
     df = pd.DataFrame(
         mat,
         index=[f'PC{i + 1}' for i in range(mat.shape[0])],
@@ -53,12 +54,15 @@ def load_tss(ref_anno: Path) -> pd.DataFrame:
 parser = argparse.ArgumentParser(description='Run PCA on feature bin coverage and create BED file')
 parser.add_argument('-i', '--input', type=Path, required=True, help='File containing paths to all input BED files. Base file name before first "." is sample ID')
 parser.add_argument('-g', '--gtf', type=Path, required=True, help='Reference annotation GTF file to add TSS to BED output')
-parser_n_comp = parser.add_mutually_exclusive_group()
-parser_n_comp.add_argument('-v', '--var_expl', type=float, default=0.95, help='Return enough PCs to explain this fraction of variance')
-parser_n_comp.add_argument('-n', '--n-pcs', type=int, help='Number of PCs to keep per gene')
+parser.add_argument('-v', '--var-expl-max', type=float, default=0.95, help='Max variance explained by the PCs kept per gene. Pass 0 or 1 for no variance explained cutoff.')
+parser.add_argument('-n', '--n-pcs-max', type=int, default=50, help='Max number of PCs to keep per gene. Pass 0 for no cutoff.')
 parser.add_argument('-o', '--output', type=Path, required=True, help='Output file (BED)')
 args = parser.parse_args()
 
+if args.var_expl_max == 0 or args.var_expl_max == 1:
+    args.var_expl_max = None
+if args.n_pcs_max == 0:
+    args.n_pcs_max = None
 infiles = pd.read_csv(args.input, header=None, names=['path'])
 for i, fname in enumerate(infiles['path']):
     d = pd.read_csv(fname, sep='\t', header=None, usecols=[3, 6], names=['region', 'count'], index_col='region')
@@ -91,7 +95,7 @@ df = df.div(regions['length'], axis=0)
 df = np.sqrt(df)
 # Run PCA on each gene:
 df = df.loc[df.std(axis=1) > 0, :]
-df = df.groupby('gene_id').apply(lambda x: pca(x, args.var_expl, args.n_pcs))
+df = df.groupby('gene_id').apply(lambda x: pca(x, args.var_expl_max, args.n_pcs_max))
 
 samples = list(df.columns)
 df = df.reset_index()

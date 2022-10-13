@@ -62,7 +62,8 @@ rule assemble_latent_bed:
     params:
         unnorm_dir = interm_dir / 'unnorm',
         bedfile_list = interm_dir / 'latent' / 'bedfiles.txt',
-        var_expl = 0.95,
+        var_expl_max = 0.95,
+        n_pcs_max = 50,
     shell:
         """
         mkdir -p {params.unnorm_dir}
@@ -70,7 +71,8 @@ rule assemble_latent_bed:
         python3 scripts/get_PC_features.py \
             -i {params.bedfile_list} \
             -g {input.ref_anno} \
-            -v {params.var_expl} \
+            -v {params.var_expl_max} \
+            -n {params.n_pcs_max} \
             -o {output}
         """
 

@@ -167,15 +167,15 @@ We suggest these steps to run Pantry.
 1. Run the included test data
 -----------------------------
 
-This will require installation of all programs used in the snakefiles. `Miniconda <https://docs.conda.io/en/latest/miniconda.html>`_ is recommended for easy installation and management of all these programs. A conda environment specification is provided in ``conda_env.yaml``:
+This will require installation of all programs used in the snakefiles. `Miniconda <https://docs.conda.io/en/latest/miniconda.html>`_ is recommended for easy installation and management of all these programs. A conda environment specification is provided in ``Project/conda_env.yaml``:
 
 .. code-block:: shell
 
-   conda env create -n pantry --file conda_env.yaml
+   conda env create -n pantry --file Project/conda_env.yaml
    conda activate pantry
    pip3 install -e Pantry
 
-Once you think you have everything installed, try running on the included test data, which is small:
+The environment can be customized for each project depending on the tools used. Once you think you have everything installed, try running on the included test data, which is small:
 
 .. code-block:: shell
 
