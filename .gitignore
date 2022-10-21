@@ -4,6 +4,9 @@ __pycache__
 Project/input/*
 Project/intermediate/*
 Project/output/*
+Pheast/input/*
+Pheast/intermediate/*
+Pheast/output/*
 .DS_Store
 Pantry.egg-info
 build

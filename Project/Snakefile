@@ -118,8 +118,6 @@ outputs = []
 for pheno, params in phenotypes.items():
     for f in params['files']:
         outputs.append(output_dir / f)
-    # Used only for QTL mapping for now:
-    params['grouped'] = any(['phenotype_groups' in f for f in params['files']])
 
 # List short steps here so they will not be submitted as cluster jobs:
 # (These can be specified on a per-file basis)

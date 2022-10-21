@@ -8,7 +8,7 @@ def groups_arg(wildcards, input):
 def groups_input(wildcards):
     """Include the phenotype groups file as an input if applicable"""
     if phenotypes[wildcards.pheno]['grouped']:
-        return output_dir / f'{wildcards.pheno}.phenotype_groups.txt'
+        return pheno_dir / f'{wildcards.pheno}.phenotype_groups.txt'
     else:
         return []
 
@@ -18,9 +18,9 @@ rule tensorqtl_perm:
     """
     input:
         geno = multiext(geno_prefix, '.bed', '.bim', '.fam'),
-        bed = output_dir / '{pheno}.bed.gz',
-        bedi = output_dir / '{pheno}.bed.gz.tbi',
-        covar = covar_file,
+        bed = pheno_dir / '{pheno}.bed.gz',
+        bedi = pheno_dir / '{pheno}.bed.gz.tbi',
+        covar = interm_dir / 'covar' / '{pheno}.covar.tsv',
         groups = groups_input,
     output:
         output_dir / 'qtl' / '{pheno}.cis_qtl.txt.gz',
@@ -48,9 +48,9 @@ rule tensorqtl_independent:
     """Use stepwise regression to identify multiple conditionally independent cis-QTLs per phenotype."""
     input:
         geno = multiext(geno_prefix, '.bed', '.bim', '.fam'),
-        bed = output_dir / '{pheno}.bed.gz',
-        bedi = output_dir / '{pheno}.bed.gz.tbi',
-        covar = covar_file,
+        bed = pheno_dir / '{pheno}.bed.gz',
+        bedi = pheno_dir / '{pheno}.bed.gz.tbi',
+        covar = interm_dir / 'covar' / '{pheno}.covar.tsv',
         groups = groups_input,
         cis = output_dir / 'qtl' / '{pheno}.cis_qtl.txt.gz',
     output:

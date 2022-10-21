@@ -54,7 +54,7 @@ for pheno in phenos:
     grm = args.grm_dir / f'{chrom}_{pos_min}_{pos_max}'
     if not Path(f'{grm}.grm.bin').exists():
         cmd = [
-            'plink',
+            'plink2',
             '--bfile', args.geno,
             '--chr', chrom,
             '--from-bp', str(pos_min),

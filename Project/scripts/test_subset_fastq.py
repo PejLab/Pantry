@@ -28,8 +28,9 @@ outmap = Path("test/fastq_map.txt")
 outfqdir = Path("test/fastq")
 outfqdir.mkdir(parents=True, exist_ok=True)
 # shuf -n 10 data/fastq_map.txt | cut -f3 | sort
+# shuf -n 10 ../Pheast/input/GEUVADIS.445_samples.GRCh38.chr1_0-1Mb.fam | cut -f2 | sort
 samples = [
-    'HG00134', 'HG00178', 'HG00267', 'HG00382', 'NA12044',
+    'HG00133', 'HG00178', 'HG00267', 'HG00382', 'NA12044',
     'NA18912', 'NA19114', 'NA19223', 'NA20508', 'NA20759',
 ]
 

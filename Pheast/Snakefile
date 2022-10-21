@@ -1,0 +1,41 @@
+from pathlib import Path
+import pandas as pd
+import pantry
+
+configfile: 'config.yaml'
+
+# pantry.validate_config(config)
+
+pheno_dir = Path(config['phenotype_dir'])
+interm_dir = Path('intermediate')
+output_dir = Path('output')
+geno_prefix = config['geno_prefix']
+
+samples_file = Path(config['samples_file'])
+samples = pd.read_csv(samples_file, sep='\t', header=None)[0].tolist()
+geno_samples = pd.read_csv(geno_prefix + '.fam', sep='\t', header=None)[1].tolist()
+missing_samples = [s for s in samples if s not in geno_samples]
+if len(missing_samples) > 0:
+    raise Exception(f'Samples missing from genotypes: {missing_samples}')
+    # print(f'WARNING: Samples missing from genotypes: {missing_samples}')
+
+phenotypes = config['phenotypes']
+for pheno, params in phenotypes.items():
+    chroms = pd.read_csv(pheno_dir / f'{pheno}.bed.gz', sep='\t', usecols=[0])
+    params['chroms'] = chroms.iloc[:, 0].unique().tolist()
+
+# List short steps here so they will not be submitted as cluster jobs:
+# (These can be specified on a per-file basis)
+localrules:
+    # index_bed,
+
+# These are the target files to be generated (or regenerated if outdated):
+rule all:
+    input:
+        expand(interm_dir / 'covar' / '{pheno}.covar.tsv', pheno=phenotypes.keys()),
+        expand(output_dir / 'heritability' / '{pheno}_hsq.tsv', pheno=phenotypes.keys()),
+        expand(output_dir / 'qtl' / '{pheno}.cis_independent_qtl.txt.gz', pheno=phenotypes.keys()),
+
+include: 'steps/covariates.smk'
+include: 'steps/heritability.smk'
+include: 'steps/qtl.smk'

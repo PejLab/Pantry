@@ -1,7 +1,7 @@
 rule calculate_heritability_chr:
     """Get heritability for phenotypes on one chromosome using plink and gcta64."""
     input:
-        bed = output_dir / '{pheno}.bed.gz',
+        bed = pheno_dir / '{pheno}.bed.gz',
         geno = multiext(geno_prefix, '.bed', '.bim', '.fam'),
     output:
         interm_dir / 'heritability' / '{pheno}_hsq.{chrom}.tsv',
@@ -27,7 +27,7 @@ rule calculate_heritability_chr:
 rule combine_heritability_chr:
     """Combine per-chromosome heritability stats into one file"""
     input:
-        expand(interm_dir / 'heritability' / '{{pheno}}_hsq.{chrom}.tsv', chrom=chroms),
+        lambda w: expand(interm_dir / 'heritability' / '{pheno}_hsq.{chrom}.tsv', pheno=w.pheno, chrom=config['phenotypes'][w.pheno]['chroms']),
     output:
         output_dir / 'heritability' / '{pheno}_hsq.tsv',
     params:
