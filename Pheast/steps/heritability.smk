@@ -9,6 +9,8 @@ rule calculate_heritability_chr:
         geno_prefix = geno_prefix,
         grm_dir = lambda w: interm_dir / 'heritability' / f'grm_{w.pheno}_{w.chrom}',
         tmp_dir = lambda w: interm_dir / 'heritability' / f'tmp_{w.pheno}_{w.chrom}',
+    resources:
+        walltime = 12,
     shell:
         """
         mkdir -p {params.grm_dir}

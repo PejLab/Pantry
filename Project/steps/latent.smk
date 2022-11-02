@@ -62,8 +62,8 @@ rule assemble_latent_bed:
     params:
         unnorm_dir = interm_dir / 'unnorm',
         bedfile_list = interm_dir / 'latent' / 'bedfiles.txt',
-        var_expl_max = 0.95,
-        n_pcs_max = 50,
+        var_expl_max = 0.80,
+        n_pcs_max = 32,
     shell:
         """
         mkdir -p {params.unnorm_dir}
