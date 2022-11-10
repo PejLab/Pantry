@@ -32,8 +32,9 @@ rule tensorqtl_perm:
         walltime = 12,
         partition = '--partition=gpu',
     shell:
+        ## Cluster environments may require cuda to be loaded, e.g.:
+        # module load cuda
         """
-        module load cuda
         mkdir -p {params.qtl_dir}
         python3 scripts/run_tensorqtl.py \
             {params.geno_prefix} \
@@ -62,8 +63,9 @@ rule tensorqtl_independent:
         walltime = 20,
         partition = '--partition=gpu',
     shell:
+        ## Cluster environments may require cuda to be loaded, e.g.:
+        # module load cuda
         """
-        module load cuda
         python3 scripts/run_tensorqtl.py \
             {params.geno_prefix} \
             {input.bed} \

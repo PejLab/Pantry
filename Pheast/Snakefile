@@ -21,7 +21,7 @@ if len(missing_samples) > 0:
 
 phenotypes = config['phenotypes']
 for pheno, params in phenotypes.items():
-    chroms = pd.read_csv(pheno_dir / f'{pheno}.bed.gz', sep='\t', usecols=[0])
+    chroms = pd.read_csv(pheno_dir / f'{pheno}.bed.gz', sep='\t', usecols=[0], dtype=str)
     params['chroms'] = chroms.iloc[:, 0].unique().tolist()
 
 # List short steps here so they will not be submitted as cluster jobs:
