@@ -7,7 +7,7 @@
 #################
 
 ## Get sample subset
-geno="~/bulk/pantry/Geuvadis/genotype/GEUVADIS.445_samples.GRCh38.20170504.maf01.filtered.nodup"
+geno="../../Geuvadis/input/genotype/GEUVADIS.445_samples.GRCh38.20170504.maf01.filtered.nodup"
 mkdir -p input
 shuf -n 16 $geno.fam | cut -f2 | sort > input/samples.txt
 
@@ -25,6 +25,7 @@ awk '{print $1".bam\t"$1}' input/samples.txt > input/bam_map.txt
 genonew="../Pheast/input/Geuvadis.16_samples.GRCh38.chr1_0-2Mb"
 mkdir -p ../Pheast/input
 plink2 --bfile $geno \
+    --keep input/samples.txt \
     --chr 1 \
     --from-mb 0 \
     --to-mb 3 \
@@ -37,18 +38,18 @@ plink2 --bfile $geno \
 
 ## Subset gene annotations
 mkdir -p input/ref
-gtf="~/bulk/pantry/Geuvadis/human_ref/Homo_sapiens.GRCh38.106.gtf"
+gtf="../../Geuvadis/input/human_ref/Homo_sapiens.GRCh38.106.gtf"
 gtfnew="input/ref/Homo_sapiens.GRCh38.106.chr1_0-2Mb.gtf"
 head -5 "$gtf" > "$gtfnew"
 awk '($1 == "1") && ($4 < 2000000) && ($5 < 2000000)' "$gtf" >> "$gtfnew"
 
 ## Subset retroelement annotations
-retro="~/bulk/pantry/Geuvadis/human_ref/retro.hg38.v1.nochr.gtf"
+retro="../../Geuvadis/input/human_ref/retro.hg38.v1.nochr.gtf"
 retronew="input/ref/retro.hg38.v1.nochr.chr1_0-2Mb.gtf"
 awk '($1 == "1") && ($4 < 2000000) && ($5 < 2000000)' "$retro" > "$retronew"
 
 ## Subset genome
-fa="~/bulk/pantry/Geuvadis/human_ref/Homo_sapiens.GRCh38.dna.primary_assembly.fa"
+fa="../../Geuvadis/input/human_ref/Homo_sapiens.GRCh38.dna.primary_assembly.fa"
 fanew="input/ref/Homo_sapiens.GRCh38.dna.primary_assembly.chr1_0-2Mb.fa"
 # 60 bases per line, so first 2 Mb is 33334 lines
 head -33335 "$fa" > "$fanew"
