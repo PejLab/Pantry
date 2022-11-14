@@ -5,11 +5,12 @@ name: pheast
 #   - defaults
 dependencies:
   - bioconductor-impute
+  - bioconductor-qvalue
   - bioconductor-variantannotation
   - gcta
+  - pip
   - plink2=2
   - rpy2
-  - bioconductor-qvalue
   - snakemake
   - pip:
     - tensorqtl
