@@ -10,7 +10,7 @@ rule star_index:
     params:
         index_dir = ref_dir / 'star_index',
         overhang = read_length - 1,
-        genomeSAindexNbases = int(np.log2(genome_size) / 2 - 1),
+        genomeSAindexNbases = int(np.log2(float(genome_size)) / 2 - 1),
     threads: 16
     resources:
         mem_mb = 60000,

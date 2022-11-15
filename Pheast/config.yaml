@@ -2,14 +2,15 @@
 phenotype_dir: ../Project/output
 
 # Give the path prefix to genotypes in plink1 (bed/bim/fam) format:
-geno_prefix: input/GEUVADIS.445_samples.GRCh38.chr1_0-1Mb
+geno_prefix: input/GEUVADIS.445_samples.GRCh38.chr1_0-2Mb
 
 ## Samples to include:
-samples_file: ../Project/input/samples.txt
+samples_file: input/samples.txt
 
 ## Phenotypes
-# List the phenotype categories to extract, with list of expected output files for each.
-# A snakefile will be loaded for each category, steps/{phenotype}.smk
+# List the phenotype categories to use. The phenotype table ({phenotype}.bed.gz)
+# must be present in the phenotype_dir, along with a
+# {phenotype}.phenotype_groups.txt file in the case of grouped phenotypes.
 phenotypes:
   alt_polyA:
     grouped: true
@@ -21,9 +22,22 @@ phenotypes:
     grouped: true
   latent:
     grouped: true
-  # retroelements:
-  #   grouped: false
+  retroelements:
+    grouped: false
   splicing:
     grouped: true
-  # stability:
-  #   grouped: false
+  stability:
+    grouped: false
+
+## Analyses
+# List the analyses to run. A snakefile will be loaded for each analysis,
+# steps/{analysis}.smk, and results will be written to output/{analysis}/.
+# {phenotype} will be replaced with each phenotype name.
+analyses:
+  heritability:
+    files:
+    - '{phenotype}.hsq.tsv'
+  qtl:
+    files:
+    - '{phenotype}.cis_qtl.txt.gz'
+    - '{phenotype}.cis_independent_qtl.txt.gz'

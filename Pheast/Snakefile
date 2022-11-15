@@ -24,6 +24,12 @@ for pheno, params in phenotypes.items():
     chroms = pd.read_csv(pheno_dir / f'{pheno}.bed.gz', sep='\t', usecols=[0], dtype=str)
     params['chroms'] = chroms.iloc[:, 0].unique().tolist()
 
+analyses = config['analyses']
+outputs = []
+for analysis, params in analyses.items():
+    for f in params['files']:
+        outputs.append(expand(output_dir / analysis / f, phenotype=phenotypes.keys()))
+
 # List short steps here so they will not be submitted as cluster jobs:
 # (These can be specified on a per-file basis)
 localrules:
@@ -32,10 +38,9 @@ localrules:
 # These are the target files to be generated (or regenerated if outdated):
 rule all:
     input:
-        expand(interm_dir / 'covar' / '{pheno}.covar.tsv', pheno=phenotypes.keys()),
-        expand(output_dir / 'heritability' / '{pheno}_hsq.tsv', pheno=phenotypes.keys()),
-        expand(output_dir / 'qtl' / '{pheno}.cis_independent_qtl.txt.gz', pheno=phenotypes.keys()),
+        outputs,
+        # expand(interm_dir / 'covar' / '{pheno}.covar.tsv', pheno=phenotypes.keys()),
 
 include: 'steps/covariates.smk'
-include: 'steps/heritability.smk'
-include: 'steps/qtl.smk'
+for analysis in analyses:
+    include: f'steps/{analysis}.smk'

@@ -10,6 +10,7 @@ dependencies:
   - gcta
   - pip
   - plink2=2
+  - python=3.9 # tensorqtl imports deprecated collections.Iterable
   - rpy2
   - snakemake
   - pip:

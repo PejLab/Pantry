@@ -4,7 +4,7 @@ rule calculate_heritability_chr:
         bed = pheno_dir / '{pheno}.bed.gz',
         geno = multiext(geno_prefix, '.bed', '.bim', '.fam'),
     output:
-        interm_dir / 'heritability' / '{pheno}_hsq.{chrom}.tsv',
+        interm_dir / 'heritability' / '{pheno}.hsq.{chrom}.tsv',
     params:
         geno_prefix = geno_prefix,
         grm_dir = lambda w: interm_dir / 'heritability' / f'grm_{w.pheno}_{w.chrom}',
@@ -29,9 +29,9 @@ rule calculate_heritability_chr:
 rule combine_heritability_chr:
     """Combine per-chromosome heritability stats into one file"""
     input:
-        lambda w: expand(interm_dir / 'heritability' / '{pheno}_hsq.{chrom}.tsv', pheno=w.pheno, chrom=config['phenotypes'][w.pheno]['chroms']),
+        lambda w: expand(interm_dir / 'heritability' / '{pheno}.hsq.{chrom}.tsv', pheno=w.pheno, chrom=config['phenotypes'][w.pheno]['chroms']),
     output:
-        output_dir / 'heritability' / '{pheno}_hsq.tsv',
+        output_dir / 'heritability' / '{pheno}.hsq.tsv',
     params:
         hsq_dir = output_dir / 'heritability',
     shell:

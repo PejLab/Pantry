@@ -15,7 +15,8 @@ get_PCs <- function(df, n_pcs) {
     }
     df <- df[apply(df, 1, var) != 0, ]
     pca <- prcomp(t(df), center = TRUE, scale = TRUE)
-    pcs <- round(pca$x[, 1:n_pcs], 6)
+    n_pcs <- min(n_pcs, ncol(pca$x) - 1)
+    pcs <- round(pca$x[, 1:n_pcs, drop = FALSE], 6)
     pcs_df <- data.frame(ID = colnames(pcs), t(pcs))
     colnames(pcs_df) <- c("ID", rownames(pcs))  # Column names starting with digits get 'fixed' and must be changed back
     pcs_df

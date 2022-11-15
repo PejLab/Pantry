@@ -128,8 +128,6 @@ localrules:
 rule all:
     input:
         outputs,
-        # expand(output_dir / 'heritability' / '{pheno}_hsq.tsv', pheno=phenotypes.keys()),
-        # expand(output_dir / 'qtl' / '{pheno}.cis_independent_qtl.txt.gz', pheno=phenotypes.keys()),
 
 include: 'steps/align.smk'
 for phenotype in phenotypes:
