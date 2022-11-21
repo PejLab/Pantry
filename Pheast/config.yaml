@@ -1,8 +1,12 @@
-# Point to the Pantry output directory containing BED files:
-phenotype_dir: ../Project/output
+## Point to the Pantry output directory containing BED files:
+# phenotype_dir: ../Project/output
+# Since the tables produced by the main test dataset may be too small for
+# downstream analyses, the Pheast tests use another test dataset produced by
+# Pheast/scripts/test_prepare_data.sh:
+phenotype_dir: input/phenotypes
 
-# Give the path prefix to genotypes in plink1 (bed/bim/fam) format:
-geno_prefix: input/GEUVADIS.445_samples.GRCh38.chr1_0-2Mb
+## Give the path prefix to genotypes in plink1 (bed/bim/fam) format:
+geno_prefix: input/GEUVADIS.445_samples.GRCh38.chr1
 
 ## Samples to include:
 samples_file: input/samples.txt

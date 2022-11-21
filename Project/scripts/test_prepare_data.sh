@@ -21,17 +21,6 @@ done < input/samples.txt
 ## Make BAM map
 awk '{print $1".bam\t"$1}' input/samples.txt > input/bam_map.txt
 
-## Subset genotypes (Add 1 Mb to include the full cis-window for the test region genes)
-## Keep all samples to allow for LD pruning for covariates
-genonew="../Pheast/input/GEUVADIS.445_samples.GRCh38.chr1_0-2Mb"
-mkdir -p ../Pheast/input
-plink2 --bfile $geno \
-    --chr 1 \
-    --from-mb 0 \
-    --to-mb 3 \
-    --make-bed \
-    --out $genonew
-
 ########################
 ## Subset annotations ##
 ########################

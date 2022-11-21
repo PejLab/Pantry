@@ -24,6 +24,7 @@ def read_hsq_stats(hsq_file):
 parser = argparse.ArgumentParser(description='Run plink and gcta to calculate heritability per phenotype.')
 parser.add_argument('--bed', '-i', type=Path, help='The input BED file.')
 parser.add_argument('--geno', type=str, help='Prefix of plink (bed, bim, fam) genotype files.')
+parser.add_argument('--covar', type=Path, help='Covariates file (TSV, first column is covariate names).')
 parser.add_argument('--chrom', type=str, help='If provided, only include phenotypes on this chromosome.')
 parser.add_argument('--grm-dir', type=Path, help='The directory that contains or will contain GRM files.')
 parser.add_argument('--tmp-dir', type=Path, help='The directory that intermediate files will be written to.')
@@ -43,12 +44,21 @@ df = df.T
 df.index.name = 'sample'
 phenos = list(df.columns)
 df = df.reset_index()
-df['zero'] = 0
+df.insert(0, 'family', 0)  # Family must match that in the genotype files.
+
+covar = pd.read_csv(args.covar, sep='\t', index_col=0)
+covar.index.name = None
+covar = covar.T
+covar.index.name = 'sample'
+covar = covar.reset_index()
+covar.insert(0, 'family', 0)  # Family must match that in the genotype files.
+covar.to_csv(args.tmp_dir / 'covar.tsv', sep='\t', index=False, header=False)
+
 stats = {}
 for pheno in phenos:
     # print(pheno)
     prefix = args.tmp_dir / pheno.replace(':', '_')
-    ph = df[['zero', 'sample', pheno]]
+    ph = df[['family', 'sample', pheno]]
     ph.to_csv(f'{prefix}.pheno', sep='\t', index=False, header=False)
     chrom, pos_min, pos_max = pos.loc[pheno, ['#chr', 'pos_min', 'pos_max']]
     grm = args.grm_dir / f'{chrom}_{pos_min}_{pos_max}'
@@ -72,12 +82,13 @@ for pheno in phenos:
         'gcta64',
         '--grm', grm,
         '--pheno', f'{prefix}.pheno',
+        '--qcovar', args.tmp_dir / 'covar.tsv',
         '--reml',
         '--reml-no-constrain',
-        '--out', f'{prefix}.no_covar_h2',
+        '--out', f'{prefix}.covar_h2',
     ]
     subprocess.run(cmd, stdout=subprocess.DEVNULL)  # gcta already creates a log
-    stats[pheno] = read_hsq_stats(f'{prefix}.no_covar_h2.hsq')
+    stats[pheno] = read_hsq_stats(f'{prefix}.covar_h2.hsq')
 
 with open(args.output, 'w') as f:
     f.write(f'phenotype_id\thsq\tse\tpval\n')

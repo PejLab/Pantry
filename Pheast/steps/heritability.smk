@@ -3,6 +3,7 @@ rule calculate_heritability_chr:
     input:
         bed = pheno_dir / '{pheno}.bed.gz',
         geno = multiext(geno_prefix, '.bed', '.bim', '.fam'),
+        covar = interm_dir / 'covar' / '{pheno}.covar.tsv',
     output:
         interm_dir / 'heritability' / '{pheno}.hsq.{chrom}.tsv',
     params:
@@ -18,6 +19,7 @@ rule calculate_heritability_chr:
         python3 scripts/heritability.py \
             --bed {input.bed} \
             --geno {params.geno_prefix} \
+            --covar {input.covar} \
             --chrom {wildcards.chrom} \
             --grm-dir {params.grm_dir} \
             --tmp-dir {params.tmp_dir} \
