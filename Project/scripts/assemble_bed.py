@@ -122,25 +122,38 @@ def assemble_alt_TSS_polyA(sample_ids: list, group1_dir: Path, group2_dir: Path,
     df = df[['#chr', 'start', 'end', 'phenotype_id'] + sample_ids]
     df.to_csv(bed, sep='\t', index=False, float_format='%g')
 
-def assemble_expression(sample_ids: list, kallisto_dir: Path, units: str, ref_anno: Path, bed_iso: Path, bed_gene: Path):
+def assemble_expression(sample_ids: list, kallisto_dir: Path, units: str, ref_anno: Path, bed_iso: Path, bed_gene: Path, min_count: int = 10):
     """Assemble kallisto est_counts or tpm outputs into isoform- and gene-level BED files
     
-    Isoform counts are normalized to relative abundance in each gene.
+    Isoform counts are normalized to relative abundance in each gene. Isoforms
+    with fewer than `min_count` reads in every sample are excluded
+    (`est_counts` read counts are always used for this filtering).
     """
     df = load_kallisto(sample_ids, kallisto_dir, units)
     # This assumes that Ensembl cDNA was used for kallisto:
     # Strip off the version number from the transcript_id:
     df.index = df.index.str.split('.').str[0]
+
+    # Record isoforms with any value >= `min_count` to keep:
+    if units == 'est_counts':
+        df_counts = df
+    else:
+        df_counts = load_kallisto(sample_ids, kallisto_dir, 'est_counts')
+        df_counts.index = df_counts.index.str.split('.').str[0]
+    keep_iso = df_counts[(df_counts >= min_count).any(axis=1)].index
+
     df.index = df.index.rename('transcript_id')
     # Add gene_id and use its TSS for all of its isoforms:
     gene_map = transcript_to_gene_map(ref_anno)
     df = df.reset_index().merge(gene_map, on='transcript_id', how='inner')
     # Also get gene-level expression:
-    df_gene = df.drop('transcript_id', axis=1).groupby('gene_id').sum()
+    df_gene = df.drop('transcript_id', axis=1).groupby('gene_id', group_keys=True).sum()
     # Calculate proportion of each transcript in each gene_id:
     df = df.set_index('transcript_id')
     gene_ids = df['gene_id'] # groupby/apply removes gene_id, so save it to add back
-    df = df.groupby('gene_id').apply(lambda x: x / x.sum(axis=0))
+    # Remove isoforms with fewer than `min_count` reads in every sample:
+    df = df[df.index.isin(keep_iso)]
+    df = df.groupby('gene_id', group_keys=False).apply(lambda x: x / x.sum(axis=0))
     df['gene_id'] = gene_ids
     anno = load_tss(ref_anno)
     df = anno.merge(df.reset_index(), on='gene_id', how='inner')
@@ -235,7 +248,7 @@ if args.samples is not None:
 if args.type == 'alt_TSS_polyA':
     assemble_alt_TSS_polyA(samples, args.input_dir, args.input_dir2, 'tpm', args.ref_anno, args.output)
 elif args.type == 'expression':
-    assemble_expression(samples, args.input_dir, 'tpm', args.ref_anno, args.output, args.output2)
+    assemble_expression(samples, args.input_dir, 'tpm', args.ref_anno, args.output, args.output2, min_count=10)
 elif args.type == 'retroelements':
     assemble_retroelements(samples, args.input_dir, args.ref_anno, args.output)
 elif args.type == 'splicing':
