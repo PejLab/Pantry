@@ -14,7 +14,13 @@ rule exons_introns_from_GTF:
         """
 
 rule run_featureCounts:
-    """Run featureCounts from subread to get exon or intron read counts"""
+    """Run featureCounts from subread to get exon or intron read counts
+    
+    Intron counts represent reads that could only come from pre-mRNA, so they
+    need only overlap an intron by one base. Exon counts represent reads that
+    could come from pre-mRNA or mature mRNA, so they must be fully within an
+    exon.
+    """
     input:
         bam = lambda w: bam_map[w.sample_id],
         gtf = ref_dir / '{feature_type}.gtf',
@@ -24,6 +30,7 @@ rule run_featureCounts:
         stab_dir = interm_dir / 'stability',
         paired_flag = '-p' if paired_end else '',
         feature_id = lambda w: {'constit_exons': 'exon', 'introns': 'intron'}[w.feature_type],
+        frac_overlap = lambda w: {'constit_exons': 1, 'introns': 0}[w.feature_type],
         # TODO add strandedness parameter
     threads: 8
     resources:
@@ -36,6 +43,7 @@ rule run_featureCounts:
             {params.paired_flag} \
             -a {input.gtf} \
             -t {params.feature_id} \
+            --fracOverlap {params.frac_overlap} \
             -T {threads} \
             -o {output}
         """
