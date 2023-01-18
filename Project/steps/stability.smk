@@ -22,7 +22,7 @@ rule run_featureCounts:
     exon.
     """
     input:
-        bam = lambda w: bam_map[w.sample_id],
+        bam = interm_dir / 'bam' / '{sample_id}.bam',
         gtf = ref_dir / '{feature_type}.gtf',
     output:
         interm_dir / 'stability' / '{sample_id}.{feature_type}.counts.txt',

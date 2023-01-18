@@ -18,11 +18,8 @@ samples = config['samples']
 
 paired_end = config['paired_end']
 read_length = config['read_length']
-
 fastq_dir = config['fastq_dir']
 fastq_map = config['fastq_map']
-bam_dir = config['bam_dir']
-bam_map = config['bam_map']
 
 ref_genome = config['ref_genome']
 ref_anno = config['ref_anno']

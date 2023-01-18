@@ -81,10 +81,8 @@ args = parser.parse_args()
 
 df = pd.read_csv(args.input, sep="\t", dtype={"#chr": str, "start": int, "end": int, "phenotype_id": str})
 
-# # TODO: Temporary, improve or remove this
-# chrs = [str(i) for i in range(1, 23)] + ['X']
-# df = df[df["#chr"].isin(chrs)]
-# df["#chr"] = df["#chr"].apply(lambda x: "chr" + x)
+# Stop if the raw table is empty:
+assert not df.empty, f"{args.input} is empty"
 
 if args.samples is not None:
     with open(args.samples) as f:
@@ -117,6 +115,9 @@ df = df[~no_var]
 data = data[~no_var]
 # if no_var.sum() > 0:
 print(f"{args.output}: Removed {no_var.sum()} additional rows with no variation")
+
+# Stop if the processed table is empty:
+assert not df.empty, f"After filtering {args.input}, no phenotypes remain"
 
 iqn = normalize_quantiles(data)
 iqn = inverse_normal_transform(iqn)
