@@ -23,7 +23,6 @@ fastq_map = config['fastq_map']
 
 ref_genome = config['ref_genome']
 ref_anno = config['ref_anno']
-retro_anno = config['retro_anno']
 ref_cdna = config['ref_cdna']
 
 phenotypes = config['phenotypes']

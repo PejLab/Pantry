@@ -25,13 +25,6 @@ def load_fastq_map(map_file: Path, fastq_dir: Path, paired_end) -> dict:
                 paths[sample_id].append(str(fastq_dir / fastq))
     return paths
 
-def new_bam_map(samples: list, bam_dir: Path) -> dict:
-    """Get the list of BAM file paths to be created."""
-    paths = {}
-    for sample_id in samples:
-        paths[sample_id] = bam_dir / f'{sample_id}.bam'
-    return paths
-
 def validate_config(config: dict):
     """Validate the configuration"""
     if len(config.keys()) == 0:
@@ -64,7 +57,6 @@ def process_config(config: dict):
         'ref_genome',
         'ref_anno',
         'ref_cdna',
-        'retro_anno',
         'samples_file',
         'intermediate_dir',
     ]
@@ -79,5 +71,3 @@ def process_config(config: dict):
         config['intermediate_dir'] = Path('intermediate')
 
     config['fastq_map'] = load_fastq_map(config['fastq_map'], config['fastq_dir'], config['paired_end'])
-    config['bam_dir'] = config['intermediate_dir'] / 'bam'
-    config['bam_map'] = new_bam_map(samples, config['bam_dir'])

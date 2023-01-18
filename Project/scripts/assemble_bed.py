@@ -41,24 +41,6 @@ def transcript_to_gene_map(ref_anno: Path) -> pd.DataFrame:
     anno = anno.loc[anno['feature'] == 'transcript', :]
     return anno[['gene_id', 'transcript_id']]
 
-def load_retros(retro_anno: Path) -> pd.DataFrame:
-    """Load retroelement annotations
-    
-    For retroelements with multiple entries (corresponding to multiple repeats),
-    returns the median of their starts as its 'TSS'.
-    """
-    anno = read_gtf(retro_anno)
-    anno['chromEnd'] = np.where(anno['strand'] == '+', anno['start'], anno['end'])
-    anno = anno[['gene_id', 'seqname', 'chromEnd']]
-    anno = anno.groupby(['gene_id', 'seqname']).median().astype(int).reset_index()
-    # assert len(anno['gene_id'].unique()) == len(anno['gene_id'])
-    anno['chromStart'] = anno['chromEnd'] - 1  # BED coordinates are 0-based
-    anno = anno[['seqname', 'chromStart', 'chromEnd', 'gene_id']]
-    # Rename columns for tensorQTL:
-    anno.columns = ['#chr', 'start', 'end', 'phenotype_id']
-    anno = anno.sort_values(['#chr', 'start'])
-    return anno
-
 def map_introns_to_genes(introns: list, exons: pd.DataFrame) -> pd.DataFrame:
     """Map de novo splice junctions to genes based on known exon boundaries"""
     exons['exonStart'] = exons['exonStart'].astype(str)
@@ -165,23 +147,6 @@ def assemble_expression(sample_ids: list, kallisto_dir: Path, units: str, ref_an
     df_gene = df_gene[['#chr', 'start', 'end', 'phenotype_id'] + sample_ids]
     df_gene.to_csv(bed_gene, sep='\t', index=False, float_format='%g')
 
-def assemble_retroelements(sample_ids: list, retro_dir: Path, retro_anno: Path, bed: Path):
-    """Assemble telescope output files into retroelement expression BED file"""
-    for i, sample in enumerate(sample_ids):
-        fname = retro_dir / f'{sample}-telescope_report.tsv'
-        d = pd.read_csv(fname, sep='\t', index_col='transcript', skiprows=1)
-        d = d.rename(columns={'final_count': sample})[[sample]]
-        if i == 0:
-            df = d
-        else:
-            df = df.join(d, how='outer')
-    df = df.fillna(0).astype(int)
-    df = df.loc[np.sum(df > 0, axis=1) > 0, :]
-    anno = load_retros(retro_anno)
-    df.index = df.index.rename('phenotype_id')
-    df = anno.merge(df.reset_index(), on='phenotype_id', how='inner')
-    df.to_csv(bed, sep='\t', index=False, float_format='%g')
-
 def assemble_splicing(counts: Path, ref_anno: Path, bed: Path):
     """Convert leafcutter output into splicing BED file"""
     df = pd.read_csv(counts, sep=' ')
@@ -232,7 +197,7 @@ def assemble_stability(sample_ids: list, stab_dir: Path, ref_anno: Path, bed: Pa
     df.to_csv(bed, sep='\t', index=False, float_format='%g')
 
 parser = argparse.ArgumentParser(description='Assemble data into an RNA phenotype BED file')
-parser.add_argument('--type', choices=['alt_TSS_polyA', 'expression', 'retroelements', 'splicing', 'stability'], required=True, help='Type of data to assemble')
+parser.add_argument('--type', choices=['alt_TSS_polyA', 'expression', 'splicing', 'stability'], required=True, help='Type of data to assemble')
 parser.add_argument('--input', type=Path, required=False, help='Input file, for phenotype groups in which all data is already in a single file')
 parser.add_argument('--input-dir', type=Path, required=False, help='Directory containing input files, for phenotype groups with per-sample input files')
 parser.add_argument('--input-dir2', type=Path, required=False, help='Second input directory, for phenotype groups with per-sample input files in two directories')
@@ -249,8 +214,6 @@ if args.type == 'alt_TSS_polyA':
     assemble_alt_TSS_polyA(samples, args.input_dir, args.input_dir2, 'tpm', args.ref_anno, args.output)
 elif args.type == 'expression':
     assemble_expression(samples, args.input_dir, 'tpm', args.ref_anno, args.output, args.output2, min_count=10)
-elif args.type == 'retroelements':
-    assemble_retroelements(samples, args.input_dir, args.ref_anno, args.output)
 elif args.type == 'splicing':
     assemble_splicing(args.input, args.ref_anno, args.output)
 elif args.type == 'stability':
