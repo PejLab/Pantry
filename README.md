@@ -76,7 +76,6 @@ FASTQ files must be compressed (decompressible with `zcat`) unless you modify th
 
 - The FASTA file for a reference genome, e.g. `Homo_sapiens.GRCh38.dna.primary_assembly.fa`.
 - A GTF file containing the gene, exon, and other annotations, compatible with the supplied reference genome. For example, `Homo_sapiens.GRCh38.106.gtf`.
-- The cDNA sequences for the same set of annotations. For example, `Homo_sapiens.GRCh38.cdna.all.fa.gz`.
 
 ## Running from the command line
 

@@ -42,7 +42,7 @@ rule kallisto:
         """
 
 rule assemble_expression_bed:
-    """Assemble kallisto est_counts and tpm outputs into expression BED files
+    """Assemble kallisto outputs into expression BED files
     
     Currently only tpm is used for downstream analysis.
     """

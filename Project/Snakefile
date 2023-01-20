@@ -23,7 +23,7 @@ fastq_map = config['fastq_map']
 
 ref_genome = config['ref_genome']
 ref_anno = config['ref_anno']
-ref_cdna = config['ref_cdna']
+ref_cdna = ref_dir / 'cDNA.fa.gz'
 
 phenotypes = config['phenotypes']
 genome_size = config['genome_size'] # TODO: compute from fasta file
@@ -37,6 +37,7 @@ for pheno, params in phenotypes.items():
 # (These can be specified on a per-file basis)
 localrules:
     index_bed,
+    extract_cdna,
 
 # These are the target files to be generated (or regenerated if outdated):
 rule all:
@@ -101,3 +102,12 @@ rule index_fasta:
     shell:
         'samtools faidx {input}'
 
+rule extract_cdna:
+    """Extract cDNA sequences from a genome and GTF file."""
+    input:
+        ref_genome = ref_genome,
+        ref_anno = ref_anno,
+    output:
+        ref_cdna,
+    shell:
+        'gffread {input.ref_anno} -g {input.ref_genome} -w - | bgzip -c > {output}'

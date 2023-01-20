@@ -36,7 +36,6 @@ def validate_config(config: dict):
         'fastq_map',
         'ref_genome',
         'ref_anno',
-        'ref_cdna',
         'samples_file',
         'phenotypes',
         'genome_size',
@@ -56,7 +55,6 @@ def process_config(config: dict):
         'fastq_map',
         'ref_genome',
         'ref_anno',
-        'ref_cdna',
         'samples_file',
         'intermediate_dir',
     ]

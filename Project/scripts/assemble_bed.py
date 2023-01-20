@@ -107,14 +107,11 @@ def assemble_alt_TSS_polyA(sample_ids: list, group1_dir: Path, group2_dir: Path,
 def assemble_expression(sample_ids: list, kallisto_dir: Path, units: str, ref_anno: Path, bed_iso: Path, bed_gene: Path, min_count: int = 10):
     """Assemble kallisto est_counts or tpm outputs into isoform- and gene-level BED files
     
-    Isoform counts are normalized to relative abundance in each gene. Isoforms
+    Isoform values are normalized to relative abundance in each gene. Isoforms
     with fewer than `min_count` reads in every sample are excluded
     (`est_counts` read counts are always used for this filtering).
     """
     df = load_kallisto(sample_ids, kallisto_dir, units)
-    # This assumes that Ensembl cDNA was used for kallisto:
-    # Strip off the version number from the transcript_id:
-    df.index = df.index.str.split('.').str[0]
 
     # Record isoforms with any value >= `min_count` to keep:
     if units == 'est_counts':

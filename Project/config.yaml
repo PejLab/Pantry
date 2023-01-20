@@ -9,7 +9,6 @@ fastq_map: input/fastq_map.txt
 ref_genome: input/ref/Homo_sapiens.GRCh38.dna.primary_assembly.chr1_0-2Mb.fa
 # Download and unzip gene annotations, e.g. http://ftp.ensembl.org/pub/release-106/gtf/homo_sapiens/Homo_sapiens.GRCh38.106.gtf.gz
 ref_anno: input/ref/Homo_sapiens.GRCh38.106.chr1_0-2Mb.gtf
-ref_cdna: 'input/ref/Homo_sapiens.GRCh38.cdna.all.fa.gz'
 
 ## Samples to include:
 samples_file: input/samples.txt
