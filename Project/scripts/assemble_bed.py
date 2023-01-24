@@ -118,7 +118,6 @@ def assemble_expression(sample_ids: list, kallisto_dir: Path, units: str, ref_an
         df_counts = df
     else:
         df_counts = load_kallisto(sample_ids, kallisto_dir, 'est_counts')
-        df_counts.index = df_counts.index.str.split('.').str[0]
     keep_iso = df_counts[(df_counts >= min_count).any(axis=1)].index
 
     df.index = df.index.rename('transcript_id')

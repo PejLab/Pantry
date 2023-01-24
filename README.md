@@ -42,7 +42,7 @@ fastq_map: input/fastq_map.txt
 
 ## Input files
 
-Some phenotypes are extracted from raw sequences (e.g. using kallisto), while others are extracted from aligned reads. Pantry input sequences must be in FASTQ format. If you only have BAM files, you can convert them to FASTQ using the `samtools fastq` command. Pantry will generate its own BAM files from the FASTQ files using the reference files. These new BAM files will not contain the sequences themselves so they will be smaller than typical BAM files. If you are sure your existing BAM files are compatible with the reference files, you can put them in the intermediate directory and update the timestamps to avoid re-running the alignment step.
+Some phenotypes are extracted from raw sequences (e.g. using kallisto), while others are extracted from aligned reads. Pantry input sequences must be in FASTQ format. If you only have BAM files, you can convert them to FASTQ using the `samtools fastq` command. Pantry will generate its own BAM files from the FASTQ files using the reference files. These new BAM files will not contain the sequences themselves so they will be smaller than typical BAM files. If you are sure your existing BAM files are compatible with the reference files, you can put them in the intermediate directory, name them as expected by the pipeline, and update the timestamps to avoid re-running the alignment step.
 
 ### FASTQ sample map
 
