@@ -4,8 +4,8 @@ localrules:
 rule regtools_junctions:
     """Run regtools junctions for LeafCutter"""
     input:
-        bam = lambda w: bam_map[w.sample_id],
-        bai = lambda w: f'{bam_map[w.sample_id]}.bai',
+        bam = interm_dir / 'bam' / '{sample_id}.bam',
+        bai = interm_dir / 'bam' / '{sample_id}.bam.bai',
     output:
         interm_dir / 'splicing' / '{sample_id}.junc'
     params:
