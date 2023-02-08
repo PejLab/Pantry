@@ -147,13 +147,11 @@ def assemble_splicing(counts: Path, ref_anno: Path, bed: Path):
     """Convert leafcutter output into splicing BED file"""
     df = pd.read_csv(counts, sep=' ')
     sample_ids = list(df.columns)
+    cluster = df.index.str.extract(r'clu_(\d+)_', expand=False)
+    df = df.groupby(cluster, group_keys=False).apply(lambda g: g / g.sum(axis=0))
+    df['cluster'] = cluster
     df.index = df.index.rename('intron')
     df = df.reset_index()
-    # df = df.rename(columns={'chrom': 'name'})
-    df['cluster'] = df['intron'].str.extract(r'clu_(\d+)_', expand=False)
-    for col in sample_ids:
-    #     df[col] = pd.eval(df[col])  # convert fraction string to float
-        df[col] = df.groupby('cluster', group_keys=False).apply(lambda g: g[col] / g[col].sum())
     exons = load_exons(ref_anno)
     genes = map_introns_to_genes(df['intron'], exons)
     df = df.merge(genes, on='cluster', how='left')

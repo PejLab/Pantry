@@ -81,8 +81,7 @@ args = parser.parse_args()
 
 anno = read_gtf(args.gtf)
 anno = anno.loc[anno['feature'] == 'exon', :]
-anno = anno.loc[anno['source'] == 'ensembl_havana', :]
-# anno = anno.iloc[:1000, :]
+# anno = anno.loc[anno['source'] == 'ensembl_havana', :]
 
 # For each gene_id, choose the transcript_id with the most exons:
 tx_ids = anno.groupby('gene_id').apply(lambda x: x['transcript_id'].value_counts().index[0])
