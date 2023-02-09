@@ -76,7 +76,7 @@ def load_kallisto(sample_ids: list, kallisto_dir: Path, units: str) -> pd.DataFr
         counts.append(d)
     return pd.concat(counts, axis=1)
 
-def assemble_alt_TSS_polyA(sample_ids: list, group1_dir: Path, group2_dir: Path, units: str, ref_anno: Path, bed: Path):
+def assemble_alt_TSS_polyA(sample_ids: list, group1_dir: Path, group2_dir: Path, units: str, ref_anno: Path, bed: Path, min_frac: float = 0.05, max_frac: float = 0.95):
     """Assemble txrevise-based kallisto outputs into BED file
     
     By default, txrevise produces two sets of annotations per annotation type.
@@ -90,11 +90,15 @@ def assemble_alt_TSS_polyA(sample_ids: list, group1_dir: Path, group2_dir: Path,
     df2['gene_id'] = df2.index.str.split('.').str[0]
     # Calculate proportion of each transcript in each gene_id:
     gene_ids = df1['gene_id'] # groupby/apply removes gene_id, so save it to add back
-    df1 = df1.groupby('gene_id').apply(lambda x: x / x.sum(axis=0))
-    df1['gene_id'] = gene_ids
+    df1 = df1.groupby('gene_id', group_keys=False).apply(lambda x: x / x.sum(axis=0))
+    # Remove sites with mean relative usage < `min_frac` or > `max_frac`:
+    df1 = df1[(df1.mean(axis=1) >= min_frac) & (df1.mean(axis=1) <= max_frac)]
+    df1 = df1.join(gene_ids, how='left')
     gene_ids = df2['gene_id']
-    df2 = df2.groupby('gene_id').apply(lambda x: x / x.sum(axis=0))
-    df2['gene_id'] = gene_ids
+    df2 = df2.groupby('gene_id', group_keys=False).apply(lambda x: x / x.sum(axis=0))
+    # Remove sites with mean relative usage < `min_frac` or > `max_frac`:
+    df2 = df2[(df2.mean(axis=1) >= min_frac) & (df2.mean(axis=1) <= max_frac)]
+    df2 = df2.join(gene_ids, how='left')
     df = pd.concat([df1, df2], axis=0)
     df.index = df.index.rename('phenotype_id')
     df = df.reset_index()
@@ -104,52 +108,55 @@ def assemble_alt_TSS_polyA(sample_ids: list, group1_dir: Path, group2_dir: Path,
     df = df[['#chr', 'start', 'end', 'phenotype_id'] + sample_ids]
     df.to_csv(bed, sep='\t', index=False, float_format='%g')
 
-def assemble_expression(sample_ids: list, kallisto_dir: Path, units: str, ref_anno: Path, bed_iso: Path, bed_gene: Path, min_count: int = 10):
+def assemble_expression(sample_ids: list, kallisto_dir: Path, units: str, ref_anno: Path, bed_iso: Path, bed_gene: Path, min_count: int = 10, min_frac: float = 0.05, max_frac: float = 0.95):
     """Assemble kallisto est_counts or tpm outputs into isoform- and gene-level BED files
     
     Isoform values are normalized to relative abundance in each gene. Isoforms
     with fewer than `min_count` reads in every sample are excluded
     (`est_counts` read counts are always used for this filtering).
     """
-    df = load_kallisto(sample_ids, kallisto_dir, units)
+    df_iso = load_kallisto(sample_ids, kallisto_dir, units)
 
     # Record isoforms with any value >= `min_count` to keep:
     if units == 'est_counts':
-        df_counts = df
+        df_counts = df_iso
     else:
         df_counts = load_kallisto(sample_ids, kallisto_dir, 'est_counts')
-    keep_iso = df_counts[(df_counts >= min_count).any(axis=1)].index
+    iso_enough_counts = df_counts[(df_counts >= min_count).any(axis=1)].index
 
-    df.index = df.index.rename('transcript_id')
-    # Add gene_id and use its TSS for all of its isoforms:
-    gene_map = transcript_to_gene_map(ref_anno)
-    df = df.reset_index().merge(gene_map, on='transcript_id', how='inner')
+    df_iso.index = df_iso.index.rename('transcript_id')
+    gene_map = transcript_to_gene_map(ref_anno).set_index('transcript_id')
+    df_iso = df_iso.join(gene_map, how='inner')
     # Also get gene-level expression:
-    df_gene = df.drop('transcript_id', axis=1).groupby('gene_id', group_keys=True).sum()
+    df_gene = df_iso.reset_index().drop('transcript_id', axis=1).groupby('gene_id', group_keys=True).sum()
     # Calculate proportion of each transcript in each gene_id:
-    df = df.set_index('transcript_id')
-    gene_ids = df['gene_id'] # groupby/apply removes gene_id, so save it to add back
+    df_iso = df_iso.groupby('gene_id', group_keys=False).apply(lambda x: x / x.sum(axis=0))
     # Remove isoforms with fewer than `min_count` reads in every sample:
-    df = df[df.index.isin(keep_iso)]
-    df = df.groupby('gene_id', group_keys=False).apply(lambda x: x / x.sum(axis=0))
-    df['gene_id'] = gene_ids
+    df_iso = df_iso[df_iso.index.isin(iso_enough_counts)]
+    # Remove isoforms with mean relative abundance < `min_frac` or > `max_frac`:
+    df_iso = df_iso[(df_iso.mean(axis=1) >= min_frac) & (df_iso.mean(axis=1) <= max_frac)]
+    # groupby/apply removes gene_id, so add them back
+    df_iso = df_iso.join(gene_map, how='left')
+
     anno = load_tss(ref_anno)
-    df = anno.merge(df.reset_index(), on='gene_id', how='inner')
-    df['phenotype_id'] = df['gene_id'] + ':' + df['transcript_id']
-    df = df[['#chr', 'start', 'end', 'phenotype_id'] + sample_ids]
-    df.to_csv(bed_iso, sep='\t', index=False, float_format='%g')
+    df_iso = anno.merge(df_iso.reset_index(), on='gene_id', how='inner')
+    df_iso['phenotype_id'] = df_iso['gene_id'] + ':' + df_iso['transcript_id']
+    df_iso = df_iso[['#chr', 'start', 'end', 'phenotype_id'] + sample_ids]
+    df_iso.to_csv(bed_iso, sep='\t', index=False, float_format='%g')
     df_gene = anno.merge(df_gene.reset_index(), on='gene_id', how='inner')
     df_gene = df_gene.rename(columns={'gene_id': 'phenotype_id'})
     df_gene = df_gene[['#chr', 'start', 'end', 'phenotype_id'] + sample_ids]
     df_gene.to_csv(bed_gene, sep='\t', index=False, float_format='%g')
 
-def assemble_splicing(counts: Path, ref_anno: Path, bed: Path):
+def assemble_splicing(counts: Path, ref_anno: Path, bed: Path, min_frac: float = 0.05, max_frac: float = 0.95):
     """Convert leafcutter output into splicing BED file"""
     df = pd.read_csv(counts, sep=' ')
     sample_ids = list(df.columns)
     cluster = df.index.str.extract(r'clu_(\d+)_', expand=False)
     df = df.groupby(cluster, group_keys=False).apply(lambda g: g / g.sum(axis=0))
-    df['cluster'] = cluster
+    # Remove junctions with mean relative usage < `min_frac` or > `max_frac`:
+    df = df[(df.mean(axis=1) >= min_frac) & (df.mean(axis=1) <= max_frac)]
+    df['cluster'] = df.index.str.extract(r'clu_(\d+)_', expand=False)
     df.index = df.index.rename('intron')
     df = df.reset_index()
     exons = load_exons(ref_anno)
@@ -205,10 +212,10 @@ if args.samples is not None:
     samples = pd.read_csv(args.samples, sep='\t', header=None)[0].tolist()
 
 if args.type == 'alt_TSS_polyA':
-    assemble_alt_TSS_polyA(samples, args.input_dir, args.input_dir2, 'tpm', args.ref_anno, args.output)
+    assemble_alt_TSS_polyA(samples, args.input_dir, args.input_dir2, 'tpm', args.ref_anno, args.output, min_frac=0.05, max_frac=0.95)
 elif args.type == 'expression':
-    assemble_expression(samples, args.input_dir, 'tpm', args.ref_anno, args.output, args.output2, min_count=10)
+    assemble_expression(samples, args.input_dir, 'tpm', args.ref_anno, args.output, args.output2, min_count=10, min_frac=0.05, max_frac=0.95)
 elif args.type == 'splicing':
-    assemble_splicing(args.input, args.ref_anno, args.output)
+    assemble_splicing(args.input, args.ref_anno, args.output, min_frac=0.05, max_frac=0.95)
 elif args.type == 'stability':
     assemble_stability(samples, args.input_dir, args.ref_anno, args.output)
