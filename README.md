@@ -48,7 +48,7 @@ Some phenotypes are extracted from raw sequences (e.g. using kallisto), while ot
 samtools fastq -1 pair1.fq -2 pair2.fq -0 /dev/null -s /dev/null -n in.bam
 ```
 
-Pantry will generate its own BAM files from the FASTQ files using the reference files. These new BAM files will not contain the sequences themselves so they will be smaller than typical BAM files. If you are sure your existing BAM files are compatible with the reference files, you can put them in the intermediate directory, name them as expected by the pipeline, and update the timestamps to avoid re-running the alignment step.
+Pantry will generate its own BAM files from the FASTQ files using the reference files. These new BAM files will not contain the sequences themselves so they will be smaller than typical BAM files. If you are sure your existing BAM files are compatible with the reference files, you can symlink to them in the intermediate directory, named as expected by the pipeline, and update the timestamps to avoid re-running the alignment step. Note that the BAM files output by STAR are deleted by default after being converted to shrunken BAM files, so it's recommended to use symlinks instead of the actual files, and name the symlinks either as the STAR output BAM files or the final, shrunken BAM files.
 
 ### FASTQ sample map
 

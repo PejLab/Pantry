@@ -21,7 +21,7 @@ def add_noncoding_regions(anno: pd.DataFrame) -> pd.DataFrame:
     assert anno.start.unique().shape[0] == anno.shape[0]
     features, starts, ends = [], [], []
     features.append('upstream' if strand == '+' else 'downstream')
-    starts.append(anno.iloc[0].start - 1000)
+    starts.append(max(1, anno.iloc[0].start - 1000))
     ends.append(anno.iloc[0].start - 1)
     for i in range(len(anno) - 1):
         features.append('intron')

@@ -112,7 +112,7 @@ def assemble_expression(sample_ids: list, kallisto_dir: Path, units: str, ref_an
     """Assemble kallisto est_counts or tpm outputs into isoform- and gene-level BED files
     
     Isoform values are normalized to relative abundance in each gene. Isoforms
-    with fewer than `min_count` reads in every sample are excluded
+    with fewer than `min_count` reads on average are excluded
     (`est_counts` read counts are always used for this filtering).
     """
     df_iso = load_kallisto(sample_ids, kallisto_dir, units)
@@ -122,7 +122,7 @@ def assemble_expression(sample_ids: list, kallisto_dir: Path, units: str, ref_an
         df_counts = df_iso
     else:
         df_counts = load_kallisto(sample_ids, kallisto_dir, 'est_counts')
-    iso_enough_counts = df_counts[(df_counts >= min_count).any(axis=1)].index
+    iso_enough_counts = df_counts[df_counts.mean(axis=1) >= min_count].index
 
     df_iso.index = df_iso.index.rename('transcript_id')
     gene_map = transcript_to_gene_map(ref_anno).set_index('transcript_id')
@@ -131,7 +131,7 @@ def assemble_expression(sample_ids: list, kallisto_dir: Path, units: str, ref_an
     df_gene = df_iso.reset_index().drop('transcript_id', axis=1).groupby('gene_id', group_keys=True).sum()
     # Calculate proportion of each transcript in each gene_id:
     df_iso = df_iso.groupby('gene_id', group_keys=False).apply(lambda x: x / x.sum(axis=0))
-    # Remove isoforms with fewer than `min_count` reads in every sample:
+    # Remove isoforms with mean read count < `min_count`:
     df_iso = df_iso[df_iso.index.isin(iso_enough_counts)]
     # Remove isoforms with mean relative abundance < `min_frac` or > `max_frac`:
     df_iso = df_iso[(df_iso.mean(axis=1) >= min_frac) & (df_iso.mean(axis=1) <= max_frac)]
