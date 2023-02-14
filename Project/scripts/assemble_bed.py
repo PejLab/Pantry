@@ -127,6 +127,7 @@ def assemble_expression(sample_ids: list, kallisto_dir: Path, units: str, ref_an
     df_iso.index = df_iso.index.rename('transcript_id')
     gene_map = transcript_to_gene_map(ref_anno).set_index('transcript_id')
     df_iso = df_iso.join(gene_map, how='inner')
+    assert df_iso.shape[0] > 0, 'No matching isoforms in kallisto output and reference annotation'
     # Also get gene-level expression:
     df_gene = df_iso.reset_index().drop('transcript_id', axis=1).groupby('gene_id', group_keys=True).sum()
     # Calculate proportion of each transcript in each gene_id:

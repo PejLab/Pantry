@@ -10,7 +10,7 @@ phenodir=$1
 
 mkdir -p input/phenotypes
 
-for pheno in expression retroelements stability
+for pheno in expression stability
 do
     # echo $pheno
     zcat $phenodir/$pheno.bed.gz | grep -P '^(#chr)|(1\t)' | head -101 | bgzip -c > input/phenotypes/$pheno.bed.gz
@@ -38,7 +38,6 @@ done
 ## Keep all samples to allow for LD pruning for covariates and to detect QTLs
 geno="../../Geuvadis/input/genotype/GEUVADIS.445_samples.GRCh38.20170504.maf01.filtered.nodup.nochr"
 genonew="input/GEUVADIS.445_samples.GRCh38.chr1"
-mkdir -p ../Pheast/input
 plink2 --bfile $geno \
     --chr 1 \
     --make-bed \

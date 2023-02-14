@@ -87,19 +87,14 @@ rule alt_TSS_polyA_transcript_seqs:
         ref_genome = ref_genome,
         gff3 = ref_dir / 'txrevise' / 'txrevise.{group}.{position}.gff3',
     output:
-        ref_dir / 'txrevise' / 'txrevise.{group}.{position}.fa',
+        ref_dir / 'txrevise' / 'txrevise.{group}.{position}.fa.gz',
     shell:
-        """
-        gffread \
-            -w {output} \
-            -g {input.ref_genome} \
-            {input.gff3}
-        """
+        'gffread {input.gff3} -g {input.ref_genome} -w - | bgzip -c > {output}'
 
 rule alt_TSS_polyA_kallisto_index:
     """Generate the index for kallisto using annotations from txrevise."""
     input:
-        ref_dir / 'txrevise' / 'txrevise.{group}.{position}.fa',
+        ref_dir / 'txrevise' / 'txrevise.{group}.{position}.fa.gz',
     output:
         ref_dir / 'txrevise' / 'txrevise.{group}.{position}.idx',
     shell:

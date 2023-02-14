@@ -21,9 +21,9 @@ done < input/samples.txt
 ## Make BAM map
 awk '{print $1".bam\t"$1}' input/samples.txt > input/bam_map.txt
 
-########################
-## Subset annotations ##
-########################
+######################
+## Subset reference ##
+######################
 
 ## Subset gene annotations
 mkdir -p input/ref
@@ -31,11 +31,6 @@ gtf="../../Geuvadis/input/human_ref/Homo_sapiens.GRCh38.106.gtf"
 gtfnew="input/ref/Homo_sapiens.GRCh38.106.chr1_0-2Mb.gtf"
 head -5 "$gtf" > "$gtfnew"
 awk '($1 == "1") && ($4 < 2000000) && ($5 < 2000000)' "$gtf" >> "$gtfnew"
-
-## Subset retroelement annotations
-retro="../../Geuvadis/input/human_ref/retro.hg38.v1.nochr.gtf"
-retronew="input/ref/retro.hg38.v1.nochr.chr1_0-2Mb.gtf"
-awk '($1 == "1") && ($4 < 2000000) && ($5 < 2000000)' "$retro" > "$retronew"
 
 ## Subset genome
 fa="../../Geuvadis/input/human_ref/Homo_sapiens.GRCh38.dna.primary_assembly.fa"
