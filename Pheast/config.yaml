@@ -24,8 +24,6 @@ phenotypes:
     grouped: false
   isoforms:
     grouped: true
-  latent:
-    grouped: true
   splicing:
     grouped: true
   stability:
@@ -43,3 +41,6 @@ analyses:
     files:
     - '{phenotype}.cis_qtl.txt.gz'
     - '{phenotype}.cis_independent_qtl.txt.gz'
+  twas:
+    files:
+    - '{phenotype}.weights.tsv'

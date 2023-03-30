@@ -8,6 +8,7 @@ dependencies:
   - bioconductor-qvalue
   - bioconductor-variantannotation
   - gcta
+  - gemma
   - pip
   - plink2=2
   - python=3.9 # tensorqtl imports deprecated collections.Iterable
