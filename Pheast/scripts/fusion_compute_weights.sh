@@ -8,7 +8,8 @@ B_START=$4
 B_END=$5
 OUTDIR=$6
 
-set -e
+# I don't think set -e can be used because plink has error when no cis-window variants present, in which case this script should skip it and continue.
+# set -e
 
 echo $GENO $BED $PHENO $B_START $B_END $OUTDIR
 
@@ -24,7 +25,7 @@ NR="${B_START}_${B_END}"
 mkdir --parents $OUTDIR/tmp_$PHENO/$NR
 mkdir --parents $OUTDIR/hsq_$PHENO
 # THIS IS DIRECTORY WHERE THE OUTPUT WILL GO:
-mkdir --parents $OUTDIR/weights_$PHENO
+mkdir --parents $OUTDIR/$PHENO
 
 # Create batch hsq file even if empty to indicate the batch has been run
 touch $OUTDIR/tmp_$PHENO/$NR.hsq
@@ -58,7 +59,7 @@ zcat $BED | awk -vs=$B_START -ve=$B_END 'NR >= s + 1 && NR <= e + 1' | while rea
 		--from-bp $P0 \
 		--to-bp $P1
 
-	G_OUT="$OUTDIR/weights_$PHENO/$GNAME"
+	G_OUT="$OUTDIR/$PHENO/$GNAME"
 
 	Rscript scripts/fusion_twas/FUSION.compute_weights.R \
 		--bfile $G_TMP \

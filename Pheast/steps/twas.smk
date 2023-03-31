@@ -33,20 +33,70 @@ def twas_batch_hsq_input(wildcards):
         end = min((i + 1) * batch_size, n)
         yield interm_dir / 'twas' / f'hsq_{wildcards.pheno}' / f'{start}_{end}.hsq'
 
-rule twas_assemble_weights:
-    """Combine TWAS weights from all batches/genes."""
+rule twas_assemble_summary:
+    """Summarize weights from all batches/genes.
+    
+    The hsq 'input' files aren't actually used, but signify the batch was run.
+    The true input files are the per-gene weights, but the genes for which we
+    end up with outputs are not known until the rule is run.
+    """
     input:
-        # expand(interm_dir / 'twas' / 'weights_{{pheno}}' / '{gene}.wgt.RDat', gene=gene_list),
-        # expand(interm_dir / 'twas' / 'hsq_{{pheno}}' / '{batch}.hsq', batch=[f'{i}_{i+9}' for i in range(1, 100, 10)]),
         twas_batch_hsq_input,
     output:
-        output_dir / 'twas' / '{pheno}.weights.tsv',
+        file_list = interm_dir / 'twas' / '{pheno}.list',
+        profile = interm_dir / 'twas' / '{pheno}.profile',
+        summary = interm_dir / 'twas' / '{pheno}.profile.err',
     params:
-        weights_dir = str(interm_dir / 'twas' / 'weights_{pheno}'),
+        twas_interm_dir = interm_dir / 'twas',
     shell:
         """
-        ls {params.weights_dir}/*.wgt.RDat > {params.weights_dir}.list
-        Rscript scripts/fusion_twas/utils/FUSION.profile_wgt.R \
-            {params.weights_dir}.list \
-            > {output}
+        cd {params.twas_interm_dir}
+        ls {wildcards.pheno}/*.wgt.RDat > {wildcards.pheno}.list
+        Rscript ../../scripts/fusion_twas/utils/FUSION.profile_wgt.R \
+            {wildcards.pheno}.list \
+            > {wildcards.pheno}.profile \
+            2> {wildcards.pheno}.profile.err
+        """
+
+rule twas_pos_file:
+    input:
+        file_list = interm_dir / 'twas' / '{pheno}.list',
+        bed = pheno_dir / '{pheno}.bed.gz',
+    output:
+        pos_file = interm_dir / 'twas' / '{pheno}.pos',
+    shell:
+        """
+        echo 'WGT\tID\tCHR\tP0\tP1' > {output.pos_file}
+        cut -d'/' -f2 {input.file_list} \
+            | sed 's/.wgt.RDat//' \
+            | paste {input.file_list} - \
+            | join -1 2 -2 4 - <(zcat {input.bed} | cut -f1-4 | sort -k4) \
+            | awk '{{OFS="\t"; print $2, $1, $3, $4, $5}}' \
+            >> {output.pos_file}
+        """
+
+rule twas_compress_output:
+    """Combine TWAS weights and summary files into a single archive.
+
+    Uses the same format as these:
+    http://gusevlab.org/projects/fusion/#single-tissue-gene-expression
+    """
+    input:
+        file_list = interm_dir / 'twas' / '{pheno}.list',
+        profile = interm_dir / 'twas' / '{pheno}.profile',
+        summary = interm_dir / 'twas' / '{pheno}.profile.err',
+        pos_file = interm_dir / 'twas' / '{pheno}.pos',
+    output:
+        output_dir / 'twas' / '{pheno}.tar.bz2',
+    params:
+        twas_interm_dir = interm_dir / 'twas',
+    shell:
+        """
+        tar -cjf {output} \
+            -C {params.twas_interm_dir} \
+            {wildcards.pheno}.list \
+            {wildcards.pheno}.profile \
+            {wildcards.pheno}.profile.err \
+            {wildcards.pheno}.pos \
+            {wildcards.pheno}/
         """
