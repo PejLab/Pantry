@@ -43,4 +43,4 @@ analyses:
     - '{phenotype}.cis_independent_qtl.txt.gz'
   twas:
     files:
-    - '{phenotype}.weights.tsv'
+    - '{phenotype}.tar.bz2'

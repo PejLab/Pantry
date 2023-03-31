@@ -1,3 +1,6 @@
+localrules:
+    twas_pos_file,
+
 TWAS_N_BATCHES = 64
 
 rule twas_compute_weights_batch:
@@ -90,8 +93,10 @@ rule twas_compress_output:
         output_dir / 'twas' / '{pheno}.tar.bz2',
     params:
         twas_interm_dir = interm_dir / 'twas',
+        twas_output_dir = output_dir / 'twas',
     shell:
         """
+        mkdir -p {params.twas_output_dir}
         tar -cjf {output} \
             -C {params.twas_interm_dir} \
             {wildcards.pheno}.list \
