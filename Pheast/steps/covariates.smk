@@ -1,3 +1,6 @@
+localrules:
+    plink_covariates,
+
 rule prune_for_covar:
     """Prune genotypes to compute covariate PCs.
     --indep-pairwise parameters are based on GTEx methods.
@@ -46,3 +49,18 @@ rule covariates:
             {params.n_pheno_pcs} \
             {output}
         """
+
+rule plink_covariates:
+    """Convert covariates to PLINK format."""
+    input:
+        covar = interm_dir / 'covar' / '{pheno}.covar.tsv',
+    output:
+        plink = interm_dir / 'covar' / '{pheno}.covar.plink.tsv',
+    run:
+        covar = pd.read_csv(input.covar, sep='\t', index_col=0)
+        covar.index.name = None
+        covar = covar.T
+        covar.index.name = 'IID'
+        covar = covar.reset_index()
+        covar.insert(0, 'FID', 0)  # Family must match that in the genotype files.
+        covar.to_csv(output.plink, sep='\t', index=False, header=False)

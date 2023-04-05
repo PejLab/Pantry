@@ -3,22 +3,23 @@
 
 GENO=$1
 BED=$2
-PHENO=$3
-B_START=$4
-B_END=$5
-OUTDIR=$6
+COVAR=$3
+PHENO=$4
+B_START=$5
+B_END=$6
+OUTDIR=$7
 
 # I don't think set -e can be used because plink has error when no cis-window variants present, in which case this script should skip it and continue.
 # set -e
 
-echo $GENO $BED $PHENO $B_START $B_END $OUTDIR
+echo $GENO $BED $COVAR $PHENO $B_START $B_END $OUTDIR
 
 # PATH TO DIRECTORY CONTAINING LDREF DATA (FROM FUSION WEBSITE or https://data.broadinstitute.org/alkesgroup/FUSION/LDREF.tar.bz2)
 # LDREF="scripts/fusion_twas/LDREF"
 # THIS IS USED TO RESTRICT INPUT SNPS TO REFERENCE IDS ONLY
 mkdir --parents $OUTDIR
 
-# Setting family ID to 0 to match Pantry's plink geno files
+# Setting family ID to 0, which is current plink default when coverting from VCF
 zcat $BED | head -n1 | tr '\t' '\n' | tail -n+5 | awk '{ print 0,$1 }' > $OUTDIR/$PHENO.ID
 
 NR="${B_START}_${B_END}"
@@ -63,14 +64,15 @@ zcat $BED | awk -vs=$B_START -ve=$B_END 'NR >= s + 1 && NR <= e + 1' | while rea
 
 	Rscript scripts/fusion_twas/FUSION.compute_weights.R \
 		--bfile $G_TMP \
+		--covar $COVAR \
 		--tmp $G_TMP.tmp \
 		--out $G_OUT \
 		--verbose 0 \
 		--save_hsq \
 		--PATH_plink plink2 \
-		--PATH_gcta gcta64 \
-		--models lasso,top1,enet
-		# --PATH_gemma gemma \
+		--PATH_gcta ./scripts/fusion_twas/gcta_nr_robust \
+		--PATH_gemma gemma \
+		--models blup,lasso,top1,enet
 
 	# Append heritability output to hsq file
 	if [ -f "$G_OUT.hsq" ]; then

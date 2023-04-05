@@ -28,6 +28,7 @@ BED_FILE <- args[2]
 N_GENO_PCS <- as.integer(args[3])
 N_PHENO_PCS <- as.integer(args[4])
 OUT_FILE <- args[5]
+# OUT_FILE_PLINK <- args[6]
 
 pheno <- read.delim(BED_FILE, check.names = FALSE, row.names = 4)[, -(1:3)]
 if (ncol(pheno) < 2) stop("Computing covariate PCs requires more than 1 sample.")
@@ -42,3 +43,12 @@ geno_pcs$ID <- paste("geno", geno_pcs$ID, sep = "_")
 stopifnot(identical(colnames(geno_pcs), colnames(pheno_pcs)))
 covars <- rbind(geno_pcs, pheno_pcs)
 write.table(covars, OUT_FILE, sep = "\t", quote = FALSE, row.names = FALSE)
+
+# plink <- covars
+# rownames(plink) <- plink$ID
+# plink$ID <- NULL
+# plink <- as.data.frame(t(plink))
+# plink$FID <- "0"
+# plink$IID <- rownames(plink)
+# plink <- plink[, c("FID", "IID", colnames(plink)[1:(ncol(plink) - 2)])]
+# write.table(plink, OUT_FILE_PLINK, sep = "\t", quote = FALSE, row.names = FALSE)
