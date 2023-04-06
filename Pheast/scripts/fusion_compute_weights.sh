@@ -17,22 +17,22 @@ echo $GENO $BED $COVAR $PHENO $B_START $B_END $OUTDIR
 # PATH TO DIRECTORY CONTAINING LDREF DATA (FROM FUSION WEBSITE or https://data.broadinstitute.org/alkesgroup/FUSION/LDREF.tar.bz2)
 # LDREF="scripts/fusion_twas/LDREF"
 # THIS IS USED TO RESTRICT INPUT SNPS TO REFERENCE IDS ONLY
-mkdir --parents $OUTDIR
+mkdir -p $OUTDIR
 
 # Setting family ID to 0, which is current plink default when coverting from VCF
-zcat $BED | head -n1 | tr '\t' '\n' | tail -n+5 | awk '{ print 0,$1 }' > $OUTDIR/$PHENO.ID
+zcat < $BED | head -n1 | tr '\t' '\n' | tail -n+5 | awk '{ print 0,$1 }' > $OUTDIR/$PHENO.ID
 
 NR="${B_START}_${B_END}"
-mkdir --parents $OUTDIR/tmp_$PHENO/$NR
-mkdir --parents $OUTDIR/hsq_$PHENO
+mkdir -p $OUTDIR/tmp_$PHENO/$NR
+mkdir -p $OUTDIR/hsq_$PHENO
 # THIS IS DIRECTORY WHERE THE OUTPUT WILL GO:
-mkdir --parents $OUTDIR/$PHENO
+mkdir -p $OUTDIR/$PHENO
 
 # Create batch hsq file even if empty to indicate the batch has been run
 touch $OUTDIR/tmp_$PHENO/$NR.hsq
 
 # Loop through each phenotype in the batch (and NR starts at 1)
-zcat $BED | awk -vs=$B_START -ve=$B_END 'NR >= s + 1 && NR <= e + 1' | while read PARAM; do
+zcat < $BED | awk -vs=$B_START -ve=$B_END 'NR >= s + 1 && NR <= e + 1' | while read PARAM; do
 
 	# Get the gene positions +/- 500kb
 	CHR=`echo $PARAM | awk '{ print $1 }'`

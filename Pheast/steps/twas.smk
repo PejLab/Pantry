@@ -35,7 +35,7 @@ rule twas_compute_weights_batch:
 def twas_batch_hsq_input(wildcards):
     """Get start and end indices of BED file for TWAS batches."""
     bed = pheno_dir / f'{wildcards.pheno}.bed.gz'
-    n = int(subprocess.check_output(f'zcat {bed} | wc -l', shell=True)) - 1
+    n = int(subprocess.check_output(f'zcat < {bed} | wc -l', shell=True)) - 1
     batch_size = math.ceil(n / TWAS_N_BATCHES)
     # Given the necessary batch size, items might fit into fewer batches:
     n_batches = math.ceil(n / batch_size)
