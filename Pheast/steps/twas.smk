@@ -20,6 +20,8 @@ rule twas_compute_weights_batch:
     params:
         geno_prefix = geno_prefix,
         twas_interm_dir = interm_dir / 'twas',
+    resources:
+        walltime = 8,
     shell:
         """
         sh scripts/fusion_compute_weights.sh \

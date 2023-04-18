@@ -72,7 +72,7 @@ zcat < $BED | awk -vs=$B_START -ve=$B_END 'NR >= s + 1 && NR <= e + 1' | while r
 		--PATH_plink plink2 \
 		--PATH_gcta ./scripts/fusion_twas/gcta_nr_robust \
 		--PATH_gemma gemma \
-		--models blup,lasso,top1,enet
+		--models lasso,top1,enet
 
 	# Append heritability output to hsq file
 	if [ -f "$G_OUT.hsq" ]; then
