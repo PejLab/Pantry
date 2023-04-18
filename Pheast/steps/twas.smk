@@ -2,6 +2,7 @@ localrules:
     twas_pos_file,
 
 TWAS_N_BATCHES = 64
+MAX_BATCH_SIZE = 300
 
 rule twas_compute_weights_batch:
     """Use FUSION to compute TWAS weights from expression and genotypes.
@@ -38,7 +39,7 @@ def twas_batch_hsq_input(wildcards):
     """Get start and end indices of BED file for TWAS batches."""
     bed = pheno_dir / f'{wildcards.pheno}.bed.gz'
     n = int(subprocess.check_output(f'zcat < {bed} | wc -l', shell=True)) - 1
-    batch_size = math.ceil(n / TWAS_N_BATCHES)
+    batch_size = min(math.ceil(n / TWAS_N_BATCHES), MAX_BATCH_SIZE)
     # Given the necessary batch size, items might fit into fewer batches:
     n_batches = math.ceil(n / batch_size)
     for i in range(n_batches):
