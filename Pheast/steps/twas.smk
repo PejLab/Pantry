@@ -15,6 +15,8 @@ rule twas_compute_weights_batch:
         geno = multiext(geno_prefix, '.bed', '.bim', '.fam'),
         bed = pheno_dir / '{pheno}.bed.gz',
         covar = interm_dir / 'covar' / '{pheno}.covar.plink.tsv',
+        gcta = 'scripts/fusion_twas/gcta_nr_robust',
+        gemma = 'scripts/fusion_twas/gemma',
     output:
         # expand(interm_dir / 'twas' / 'weights_{{pheno}}' / '{gene}.wgt.RDat', gene=gene_list),
         interm_dir / 'twas' / 'hsq_{pheno}' / '{batch_start}_{batch_end}.hsq',
@@ -64,9 +66,11 @@ rule twas_assemble_summary:
         twas_interm_dir = interm_dir / 'twas',
     shell:
         """
+        # Avoid using relative path in case intermediate dir is a symlink:
+        scripts_dir="$(realpath scripts)"
         cd {params.twas_interm_dir}
         ls {wildcards.pheno}/*.wgt.RDat > {wildcards.pheno}.list
-        Rscript ../../scripts/fusion_twas/utils/FUSION.profile_wgt.R \
+        Rscript $scripts_dir/fusion_twas/utils/FUSION.profile_wgt.R \
             {wildcards.pheno}.list \
             > {wildcards.pheno}.profile \
             2> {wildcards.pheno}.profile.err

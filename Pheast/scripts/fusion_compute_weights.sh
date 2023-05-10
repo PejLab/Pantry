@@ -28,6 +28,9 @@ mkdir -p $OUTDIR/hsq_$PHENO
 # THIS IS DIRECTORY WHERE THE OUTPUT WILL GO:
 mkdir -p $OUTDIR/$PHENO
 
+if [ -f "$OUTDIR/tmp_$PHENO/$NR.hsq" ]; then
+	rm $OUTDIR/tmp_$PHENO/$NR.hsq
+fi
 # Create batch hsq file even if empty to indicate the batch has been run
 touch $OUTDIR/tmp_$PHENO/$NR.hsq
 
@@ -51,7 +54,7 @@ zcat < $BED | awk -vs=$B_START -ve=$B_END 'NR >= s + 1 && NR <= e + 1' | while r
 	# Omit filtering to LD reference SNPs since the IDs don't match up with those in the Pantry plink files
 		# --extract $LDREF/1000G.EUR.$CHR.bim \
 		# --force-intersect
-	plink2 --bfile $GENO \
+	plink --bfile $GENO \
 		--pheno $G_TMP.pheno \
 		--keep $G_TMP.pheno \
 		--make-bed \
@@ -69,10 +72,10 @@ zcat < $BED | awk -vs=$B_START -ve=$B_END 'NR >= s + 1 && NR <= e + 1' | while r
 		--out $G_OUT \
 		--verbose 0 \
 		--save_hsq \
-		--PATH_plink plink2 \
+		--PATH_plink plink \
 		--PATH_gcta ./scripts/fusion_twas/gcta_nr_robust \
-		--PATH_gemma gemma \
-		--models lasso,top1,enet
+		--PATH_gemma ./scripts/fusion_twas/gemma \
+		--models blup,lasso,top1,enet
 
 	# Append heritability output to hsq file
 	if [ -f "$G_OUT.hsq" ]; then
