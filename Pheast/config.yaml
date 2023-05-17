@@ -8,6 +8,10 @@ phenotype_dir: input/phenotypes
 ## Give the path prefix to genotypes in plink1 (bed/bim/fam) format:
 geno_prefix: input/GEUVADIS.445_samples.GRCh38.chr1
 
+## Provide a list of SNP IDs to include when computing TWAS weights:
+# This is optional, but it is recommended to include only SNPs present in the LD reference used later for TWAS.
+# twas_snps: /path/to/list/of/snps.txt
+
 ## Samples to include:
 samples_file: input/samples.txt
 

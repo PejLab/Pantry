@@ -3,6 +3,27 @@ localrules:
 
 TWAS_N_BATCHES = 64
 MAX_BATCH_SIZE = 300
+twas_geno_prefix = interm_dir / 'twas' / 'geno' if 'twas_snps' in config else geno_prefix
+twas_snps = Path(config['twas_snps']) if 'twas_snps' in config else ''
+
+rule twas_geno:
+    """Subset genotypes to SNPs used in TWAS LD reference panel."""
+    input:
+        geno = multiext(geno_prefix, '.bed', '.bim', '.fam'),
+        snps = twas_snps,
+    output:
+        multiext(str(interm_dir / 'twas' / 'geno'), '.bed', '.bim', '.fam'),
+    params:
+        in_geno_prefix = geno_prefix,
+        out_geno_prefix = interm_dir / 'twas' / 'geno',
+    shell:
+        """
+        plink \
+            --bfile {params.in_geno_prefix} \
+            --extract {input.snps} \
+            --make-bed \
+            --out {params.out_geno_prefix}
+        """
 
 rule twas_compute_weights_batch:
     """Use FUSION to compute TWAS weights from expression and genotypes.
@@ -12,7 +33,7 @@ rule twas_compute_weights_batch:
     which we end up with outputs are not known until the rule is run.
     """
     input:
-        geno = multiext(geno_prefix, '.bed', '.bim', '.fam'),
+        geno = multiext(str(twas_geno_prefix), '.bed', '.bim', '.fam'),
         bed = pheno_dir / '{pheno}.bed.gz',
         covar = interm_dir / 'covar' / '{pheno}.covar.plink.tsv',
         gcta = 'scripts/fusion_twas/gcta_nr_robust',
@@ -21,14 +42,14 @@ rule twas_compute_weights_batch:
         # expand(interm_dir / 'twas' / 'weights_{{pheno}}' / '{gene}.wgt.RDat', gene=gene_list),
         interm_dir / 'twas' / 'hsq_{pheno}' / '{batch_start}_{batch_end}.hsq',
     params:
-        geno_prefix = geno_prefix,
+        twas_geno_prefix = twas_geno_prefix,
         twas_interm_dir = interm_dir / 'twas',
     resources:
         walltime = 8,
     shell:
         """
         sh scripts/fusion_compute_weights.sh \
-            {params.geno_prefix} \
+            {params.twas_geno_prefix} \
             {input.bed} \
             {input.covar} \
             {wildcards.pheno} \
