@@ -19,6 +19,11 @@ genome_size: 3e9
 # Path to intermediate file directory, in case you don't want it inside this project directory due to its size:
 # This directory will be created if it doesn't exist, and will contain any generated (i.e. not input) BAM, FASTQ, and all other files besides the final phenotype outputs.
 intermediate_dir: intermediate
+# Path to directory where intermediate reference files will be created:
+# This will be in the intermediate dir by default, but can be specified to be outside the project dir.
+# This could be useful if running multiple datasets with the same parameters, allowing the intermediate
+# reference files to be generated once and shared by all the dataset runs.
+# intermediate_ref_dir: intermediate/reference
 
 ## Phenotypes
 # List the phenotype categories to extract, with list of expected output files for each.

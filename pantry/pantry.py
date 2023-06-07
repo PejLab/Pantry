@@ -57,6 +57,7 @@ def process_config(config: dict):
         'ref_anno',
         'samples_file',
         'intermediate_dir',
+        'intermediate_ref_dir',
     ]
     for path in paths:
         if path in config.keys():
@@ -67,5 +68,7 @@ def process_config(config: dict):
 
     if 'intermediate_dir' not in config:
         config['intermediate_dir'] = Path('intermediate')
+    if 'intermediate_ref_dir' not in config:
+        config['intermediate_ref_dir'] = config['intermediate_dir'] / 'reference'
 
     config['fastq_map'] = load_fastq_map(config['fastq_map'], config['fastq_dir'], config['paired_end'])

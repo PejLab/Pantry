@@ -10,7 +10,7 @@ pantry.validate_config(config)
 pantry.process_config(config)
 
 interm_dir = config['intermediate_dir']
-ref_dir = interm_dir / 'reference' # For newly generated reference files only
+ref_dir = config['intermediate_ref_dir']
 output_dir = Path('output')
 
 samples_file = config['samples_file']
