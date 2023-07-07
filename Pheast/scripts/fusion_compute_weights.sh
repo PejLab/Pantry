@@ -51,7 +51,7 @@ zcat < $BED | awk -vs=$B_START -ve=$B_END 'NR >= s + 1 && NR <= e + 1' | while r
 	echo $PARAM | tr ' ' '\n' | tail -n+5 | paste $OUTDIR/$PHENO.ID - > $G_TMP.pheno
 
 	# Get the locus genotypes for all samples and set current gene expression as the phenotype
-	# Omit filtering to LD reference SNPs since the IDs don't match up with those in the Pantry plink files
+	# Omit filtering to LD reference SNPs. Instead, Pantry does optional pre-filtering.
 		# --extract $LDREF/1000G.EUR.$CHR.bim \
 		# --force-intersect
 	plink --bfile $GENO \

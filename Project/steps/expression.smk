@@ -29,7 +29,9 @@ rule kallisto:
         out_dir = str(interm_dir / 'expression' / '{sample_id}'),
         single_end_flag = '' if paired_end else '--single',
         # TODO add strandedness parameter
-    threads: 8
+    threads: 16
+    resources:
+        walltime = 8,
     shell:
         """
         mkdir -p {params.expr_dir}
