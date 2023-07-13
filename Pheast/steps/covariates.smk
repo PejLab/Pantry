@@ -54,6 +54,7 @@ rule plink_covariates:
     """Convert covariates to PLINK format."""
     input:
         covar = interm_dir / 'covar' / '{pheno}.covar.tsv',
+        fam = f'{geno_prefix}.fam',
     output:
         plink = interm_dir / 'covar' / '{pheno}.covar.plink.tsv',
     run:
@@ -62,5 +63,10 @@ rule plink_covariates:
         covar = covar.T
         covar.index.name = 'IID'
         covar = covar.reset_index()
-        covar.insert(0, 'FID', 0)  # Family must match that in the genotype files.
+        # covar.insert(0, 'FID', 0)  # Family must match that in the genotype files.
+        ## Get FIDs from genotypes:
+        fam = pd.read_csv(input.fam, sep='\t', header=None, index_col=1)
+        fam = fam.to_dict()[0]
+        ## Insert FIDs as first column of covar, joining by IID:
+        covar.insert(0, 'FID', covar['IID'].map(fam))
         covar.to_csv(output.plink, sep='\t', index=False, header=False)
