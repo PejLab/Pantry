@@ -31,7 +31,7 @@ rule kallisto:
         # TODO add strandedness parameter
     threads: 16
     resources:
-        walltime = 8,
+        walltime = 16,
     shell:
         """
         mkdir -p {params.expr_dir}

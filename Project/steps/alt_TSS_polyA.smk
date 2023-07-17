@@ -116,7 +116,7 @@ rule alt_TSS_polyA_kallisto:
         # TODO add strandedness parameter
     threads: 16
     resources:
-        walltime = 8,
+        walltime = 16,
     shell:
         """
         mkdir -p {params.alt_group_pos_dir}
