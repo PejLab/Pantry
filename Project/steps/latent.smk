@@ -1,3 +1,6 @@
+MODALITIES_FOR_LATENT = ['expression', 'isoforms', 'splicing', 'alt_TSS', 'alt_polyA', 'stability']
+N_BATCHES = 1000 # After getting gene bins, count unique genes, divide by batch size, and round up to set N_BATCHES
+
 localrules:
     get_chrom_lengths,
     latent_pheno_groups,
@@ -7,74 +10,159 @@ rule get_chrom_lengths:
     input:
         lambda w: f'{ref_genome}.fai',
     output:
-        ref_dir / 'chr_lengths.genome',
+        ref_dir / 'latent' / 'chr_lengths.genome',
     shell:
         'cut -f1,2 {input} > {output}'
+
+rule collapse_annotation:
+    """Merge the exons for all isoforms of a gene into one set of non-overlapping exon regions."""
+    input:
+        ref_anno,
+    output:
+        ref_dir / 'latent' / 'collapsed.gtf',
+    shell:
+        'python scripts/latent-rna/scripts/collapse_annotation.py {input} {output} --collapse_only'
 
 rule get_gene_bins:
     """Divide gene features into bins"""
     input:
-        ref_anno = ref_anno,
-        chrom = ref_dir / 'chr_lengths.genome',
+        gtf = ref_dir / 'latent' / 'collapsed.gtf',
+        chrom = ref_dir / 'latent' / 'chr_lengths.genome',
     output:
-        ref_dir / 'gene_bins.bed.gz',
+        ref_dir / 'latent' / 'gene_bins.bed.gz',
     params:
         n_bins = 10,
-        bed = ref_dir / 'gene_bins.bed',
     shell:
         """
-        python3 scripts/get_gene_bins.py \
-            -g {input.ref_anno} \
-            -c {input.chrom} \
-            -n {params.n_bins} \
-            -o {params.bed}
-        bgzip {params.bed}
+        python3 scripts/latent-rna/scripts/get_gene_bins.py \
+            --gtf {input.gtf} \
+            --chromosomes {input.chrom} \
+            --n-bins {params.n_bins} \
+            --output {output}
         """
 
 rule bedtools_coverage:
     """Get RNA-Seq read coverage for feature bins"""
     input:
         bam = interm_dir / 'bam' / '{sample_id}.bam',
-        bed = ref_dir / 'gene_bins.bed.gz',
-        chrom = ref_dir / 'chr_lengths.genome',
+        bed = ref_dir / 'latent' / 'gene_bins.bed.gz',
+        chrom = ref_dir / 'latent' / 'chr_lengths.genome',
     output:
-        interm_dir / 'latent' / '{sample_id}.bed.gz',
+        interm_dir / 'latent' / 'covg_sample' / '{sample_id}.txt',
     params:
-        latent_dir = interm_dir / 'latent',
+        covg_sample_dir = interm_dir / 'latent' / 'covg_sample',
     shell:
         # -split is necessary I think to avoid counting coverage between spliced exons
         """
-        mkdir -p {params.latent_dir}
+        mkdir -p {params.covg_sample_dir}
         bedtools coverage -split -sorted -counts \
             -a {input.bed} \
             -b {input.bam} \
             -g {input.chrom} \
-            | bgzip -c > {output}
+            | cut -f7 > {output}
         """
 
-rule assemble_latent_bed:
-    """Run PCA on feature bin coverage and create BED file"""
+rule prepare_coverage_full:
+    """Assemble per-sample coverage count files, normalize, and bin into batches for PCA
+    
+    The flag output can be listed in the config so coverage for multiple datasets can be
+    generated in preparation for model fitting across all datasets.
+    """
     input:
-        beds = expand(str(interm_dir / 'latent' / '{sample_id}.bed.gz'), sample_id=samples),
-        ref_anno = ref_anno,
+        covg_sample = lambda w: expand(str(interm_dir / 'latent' / 'covg_sample' / '{sample_id}.txt'), sample_id=samples),
+        bins = ref_dir / 'latent' / 'gene_bins.bed.gz',
     output:
-        interm_dir / 'unnorm' / 'latent.bed',
+        covg = expand(str(interm_dir / 'latent' / 'covg_batch_full' / 'covg_{batch}.npy'), batch=range(N_BATCHES)),
+        regions = expand(str(interm_dir / 'latent' / 'covg_batch_full' / 'covg_{batch}.regions.tsv.gz'), batch=range(N_BATCHES)),
+        flag = touch(str(output_dir / 'latent_full.coverage_done')),
     params:
-        unnorm_dir = interm_dir / 'unnorm',
-        bedfile_list = interm_dir / 'latent' / 'bedfiles.txt',
-        var_expl_max = 0.80,
-        n_pcs_max = 32,
+        covg_batch_dir = str(interm_dir / 'latent' / 'covg_batch_full'),
+        covg_file_list = str(interm_dir / 'latent' / 'covg_sample_files.txt'),
+        batch_size = 200,
     shell:
         """
-        mkdir -p {params.unnorm_dir}
-        printf '%s\\n' {input.beds} > {params.bedfile_list}
-        python3 scripts/get_PC_features.py \
-            -i {params.bedfile_list} \
-            -g {input.ref_anno} \
-            -v {params.var_expl_max} \
-            -n {params.n_pcs_max} \
-            -o {output}
+        mkdir -p {params.covg_batch_dir}
+        printf '%s\\n' {input.covg_sample} > {params.covg_file_list}
+        python scripts/latent-rna/latent_RNA.py prepare \
+            --inputs {params.covg_file_list} \
+            --regions {input.bins} \
+            --output-dir {params.covg_batch_dir} \
+            --batch-size {params.batch_size}
         """
+
+rule prepare_coverage_residual:
+    """Assemble per-sample coverage count files, normalize, regress out explicit phenotypes, and bin into batches for PCA
+    
+    The flag output can be listed in the config so coverage for multiple datasets can be
+    generated in preparation for model fitting across all datasets.
+    """
+    input:
+        covg_sample = lambda w: expand(str(interm_dir / 'latent' / 'covg_sample' / '{sample_id}.txt'), sample_id=samples),
+        bins = ref_dir / 'latent' / 'gene_bins.bed.gz',
+        phenos = expand(output_dir / '{modality}.bed.gz', modality=MODALITIES_FOR_LATENT),
+    output:
+        covg = expand(str(interm_dir / 'latent' / 'covg_batch_residual' / 'covg_{batch}.npy'), batch=range(N_BATCHES)),
+        regions = expand(str(interm_dir / 'latent' / 'covg_batch_residual' / 'covg_{batch}.regions.tsv.gz'), batch=range(N_BATCHES)),
+        flag = touch(str(output_dir / 'latent_residual.coverage_done')),
+    params:
+        covg_batch_dir = str(interm_dir / 'latent' / 'covg_batch_residual'),
+        covg_file_list = str(interm_dir / 'latent' / 'covg_sample_files.txt'),
+        phenos_list = str(interm_dir / 'latent' / 'pheno_files.txt'),
+        batch_size = 200,
+    shell:
+        """
+        mkdir -p {params.covg_batch_dir}
+        printf '%s\\n' {input.covg_sample} > {params.covg_file_list}
+        printf '%s\\n' {input.phenos} > {params.phenos_list}
+        python scripts/latent-rna/latent_RNA.py prepare \
+            --inputs {params.covg_file_list} \
+            --regions {input.bins} \
+            --pheno-paths-file {params.phenos_list} \
+            --output-dir {params.covg_batch_dir} \
+            --batch-size {params.batch_size}
+        """
+
+rule get_latent_phenotypes:
+    """Apply PCA models to generate latent phenotypes"""
+    input:
+        covg_batch = expand(str(interm_dir / 'latent' / 'covg_batch_{{version}}' / 'covg_{batch}.npy'), batch=range(N_BATCHES)),
+        models = expand(str(ref_dir / 'latent' / 'models_{{version}}' / 'models_{batch}.pickle'), batch=range(N_BATCHES)),
+    output:
+        phenos = interm_dir / 'latent' / 'latent_{version}.tsv.gz',
+    params:
+        covg_batch_dir = str(interm_dir / 'latent' / 'covg_batch_{version}'),
+        models_dir = str(ref_dir / 'latent' / 'models_{version}'),
+    shell:
+        """
+        python scripts/latent-rna/latent_RNA.py transform \
+            --batch-covg-dir {params.covg_batch_dir} \
+            --models-dir {params.models_dir} \
+            --output {output}
+        """
+
+# rule assemble_latent_bed:
+#     """Run PCA on feature bin coverage and create BED file"""
+#     input:
+#         beds = expand(str(interm_dir / 'latent' / '{sample_id}.bed.gz'), sample_id=samples),
+#         ref_anno = ref_anno,
+#     output:
+#         interm_dir / 'unnorm' / 'latent.bed',
+#     params:
+#         unnorm_dir = interm_dir / 'unnorm',
+#         bedfile_list = interm_dir / 'latent' / 'bedfiles.txt',
+#         var_expl_max = 0.80,
+#         n_pcs_max = 32,
+#     shell:
+#         """
+#         mkdir -p {params.unnorm_dir}
+#         printf '%s\\n' {input.beds} > {params.bedfile_list}
+#         python3 scripts/get_PC_features.py \
+#             -i {params.bedfile_list} \
+#             -g {input.ref_anno} \
+#             -v {params.var_expl_max} \
+#             -n {params.n_pcs_max} \
+#             -o {output}
+#         """
 
 rule normalize_latent:
     """Quantile-normalize values for QTL mapping"""
@@ -108,39 +196,3 @@ rule latent_pheno_groups:
             | awk '{{ g=$1; sub(/:.*$/, "", g); print $1 "\t" g }}' \
             > {output}
         """
-
-
-# rule get_genome_coverage:
-#     """Get RNA-Seq read coverage"""
-#     input:
-#         project_dir / 'bam' / '{sample_id}.Aligned.sortedByCoord.out.bam',
-#     output:
-#         project_dir / 'latent' / '{sample_id}.bedgraph',
-#     params:
-#         latent_dir = project_dir / 'latent',
-#     shell:
-#         # -split is necessary I think to avoid counting coverage between spliced exons
-#         """
-#         mkdir -p {params.latent_dir}
-#         bedtools genomecov -trackline -bg -split \
-#             -ibam {input} \
-#             | bedtools sort \
-#             > {output}
-#         """
-
-# rule coverage_for_gene_bins:
-#     """Extract coverage for bins of gene feature regions"""
-#     input:
-#         bedgraph = project_dir / 'latent' / '{sample_id}.bedgraph',
-#         regions = ref_dir / 'gene_bins.tsv.gz',
-#         chr_lengths = ref_dir / 'chr_lengths.genome',
-#     output:
-#         project_dir / 'latent' / '{sample_id}.bin_covg.txt.gz',
-#     shell:
-#         """
-#         python3 TURNAP/src/region_coverage.py \
-#             -b {input.bedgraph} \
-#             -r {input.regions} \
-#             -c {input.chr_lengths} \
-#             -o {output}
-#         """
