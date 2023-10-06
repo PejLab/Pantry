@@ -1,8 +1,8 @@
 # Pantry
 
-Pantry (PAN-TRanscriptome phenotYping) is a framework for generating molecular phenotypes from RNA-Seq. Existing tools have been developed to generate different transcriptomic phenotypes, and Pantry allows you to run them with full flexibility in a convenient and organized process. The goal is to make molecular QTL mapping and other analyses as easy to perform for a multitude of transcriptomic phenotypes as for basic gene expression only.
+Pantry (PAN-TRanscriptome phenotYping) is a framework for generating molecular phenotypes from RNA-Seq. Existing tools have been developed to generate different modalities of transcriptomic phenotypes, and Pantry allows you to run them with full flexibility in a convenient and organized process. The goal is to make molecular QTL mapping and other analyses as easy to perform for a multitude of transcriptomic phenotype modalities as for basic gene expression only.
 
-A project is specified with a config file containing general parameters, e.g. paths to FASTQ and reference annotation file, single-end or paired-end, and strandedness. It also lists the phenotypes to generate.
+A project is specified with a config file containing general parameters, e.g. paths to FASTQ and reference annotation file, single-end or paired-end, and strandedness. It also lists the modalities to generate.
 
 ## Installation
 
@@ -14,9 +14,9 @@ git clone https://github.com/daniel-munro/Pantry.git
 
 ## Code
 
-The `Project/` directory is a template for a project. To run Pantry on a dataset, copy the contents of `Project/` to a new directory that you can write to. Your project directory now contains all the data processing code, so that if you modify it or add custom phenotypes, you have a record of it that stays with the results and is not automatically changed by package updates or other projects.
+The `Project/` directory is a template for a project. To run Pantry on a dataset, copy the contents of `Project/` to a new directory that you can write to. Your project directory now contains all the data processing code, so that if you modify it or add custom modalities, you have a record of it that stays with the results and is not automatically changed by package updates or other projects.
 
-The commands and code to run the steps are given in [Snakemake](https://snakemake.github.io/) files, located by default in `Project/steps/`. This package includes sensible defaults for a set of tools, but you can edit the commands and add new phenotypes.
+The commands and code to run the steps are given in [Snakemake](https://snakemake.github.io/) files, located by default in `Project/steps/`. This package includes sensible defaults for a set of tools, but you can edit the commands and add new modalities.
 
 The goal of a project is to generate phenotype tables for a set of samples. Each tool could involve any combination of:
 
@@ -25,11 +25,11 @@ The goal of a project is to generate phenotype tables for a set of samples. Each
 - Intermediate steps requiring data from all samples, e.g. clustering
 - Final assembly of all results into a phenotype table
 
-Each file in `steps/` contains all of these steps for one phenotype category, or multiple categories produced in a similar way. Snakemake looks at the inputs and outputs for each rule and figures out the order and number of times to run each one.
+Each file in `steps/` contains all of these steps for one modality, or multiple modalities produced in a similar way. Snakemake looks at the inputs and outputs for each rule and figures out the order and number of times to run each step.
 
 ## Config file
 
-The config file is a file in YAML format specifying general parameters, input files, and phenotypes to generate. The project template directory includes a config, which is for a small example dataset and a small subset of the human reference:
+The config file is a file in YAML format specifying general parameters, input files, and modalities to generate. The project template directory includes a config, which is for a small example dataset and a small subset of the human reference:
 
 ```yaml
 ## Raw RNA-Seq data
@@ -81,7 +81,7 @@ FASTQ files must be compressed (decompressible with `zcat`) unless you modify th
 
 ## Running from the command line
 
-Phenotypes are usually computed by running one subprocess per phenotype category per sample. Within the specified output directory, one directory will be created for each phenotype category, containing intermediate (often per-sample) files from each program. These data will then be combined into one BED file per phenotype group so that QTL mapping can be run separately for each.
+Phenotypes are usually computed by running one subprocess per modality per sample. Within the specified output directory, one directory will be created for each modality, containing intermediate (often per-sample) files from each program. These data will then be combined into one BED file per phenotype group so that QTL mapping can be run separately for each.
 
 All this is done using Snakemake, so general guides to using Snakemake can be found online to learn its features. For example, you can specify a profile that determines how steps get run, and is different from the project config file described above. Here is an example profile config for use on a computing cluster with slurm scheduling:
 
@@ -90,8 +90,10 @@ All this is done using Snakemake, so general guides to using Snakemake can be fo
 ```yaml
 use-conda: true
 cluster: "sbatch -t {resources.walltime}:00:00 --mem={resources.mem_mb} -c {threads} {resources.partition} --mail-type=FAIL --mail-user=myemail@address.edu"
-default-resources: [walltime=1, mem_mb=4000, partition=""]
-# partition should be e.g. "--partition=gpu"
+default-resources: [walltime=4, mem_mb=4000, partition=""]
+# partition should either be empty string for default or something like "--partition=gpu"
+latency-wait: 60
+cluster-cancel: scancel
 ```
 
 Resources are specified within some of the snakemake rules, which are plugged into this command and automatically submitted as cluster jobs.

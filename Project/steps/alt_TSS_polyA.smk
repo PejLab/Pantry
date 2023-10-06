@@ -168,6 +168,7 @@ rule normalize_alt_TSS_polyA:
         bed = str(output_dir / 'alt_{type}.bed'),
     shell:
         """
+        mkdir -p {output_dir}
         python3 scripts/normalize_phenotypes.py \
             --input {input.bed} \
             --samples {input.samples} \

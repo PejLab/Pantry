@@ -4,6 +4,7 @@ __pycache__
 Project/input/*
 Project/intermediate/*
 Project/output/*
+Project/scripts/latent-rna
 Pheast/input/*
 Pheast/intermediate/*
 Pheast/output/*

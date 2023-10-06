@@ -80,6 +80,7 @@ rule normalize_splicing:
         bed = output_dir / 'splicing.bed',
     shell:
         """
+        mkdir -p {output_dir}
         python3 scripts/normalize_phenotypes.py \
             --input {input.bed} \
             --samples {input.samples} \

@@ -140,41 +140,37 @@ rule get_latent_phenotypes:
             --output {output}
         """
 
-# rule assemble_latent_bed:
-#     """Run PCA on feature bin coverage and create BED file"""
-#     input:
-#         beds = expand(str(interm_dir / 'latent' / '{sample_id}.bed.gz'), sample_id=samples),
-#         ref_anno = ref_anno,
-#     output:
-#         interm_dir / 'unnorm' / 'latent.bed',
-#     params:
-#         unnorm_dir = interm_dir / 'unnorm',
-#         bedfile_list = interm_dir / 'latent' / 'bedfiles.txt',
-#         var_expl_max = 0.80,
-#         n_pcs_max = 32,
-#     shell:
-#         """
-#         mkdir -p {params.unnorm_dir}
-#         printf '%s\\n' {input.beds} > {params.bedfile_list}
-#         python3 scripts/get_PC_features.py \
-#             -i {params.bedfile_list} \
-#             -g {input.ref_anno} \
-#             -v {params.var_expl_max} \
-#             -n {params.n_pcs_max} \
-#             -o {output}
-#         """
+rule assemble_latent_bed:
+    """Add gene info to latent phenotypes to generate BED file"""
+    input:
+        phenos = interm_dir / 'latent' / 'latent_{version}.tsv.gz',
+        ref_anno = ref_anno,
+    output:
+        interm_dir / 'unnorm' / 'latent_{version}.bed',
+    params:
+        unnorm_dir = interm_dir / 'unnorm',
+    shell:
+        """
+        mkdir -p {params.unnorm_dir}
+        python3 scripts/assemble_bed.py \
+            --type latent \
+            --input {input.phenos} \
+            --ref_anno {input.ref_anno} \
+            --output {output.bed}
+        """
 
 rule normalize_latent:
     """Quantile-normalize values for QTL mapping"""
     input:
-        bed = interm_dir / 'unnorm' / 'latent.bed',
+        bed = interm_dir / 'unnorm' / 'latent_{version}.bed',
         samples = samples_file,
     output:
-        output_dir / 'latent.bed.gz',
+        output_dir / 'latent_{version}.bed.gz',
     params:
-        bed = output_dir / 'latent.bed',
+        bed = output_dir / 'latent_{version}.bed',
     shell:
         """
+        mkdir -p {output_dir}
         python3 scripts/normalize_phenotypes.py \
             --input {input.bed} \
             --samples {input.samples} \
@@ -185,9 +181,9 @@ rule normalize_latent:
 rule latent_pheno_groups:
     """Group phenotypes by gene for tensorQTL"""
     input:
-        output_dir / 'latent.bed.gz',
+        output_dir / 'latent_{version}.bed.gz',
     output:
-        output_dir / 'latent.phenotype_groups.txt',
+        output_dir / 'latent_{version}.phenotype_groups.txt',
     shell:
         """
         zcat < {input} \

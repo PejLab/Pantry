@@ -149,6 +149,16 @@ def assemble_expression(sample_ids: list, kallisto_dir: Path, units: str, ref_an
     df_gene = df_gene[['#chr', 'start', 'end', 'phenotype_id'] + sample_ids]
     df_gene.to_csv(bed_gene, sep='\t', index=False, float_format='%g')
 
+def assemble_latent(data: Path, ref_anno: Path, bed: Path):
+    """Convert latent RNA phenotyping output into BED file"""
+    df = pd.read_csv(data, sep='\t')
+    sample_ids = list(df.columns[2:])
+    anno = load_tss(ref_anno)
+    df = anno.merge(df, on='gene_id', how='inner')
+    df['phenotype_id'] = df['gene_id'] + ':' + df['PC']
+    df = df[['#chr', 'start', 'end', 'phenotype_id'] + sample_ids]
+    df.to_csv(bed, sep='\t', index=False, float_format='%g')
+
 def assemble_splicing(counts: Path, ref_anno: Path, bed: Path, min_frac: float = 0.05, max_frac: float = 0.95):
     """Convert leafcutter output into splicing BED file"""
     df = pd.read_csv(counts, sep=' ')
@@ -199,7 +209,7 @@ def assemble_stability(sample_ids: list, stab_dir: Path, ref_anno: Path, bed: Pa
     df.to_csv(bed, sep='\t', index=False, float_format='%g')
 
 parser = argparse.ArgumentParser(description='Assemble data into an RNA phenotype BED file')
-parser.add_argument('--type', choices=['alt_TSS_polyA', 'expression', 'splicing', 'stability'], required=True, help='Type of data to assemble')
+parser.add_argument('--type', choices=['alt_TSS_polyA', 'expression', 'latent', 'splicing', 'stability'], required=True, help='Type of data to assemble')
 parser.add_argument('--input', type=Path, required=False, help='Input file, for phenotype groups in which all data is already in a single file')
 parser.add_argument('--input-dir', type=Path, required=False, help='Directory containing input files, for phenotype groups with per-sample input files')
 parser.add_argument('--input-dir2', type=Path, required=False, help='Second input directory, for phenotype groups with per-sample input files in two directories')
@@ -216,6 +226,8 @@ if args.type == 'alt_TSS_polyA':
     assemble_alt_TSS_polyA(samples, args.input_dir, args.input_dir2, 'tpm', args.ref_anno, args.output, min_frac=0.05, max_frac=0.95)
 elif args.type == 'expression':
     assemble_expression(samples, args.input_dir, 'tpm', args.ref_anno, args.output, args.output2, min_count=10, min_frac=0.05, max_frac=0.95)
+elif args.type == 'latent':
+    assemble_latent(args.input, args.ref_anno, args.output)
 elif args.type == 'splicing':
     assemble_splicing(args.input, args.ref_anno, args.output, min_frac=0.05, max_frac=0.95)
 elif args.type == 'stability':

@@ -82,6 +82,7 @@ rule normalize_stability:
         bed = output_dir / 'stability.bed',
     shell:
         """
+        mkdir -p {output_dir}
         python3 scripts/normalize_phenotypes.py \
             --input {input.bed} \
             --samples {input.samples} \
