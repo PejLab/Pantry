@@ -146,7 +146,7 @@ rule assemble_latent_bed:
         phenos = interm_dir / 'latent' / 'latent_{version}.tsv.gz',
         ref_anno = ref_anno,
     output:
-        interm_dir / 'unnorm' / 'latent_{version}.bed',
+        bed = interm_dir / 'unnorm' / 'latent_{version}.bed',
     params:
         unnorm_dir = interm_dir / 'unnorm',
     shell:
@@ -167,7 +167,7 @@ rule normalize_latent:
     output:
         output_dir / 'latent_{version}.bed.gz',
     params:
-        bed = output_dir / 'latent_{version}.bed',
+        bed = str(output_dir / 'latent_{version}.bed'),
     shell:
         """
         mkdir -p {output_dir}
