@@ -24,16 +24,19 @@ def read_hsq_stats(hsq_file):
 parser = argparse.ArgumentParser(description='Run plink and gcta to calculate heritability per phenotype.')
 parser.add_argument('--bed', '-i', type=Path, help='The input BED file.')
 parser.add_argument('--geno', type=str, help='Prefix of plink (bed, bim, fam) genotype files.')
-parser.add_argument('--covar', type=Path, help='Covariates file (TSV, first column is covariate names).')
+parser.add_argument('--covar', type=Path, help='Covariates file (TSV, plink format, no header, first two columns are family and individual ID).')
 parser.add_argument('--chrom', type=str, help='If provided, only include phenotypes on this chromosome.')
+parser.add_argument('--batch', type=int, help='If provided, only include phenotypes in this batch. Currently this must be an integer 0-9, and phenotypes for which the last digit of the TSS position matches will be included.')
 parser.add_argument('--grm-dir', type=Path, help='The directory that contains or will contain GRM files.')
 parser.add_argument('--tmp-dir', type=Path, help='The directory that intermediate files will be written to.')
 parser.add_argument('--output', '-o', type=Path, help='The output file (TSV).')
 args = parser.parse_args()
 
 df = pd.read_csv(args.bed, sep='\t', index_col='phenotype_id', dtype={'#chr': str, 'start': int, 'end': int})
-if args.chrom:
+if args.chrom is not None:
     df = df[df['#chr'] == args.chrom]
+if args.batch is not None:
+    df = df[df['end'].astype('string').str[-1] == str(args.batch)]
 pos = df[['#chr', 'end']].copy()
 pos['pos_min'] = pos['end'] - 250000
 pos['pos_min'] = pos['pos_min'].mask(pos['pos_min'] < 1, 1)
@@ -45,14 +48,6 @@ df.index.name = 'sample'
 phenos = list(df.columns)
 df = df.reset_index()
 df.insert(0, 'family', 0)  # Family must match that in the genotype files.
-
-covar = pd.read_csv(args.covar, sep='\t', index_col=0)
-covar.index.name = None
-covar = covar.T
-covar.index.name = 'sample'
-covar = covar.reset_index()
-covar.insert(0, 'family', 0)  # Family must match that in the genotype files.
-covar.to_csv(args.tmp_dir / 'covar.tsv', sep='\t', index=False, header=False)
 
 stats = {}
 for pheno in phenos:
@@ -82,7 +77,7 @@ for pheno in phenos:
         'gcta64',
         '--grm', grm,
         '--pheno', f'{prefix}.pheno',
-        '--qcovar', args.tmp_dir / 'covar.tsv',
+        '--qcovar', args.covar,
         '--reml',
         '--reml-no-constrain',
         '--out', f'{prefix}.covar_h2',
