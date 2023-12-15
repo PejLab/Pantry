@@ -4,6 +4,17 @@ Pantry (PAN-TRanscriptome phenotYping) is a framework for generating molecular p
 
 A project is specified with a config file containing general parameters, e.g. paths to FASTQ and reference annotation file, single-end or paired-end, and strandedness. It also lists the modalities to generate.
 
+## Modalities
+
+Currently Pantry generates RNA phenotypes for six modalities, grouped into four Snakemake modules that run the following tools:
+
+- `alt_TSS_polyA.smk`: Alternative TSS and polyA site usage, quantified using [txrevise](https://github.com/kauralasoo/txrevise) followed by [kallisto](https://pachterlab.github.io/kallisto/).
+- `expression.smk`: Gene-level expression and isoform ratios, quantified using [kallisto](https://pachterlab.github.io/kallisto/), then summing expression over all isoforms per gene for the former, and normalizing to proportion per gene for the latter.
+- `splicing.smk`: Intron excision ratio, quantified using [RegTools](https://regtools.readthedocs.io/en/latest/) followed by [leafCutter](https://davidaknowles.github.io/leafcutter/).
+- `stability.smk`: RNA stability, quantified using [Subread featureCounts](http://subread.sourceforge.net/) to count reads from constitutive exons and all introns and using their ratio.
+
+**Contact us** if you have a method for an additional modality that you would like to add to Pantry. Your collaboration will result in authorship on a subsequent Pantry publication.
+
 ## Installation
 
 It is recommended to install Pantry by cloning or downloading the repository, since you will then need to copy the project template directory for your own analysis. If using a conda environment, hold off on installing the Pantry Python package until the conda environment has been created and activated.
