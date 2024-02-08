@@ -13,6 +13,10 @@ def load_tss(ref_anno: Path) -> pd.DataFrame:
     coordinates are 0-based and chromEnd is just chromStart + 1.
     """
     anno = read_gtf(ref_anno)
+    # Newer versions return a polars DF by default, but not all versions allow
+    # return type to be specified, so this handles older and newer versions:
+    if type(anno).__module__ == 'polars.dataframe.frame':
+        anno = anno.to_pandas()
     anno = anno.loc[anno['feature'] == 'gene', :]
     anno['chromEnd'] = np.where(anno['strand'] == '+', anno['start'], anno['end'])
     anno['chromStart'] = anno['chromEnd'] - 1  # BED coordinates are 0-based
@@ -29,6 +33,8 @@ def load_exons(ref_anno: Path) -> pd.DataFrame:
     Returns exons with start and end oriented on the gene's strand.
     """
     anno = read_gtf(ref_anno)
+    if type(anno).__module__ == 'polars.dataframe.frame':
+        anno = anno.to_pandas()
     anno = anno.loc[anno['feature'] == 'exon', :]
     anno['chrom'] = anno['seqname']
     anno['exonStart'] = np.where(anno['strand'] == '+', anno['start'], anno['end'])
@@ -38,6 +44,8 @@ def load_exons(ref_anno: Path) -> pd.DataFrame:
 def transcript_to_gene_map(ref_anno: Path) -> pd.DataFrame:
     """Load transcript IDs and corresponding gene IDs from GTF file"""
     anno = read_gtf(ref_anno)
+    if type(anno).__module__ == 'polars.dataframe.frame':
+        anno = anno.to_pandas()
     anno = anno.loc[anno['feature'] == 'transcript', :]
     return anno[['gene_id', 'transcript_id']]
 

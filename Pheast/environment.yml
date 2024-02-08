@@ -1,0 +1,15 @@
+name: pheast
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - bioconductor-impute
+  - bioconductor-qvalue
+  - bioconductor-variantannotation
+  - pip
+  - plink2=2
+  - rpy2
+  - snakemake
+  - pip:
+    - tensorqtl

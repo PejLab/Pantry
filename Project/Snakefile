@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pantry
 
-configfile: 'config.yaml'
+configfile: 'config.yml'
 
 pantry.validate_config(config)
 pantry.process_config(config)

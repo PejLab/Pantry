@@ -1,0 +1,23 @@
+name: pantry
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - bedtools
+  - gffread  # for txrevise
+  - graphviz  # for plotting pipeline diagrams
+  - gtfparse
+  - htslib # for bgzip
+  - kallisto
+  - pysam=0.16.0.1
+  - r-tidyverse # for txrevise
+  - r-optparse  # for txrevise
+  - r-txrevise
+  - regtools
+  - rsem
+  - scikit-learn
+  - snakemake
+  - star
+  - subread
+  - telescope

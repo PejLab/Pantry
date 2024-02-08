@@ -4,7 +4,7 @@ import pandas as pd
 import pantry
 import subprocess
 
-configfile: 'config.yaml'
+configfile: 'config.yml'
 
 # pantry.validate_config(config)
 

@@ -1,8 +1,8 @@
 # These are the commands used to generate a small test dataset, which consists
 # of 445 Geuvadis samples, subsetted to chr1 genotypes and phenotypes for the
-# first 100 genes per phenotype category.
+# first 100 genes per modality.
 
-phenodir=$1
+phenodir=../../Geuvadis/output
 
 #######################
 ## Subset phenotypes ##
@@ -10,26 +10,24 @@ phenodir=$1
 
 mkdir -p input/phenotypes
 
-for pheno in expression stability
-do
-    # echo $pheno
-    zcat $phenodir/$pheno.bed.gz | grep -P '^(#chr)|(1\t)' | head -101 | bgzip -c > input/phenotypes/$pheno.bed.gz
-    tabix -p bed input/phenotypes/$pheno.bed.gz
-done
+cp ../../Geuvadis/input/samples.txt input/
 
-for pheno in alt_polyA alt_TSS isoforms latent splicing
-do
-    # echo $pheno
-    python3 scripts/test_subset_grouped_pheno.py \
-        --in-bed $phenodir/$pheno.bed.gz \
-        --in-groups $phenodir/$pheno.phenotype_groups.txt \
-        --out-bed input/phenotypes/$pheno.bed \
-        --out-groups input/phenotypes/$pheno.phenotype_groups.txt \
-        --chrom 1 \
-        --n-groups 100
-    bgzip input/phenotypes/$pheno.bed
-    tabix -p bed input/phenotypes/$pheno.bed.gz
-done
+## Test a modality with non-grouped phenotypes (one per gene)
+
+zcat $phenodir/expression.bed.gz | grep -P '^(#chr)|(1\t)' | head -201 | bgzip -c > input/phenotypes/expression.bed.gz
+tabix -p bed input/phenotypes/expression.bed.gz
+
+## Test a modality with grouped phenotypes
+
+python3 scripts/test_subset_grouped_pheno.py \
+    --in-bed $phenodir/alt_polyA.bed.gz \
+    --in-groups $phenodir/alt_polyA.phenotype_groups.txt \
+    --out-bed input/phenotypes/alt_polyA.bed \
+    --out-groups input/phenotypes/alt_polyA.phenotype_groups.txt \
+    --chrom 1 \
+    --n-groups 200
+bgzip input/phenotypes/alt_polyA.bed
+tabix -p bed input/phenotypes/alt_polyA.bed.gz
 
 ##############################
 ## Subset genotypes to chr1 ##
@@ -42,3 +40,9 @@ plink2 --bfile $geno \
     --chr 1 \
     --make-bed \
     --out $genonew
+
+####################
+## Create archive ##
+####################
+
+tar -czvf test_input_pheast.tar.gz input

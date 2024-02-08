@@ -147,7 +147,7 @@ ENSG00000279457:1:187577:188130:clu_6_-	ENSG00000279457
 
 We suggest these steps to run Pantry.
 
-### 1. Run the included test data
+### 1. Run Pantry on the test data
 
 This will require installation of all programs used in the snakefiles. [Miniconda](https://docs.conda.io/en/latest/miniconda.html) is recommended for easy installation and management of all these programs. A conda environment specification is provided in `conda_env.yaml`:
 
@@ -157,11 +157,22 @@ conda activate pantry
 pip3 install -e Pantry
 ```
 
-Once you think you have everything installed, try running on the included test data, which is small:
+The test dataset for the phenotyping stage includes reads from 16 Geuvadis samples, subsetted to those that would map to the first 2 Mb of `chr1`. Download [test_input_phenotyping.tar.gz](https://www.dropbox.com/scl/fi/5c4yjrqji9catsazc8nxd/test_input_phenotyping.tar.gz?rlkey=jsppnzu4cdls9fp5z3xxm1i37&dl=0) to Project, make sure there is no existing `input` directory with important files in it, and from there run:
 
 ```sh
-cd Project
-snakemake -j1
+tar -xzvf test_input_phenotyping.tar.gz
+rm test_input_phenotyping.tar.gz
+snakemake -j1 -n
+```
+
+If that works, remove the `-n` flag to actually run the pipeline.
+
+If you plan to use the Pheast module (downstream genetic analysis), you can download the test data for that too and run it. Since these genetic analyses can run into problems when run with too few samples, the test data for Pheast includes Pantry phenotypes for 200 genes for one non-grouped (`expression`) and one grouped (`alt_polyA`) modality, all on `chr1`, for 445 Geuvadis samples, along with their genotypes subsetted to `chr1`. Download [test_input_pheast.tar.gz](https://www.dropbox.com/scl/fi/5k2ybqyrtmjll2ig6nnxv/test_input_pheast.tar.gz?rlkey=yzybnhb60b3yxoebrhsoaoumz&dl=0) to Pheast (or your copy of that directory), make sure there is no existing `input` directory with important files in it, and from there run:
+
+```sh
+tar -xzvf test_input_pheast.tar.gz
+rm test_input_pheast.tar.gz
+snakemake -j1 -n
 ```
 
 ### 2. Run with your data
