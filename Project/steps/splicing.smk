@@ -56,9 +56,9 @@ rule assemble_splicing_bed:
         counts = interm_dir / 'splicing' / 'leafcutter_perind_numers.counts.gz',
         ref_anno = ref_anno,
     output:
-        bed = interm_dir / 'unnorm' / 'splicing.bed',
+        bed = output_dir / 'unnorm' / 'splicing.bed',
     params:
-        unnorm_dir = interm_dir / 'unnorm',
+        unnorm_dir = output_dir / 'unnorm',
     shell:
         """
         mkdir -p {params.unnorm_dir}
@@ -72,7 +72,7 @@ rule assemble_splicing_bed:
 rule normalize_splicing:
     """Quantile-normalize values for QTL mapping"""
     input:
-        bed = interm_dir / 'unnorm' / 'splicing.bed',
+        bed = output_dir / 'unnorm' / 'splicing.bed',
         samples = samples_file,
     output:
         output_dir / 'splicing.bed.gz',

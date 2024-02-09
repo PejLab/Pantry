@@ -146,9 +146,9 @@ rule assemble_latent_bed:
         phenos = interm_dir / 'latent' / 'latent_{version}.tsv.gz',
         ref_anno = ref_anno,
     output:
-        bed = interm_dir / 'unnorm' / 'latent_{version}.bed',
+        bed = output_dir / 'unnorm' / 'latent_{version}.bed',
     params:
-        unnorm_dir = interm_dir / 'unnorm',
+        unnorm_dir = output_dir / 'unnorm',
     shell:
         """
         mkdir -p {params.unnorm_dir}
@@ -162,7 +162,7 @@ rule assemble_latent_bed:
 rule normalize_latent:
     """Quantile-normalize values for QTL mapping"""
     input:
-        bed = interm_dir / 'unnorm' / 'latent_{version}.bed',
+        bed = output_dir / 'unnorm' / 'latent_{version}.bed',
         samples = samples_file,
     output:
         output_dir / 'latent_{version}.bed.gz',

@@ -53,10 +53,10 @@ rule assemble_expression_bed:
         samples = samples_file,
         ref_anno = ref_anno,
     output:
-        iso = interm_dir / 'unnorm' / 'isoforms.bed',
-        gene = interm_dir / 'unnorm' / 'expression.bed',
+        iso = output_dir / 'unnorm' / 'isoforms.bed',
+        gene = output_dir / 'unnorm' / 'expression.bed',
     params:
-        unnorm_dir = interm_dir / 'unnorm',
+        unnorm_dir = output_dir / 'unnorm',
         expr_dir = interm_dir / 'expression',
     shell:
         """
@@ -73,7 +73,7 @@ rule assemble_expression_bed:
 rule normalize_expression:
     """Quantile-normalize values for QTL mapping"""
     input:
-        bed = interm_dir / 'unnorm' / 'expression.bed',
+        bed = output_dir / 'unnorm' / 'expression.bed',
         samples = samples_file,
     output:
         output_dir / 'expression.bed.gz',
@@ -91,7 +91,7 @@ rule normalize_expression:
 rule normalize_isoforms:
     """Quantile-normalize values for QTL mapping"""
     input:
-        bed = interm_dir / 'unnorm' / 'isoforms.bed',
+        bed = output_dir / 'unnorm' / 'isoforms.bed',
         samples = samples_file,
     output:
         output_dir / 'isoforms.bed.gz',

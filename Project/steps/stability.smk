@@ -56,9 +56,9 @@ rule assemble_stability_bed:
         samples = samples_file,
         ref_anno = ref_anno,
     output:
-        bed = interm_dir / 'unnorm' / 'stability.bed',
+        bed = output_dir / 'unnorm' / 'stability.bed',
     params:
-        unnorm_dir = interm_dir / 'unnorm',
+        unnorm_dir = output_dir / 'unnorm',
         stab_dir = interm_dir / 'stability',
     shell:
         """
@@ -74,7 +74,7 @@ rule assemble_stability_bed:
 rule normalize_stability:
     """Quantile-normalize values for QTL mapping"""
     input:
-        bed = interm_dir / 'unnorm' / 'stability.bed',
+        bed = output_dir / 'unnorm' / 'stability.bed',
         samples = samples_file,
     output:
         output_dir / 'stability.bed.gz',

@@ -140,9 +140,9 @@ rule assemble_alt_TSS_polyA_bed:
         samples = samples_file,
         ref_anno = ref_anno,
     output:
-        interm_dir / 'unnorm' / 'alt_{type}.bed',
+        output_dir / 'unnorm' / 'alt_{type}.bed',
     params:
-        unnorm_dir = str(interm_dir / 'unnorm'),
+        unnorm_dir = str(output_dir / 'unnorm'),
         alt_group1_pos_dir = lambda w: str(interm_dir / 'alt_TSS_polyA' / f"grp_1.{dict(TSS='upstream', polyA='downstream')[w.type]}"),
         alt_group2_pos_dir = lambda w: str(interm_dir / 'alt_TSS_polyA' / f"grp_2.{dict(TSS='upstream', polyA='downstream')[w.type]}"),
     shell:
@@ -160,7 +160,7 @@ rule assemble_alt_TSS_polyA_bed:
 rule normalize_alt_TSS_polyA:
     """Quantile-normalize values for QTL mapping"""
     input:
-        bed = interm_dir / 'unnorm' / 'alt_{type}.bed',
+        bed = output_dir / 'unnorm' / 'alt_{type}.bed',
         samples = samples_file,
     output:
         output_dir / 'alt_{type}.bed.gz',
