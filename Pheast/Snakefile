@@ -1,43 +1,20 @@
 import math
 from pathlib import Path
 import pandas as pd
-import pantry
 import subprocess
 
 configfile: 'config.yml'
 
-# pantry.validate_config(config)
-
-pheno_dir = Path(config['phenotype_dir'])
-interm_dir = Path('intermediate')
-output_dir = Path('output')
-geno_prefix = config['geno_prefix']
-
-samples_file = Path(config['samples_file'])
-samples = pd.read_csv(samples_file, sep='\t', header=None)[0].tolist()
-geno_samples = pd.read_csv(geno_prefix + '.fam', sep='\t', header=None)[1].tolist()
-missing_samples = [s for s in samples if s not in geno_samples]
-if len(missing_samples) > 0:
-    raise Exception(f'Samples missing from genotypes: {missing_samples}')
-    # print(f'WARNING: Samples missing from genotypes: {missing_samples}')
-
-phenotypes = config['phenotypes']
-for pheno, params in phenotypes.items():
-    chroms = pd.read_csv(pheno_dir / f'{pheno}.bed.gz', sep='\t', usecols=[0], dtype=str)
-    params['chroms'] = chroms.iloc[:, 0].unique().tolist()
-
-analyses = config['analyses']
-outputs = []
-for analysis, params in analyses.items():
-    for f in params['files']:
-        outputs.append(expand(output_dir / analysis / f, phenotype=phenotypes.keys()))
+# This code validates and processes the configuration and sets global variables:
+include: 'steps/setup.smk'
 
 # List short steps here so they will not be submitted as cluster jobs:
 # (These can be specified on a per-file basis)
 localrules:
     # index_bed,
 
-# These are the target files to be generated (or regenerated if outdated):
+# These are the target files to be generated (or regenerated if outdated).
+# By default it includes all output files specified in the config file.
 rule all:
     input:
         outputs,

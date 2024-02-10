@@ -29,18 +29,18 @@ rule twas_compute_weights_batch:
     """Use FUSION to compute TWAS weights from expression and genotypes.
     
     Outputs also include the actual weights
-    ('{interm_dir}/twas/weights_{pheno}/{gene}.wgt.RDat'), but the genes for
+    ('{interm_dir}/twas/weights_{modality}/{gene}.wgt.RDat'), but the genes for
     which we end up with outputs are not known until the rule is run.
     """
     input:
         geno = multiext(str(twas_geno_prefix), '.bed', '.bim', '.fam'),
-        bed = pheno_dir / '{pheno}.bed.gz',
-        covar = interm_dir / 'covar' / '{pheno}.covar.plink.tsv',
+        bed = pheno_dir / '{modality}.bed.gz',
+        covar = interm_dir / 'covar' / '{modality}.covar.plink.tsv',
         gcta = 'scripts/fusion_twas/gcta_nr_robust',
         gemma = 'scripts/fusion_twas/gemma',
     output:
-        # expand(interm_dir / 'twas' / 'weights_{{pheno}}' / '{gene}.wgt.RDat', gene=gene_list),
-        interm_dir / 'twas' / 'hsq_{pheno}' / '{batch_start}_{batch_end}.hsq',
+        # expand(interm_dir / 'twas' / 'weights_{{modality}}' / '{gene}.wgt.RDat', gene=gene_list),
+        interm_dir / 'twas' / 'hsq_{modality}' / '{batch_start}_{batch_end}.hsq',
     params:
         twas_geno_prefix = twas_geno_prefix,
         twas_interm_dir = interm_dir / 'twas',
@@ -52,7 +52,7 @@ rule twas_compute_weights_batch:
             {params.twas_geno_prefix} \
             {input.bed} \
             {input.covar} \
-            {wildcards.pheno} \
+            {wildcards.modality} \
             {wildcards.batch_start} \
             {wildcards.batch_end} \
             {params.twas_interm_dir}
@@ -60,7 +60,7 @@ rule twas_compute_weights_batch:
 
 def twas_batch_hsq_input(wildcards):
     """Get start and end indices of BED file for TWAS batches."""
-    bed = pheno_dir / f'{wildcards.pheno}.bed.gz'
+    bed = pheno_dir / f'{wildcards.modality}.bed.gz'
     n = int(subprocess.check_output(f'zcat < {bed} | wc -l', shell=True)) - 1
     batch_size = min(math.ceil(n / TWAS_N_BATCHES), MAX_BATCH_SIZE)
     # Given the necessary batch size, items might fit into fewer batches:
@@ -68,7 +68,7 @@ def twas_batch_hsq_input(wildcards):
     for i in range(n_batches):
         start = i * batch_size + 1
         end = min((i + 1) * batch_size, n)
-        yield interm_dir / 'twas' / f'hsq_{wildcards.pheno}' / f'{start}_{end}.hsq'
+        yield interm_dir / 'twas' / f'hsq_{wildcards.modality}' / f'{start}_{end}.hsq'
 
 rule twas_assemble_summary:
     """Summarize weights from all batches/genes.
@@ -80,9 +80,9 @@ rule twas_assemble_summary:
     input:
         twas_batch_hsq_input,
     output:
-        file_list = interm_dir / 'twas' / '{pheno}.list',
-        profile = interm_dir / 'twas' / '{pheno}.profile',
-        summary = interm_dir / 'twas' / '{pheno}.profile.err',
+        file_list = interm_dir / 'twas' / '{modality}.list',
+        profile = interm_dir / 'twas' / '{modality}.profile',
+        summary = interm_dir / 'twas' / '{modality}.profile.err',
     params:
         twas_interm_dir = interm_dir / 'twas',
     shell:
@@ -90,19 +90,19 @@ rule twas_assemble_summary:
         # Avoid using relative path in case intermediate dir is a symlink:
         scripts_dir="$(realpath scripts)"
         cd {params.twas_interm_dir}
-        ls {wildcards.pheno}/*.wgt.RDat > {wildcards.pheno}.list
+        ls {wildcards.modality}/*.wgt.RDat > {wildcards.modality}.list
         Rscript $scripts_dir/fusion_twas/utils/FUSION.profile_wgt.R \
-            {wildcards.pheno}.list \
-            > {wildcards.pheno}.profile \
-            2> {wildcards.pheno}.profile.err
+            {wildcards.modality}.list \
+            > {wildcards.modality}.profile \
+            2> {wildcards.modality}.profile.err
         """
 
 rule twas_pos_file:
     input:
-        file_list = interm_dir / 'twas' / '{pheno}.list',
-        bed = pheno_dir / '{pheno}.bed.gz',
+        file_list = interm_dir / 'twas' / '{modality}.list',
+        bed = pheno_dir / '{modality}.bed.gz',
     output:
-        pos_file = interm_dir / 'twas' / '{pheno}.pos',
+        pos_file = interm_dir / 'twas' / '{modality}.pos',
     params:
         n_samples = len(samples),
     shell:
@@ -123,12 +123,12 @@ rule twas_compress_output:
     http://gusevlab.org/projects/fusion/#single-tissue-gene-expression
     """
     input:
-        file_list = interm_dir / 'twas' / '{pheno}.list',
-        profile = interm_dir / 'twas' / '{pheno}.profile',
-        summary = interm_dir / 'twas' / '{pheno}.profile.err',
-        pos_file = interm_dir / 'twas' / '{pheno}.pos',
+        file_list = interm_dir / 'twas' / '{modality}.list',
+        profile = interm_dir / 'twas' / '{modality}.profile',
+        summary = interm_dir / 'twas' / '{modality}.profile.err',
+        pos_file = interm_dir / 'twas' / '{modality}.pos',
     output:
-        output_dir / 'twas' / '{pheno}.tar.bz2',
+        output_dir / 'twas' / '{modality}.tar.bz2',
     params:
         twas_interm_dir = interm_dir / 'twas',
         twas_output_dir = output_dir / 'twas',
@@ -137,9 +137,9 @@ rule twas_compress_output:
         mkdir -p {params.twas_output_dir}
         tar -cjf {output} \
             -C {params.twas_interm_dir} \
-            {wildcards.pheno}.list \
-            {wildcards.pheno}.profile \
-            {wildcards.pheno}.profile.err \
-            {wildcards.pheno}.pos \
-            {wildcards.pheno}/
+            {wildcards.modality}.list \
+            {wildcards.modality}.profile \
+            {wildcards.modality}.profile.err \
+            {wildcards.modality}.pos \
+            {wildcards.modality}/
         """

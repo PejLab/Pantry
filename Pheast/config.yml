@@ -8,18 +8,22 @@ phenotype_dir: input/phenotypes
 ## Give the path prefix to genotypes in plink1 (bed/bim/fam) format:
 geno_prefix: input/GEUVADIS.445_samples.GRCh38.chr1
 
-## Provide a list of SNP IDs to include when computing TWAS weights:
-# This is optional, but it is recommended to include only SNPs present in the LD reference used later for TWAS.
-# twas_snps: /path/to/list/of/snps.txt
-
 ## Samples to include:
 samples_file: input/samples.txt
 
-## Phenotypes
+## Optional parameters
+# Provide a list of SNP IDs to include when computing TWAS weights:
+# It is recommended to include only SNPs present in the LD reference used later for TWAS.
+# twas_snps: /path/to/list/of/snps.txt
+# Path to intermediate file directory, in case you don't want it inside this project directory due to its size:
+# This directory will be created if it doesn't exist, and will contain any generated (i.e. not input) files besides the final analysis results.
+# intermediate_dir: intermediate
+
+## Modalities
 # List the modalities to use. The phenotype table ({modality}.bed.gz)
 # must be present in the phenotype_dir, along with a
 # {modality}.phenotype_groups.txt file in the case of grouped phenotypes.
-phenotypes:
+modalities:
   alt_polyA:
     grouped: true
   # alt_TSS:
@@ -36,15 +40,15 @@ phenotypes:
 ## Analyses
 # List the analyses to run. A snakefile will be loaded for each analysis,
 # steps/{analysis}.smk, and results will be written to output/{analysis}/.
-# {phenotype} will be replaced with each phenotype name.
+# {modality} will be replaced with each modality name.
 analyses:
   heritability:
     files:
-    - '{phenotype}.hsq.tsv'
+    - '{modality}.hsq.tsv'
   qtl:
     files:
-    - '{phenotype}.cis_qtl.txt.gz'
-    - '{phenotype}.cis_independent_qtl.txt.gz'
+    - '{modality}.cis_qtl.txt.gz'
+    - '{modality}.cis_independent_qtl.txt.gz'
   twas:
     files:
-    - '{phenotype}.tar.bz2'
+    - '{modality}.tar.bz2'

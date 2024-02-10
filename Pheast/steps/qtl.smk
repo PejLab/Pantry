@@ -1,14 +1,14 @@
 def groups_arg(wildcards, input):
     """Pass the phenotype groups file as a Python arg if applicable"""
-    if phenotypes[wildcards.pheno]['grouped']:
+    if modalities[wildcards.modality]['grouped']:
         return f'--groups {input.groups}'
     else:
         return ''
 
 def groups_input(wildcards):
     """Include the phenotype groups file as an input if applicable"""
-    if phenotypes[wildcards.pheno]['grouped']:
-        return pheno_dir / f'{wildcards.pheno}.phenotype_groups.txt'
+    if modalities[wildcards.modality]['grouped']:
+        return pheno_dir / f'{wildcards.modality}.phenotype_groups.txt'
     else:
         return []
 
@@ -18,12 +18,12 @@ rule tensorqtl_perm:
     """
     input:
         geno = multiext(geno_prefix, '.bed', '.bim', '.fam'),
-        bed = pheno_dir / '{pheno}.bed.gz',
-        bedi = pheno_dir / '{pheno}.bed.gz.tbi',
-        covar = interm_dir / 'covar' / '{pheno}.covar.tsv',
+        bed = pheno_dir / '{modality}.bed.gz',
+        bedi = pheno_dir / '{modality}.bed.gz.tbi',
+        covar = interm_dir / 'covar' / '{modality}.covar.tsv',
         groups = groups_input,
     output:
-        output_dir / 'qtl' / '{pheno}.cis_qtl.txt.gz',
+        output_dir / 'qtl' / '{modality}.cis_qtl.txt.gz',
     params:
         geno_prefix = geno_prefix,
         qtl_dir = output_dir / 'qtl',
@@ -49,13 +49,13 @@ rule tensorqtl_independent:
     """Use stepwise regression to identify multiple conditionally independent cis-QTLs per phenotype."""
     input:
         geno = multiext(geno_prefix, '.bed', '.bim', '.fam'),
-        bed = pheno_dir / '{pheno}.bed.gz',
-        bedi = pheno_dir / '{pheno}.bed.gz.tbi',
-        covar = interm_dir / 'covar' / '{pheno}.covar.tsv',
+        bed = pheno_dir / '{modality}.bed.gz',
+        bedi = pheno_dir / '{modality}.bed.gz.tbi',
+        covar = interm_dir / 'covar' / '{modality}.covar.tsv',
         groups = groups_input,
-        cis = output_dir / 'qtl' / '{pheno}.cis_qtl.txt.gz',
+        cis = output_dir / 'qtl' / '{modality}.cis_qtl.txt.gz',
     output:
-        output_dir / 'qtl' / '{pheno}.cis_independent_qtl.txt.gz',
+        output_dir / 'qtl' / '{modality}.cis_independent_qtl.txt.gz',
     params:
         geno_prefix = geno_prefix,
         groups_arg = groups_arg,

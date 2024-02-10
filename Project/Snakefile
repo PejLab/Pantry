@@ -2,36 +2,11 @@ from pathlib import Path
 from gtfparse import read_gtf
 import numpy as np
 import pandas as pd
-import pantry
 
 configfile: 'config.yml'
 
-pantry.validate_config(config)
-pantry.process_config(config)
-
-interm_dir = config['intermediate_dir']
-ref_dir = config['intermediate_ref_dir']
-output_dir = Path('output')
-
-samples_file = config['samples_file']
-samples = config['samples']
-
-paired_end = config['paired_end']
-read_length = config['read_length']
-fastq_dir = config['fastq_dir']
-fastq_map = config['fastq_map']
-
-ref_genome = config['ref_genome']
-ref_anno = config['ref_anno']
-ref_cdna = ref_dir / 'cDNA.fa.gz'
-
-phenotypes = config['phenotypes']
-genome_size = config['genome_size'] # TODO: compute from fasta file
-
-outputs = []
-for pheno, params in phenotypes.items():
-    for f in params['files']:
-        outputs.append(output_dir / f)
+# This code validates and processes the configuration and sets global variables:
+include: 'steps/setup.smk'
 
 # List short steps here so they will not be submitted as cluster jobs:
 # (These can be specified on a per-file basis)
@@ -39,7 +14,8 @@ localrules:
     index_bed,
     extract_cdna,
 
-# These are the target files to be generated (or regenerated if outdated):
+# These are the target files to be generated (or regenerated if outdated).
+# By default it includes all output files specified in the config file.
 rule all:
     input:
         outputs,
@@ -66,8 +42,8 @@ def fastq_inputs(wildcards) -> list:
 ## Load rules from all the snakefiles
 
 include: 'steps/align.smk'
-for phenotype in phenotypes:
-    include: f'steps/{phenotype}.smk'
+for modality_group in modality_groups:
+    include: f'steps/{modality_group}.smk'
 
 ## Additional general rules
 

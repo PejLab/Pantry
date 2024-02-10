@@ -1,7 +1,7 @@
-"""Generate molecular phenotypes from RNA-Seq"""
+"""This script is loaded near the beginning of the main phenotyping Snakefile.
 
-from pathlib import Path
-import pandas as pd
+It validates and processes the configuration and sets global variables.
+"""
 
 def load_fastq_map(map_file: Path, fastq_dir: Path, paired_end) -> dict:
     """Load the FASTQ file paths for each sample.
@@ -37,7 +37,7 @@ def validate_config(config: dict):
         'ref_genome',
         'ref_anno',
         'samples_file',
-        'phenotypes',
+        'modality_groups',
         'genome_size',
     ]
     for field in fields:
@@ -72,3 +72,31 @@ def process_config(config: dict):
         config['intermediate_ref_dir'] = config['intermediate_dir'] / 'reference'
 
     config['fastq_map'] = load_fastq_map(config['fastq_map'], config['fastq_dir'], config['paired_end'])
+
+validate_config(config)
+process_config(config)
+
+interm_dir = config['intermediate_dir']
+ref_dir = config['intermediate_ref_dir']
+output_dir = Path('output')
+
+samples_file = config['samples_file']
+samples = config['samples']
+
+paired_end = config['paired_end']
+read_length = config['read_length']
+fastq_dir = config['fastq_dir']
+fastq_map = config['fastq_map']
+
+ref_genome = config['ref_genome']
+ref_anno = config['ref_anno']
+ref_cdna = ref_dir / 'cDNA.fa.gz'
+
+modality_groups = config['modality_groups']
+genome_size = config['genome_size'] # TODO: compute from fasta file
+
+outputs = []
+for modality_group, params in modality_groups.items():
+    for f in params['files']:
+        outputs.append(output_dir / f)
+

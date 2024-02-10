@@ -34,9 +34,9 @@ rule covariates:
     """Compute genotype and expression PCs and combine."""
     input:
         vcf = interm_dir / 'covar' / 'geno_pruned.vcf.gz',
-        bed = pheno_dir / '{pheno}.bed.gz',
+        bed = pheno_dir / '{modality}.bed.gz',
     output:
-        interm_dir / 'covar' / '{pheno}.covar.tsv',
+        interm_dir / 'covar' / '{modality}.covar.tsv',
     params:
         n_geno_pcs = 5,
         n_pheno_pcs = 20,
@@ -53,10 +53,10 @@ rule covariates:
 rule plink_covariates:
     """Convert covariates to PLINK format."""
     input:
-        covar = interm_dir / 'covar' / '{pheno}.covar.tsv',
+        covar = interm_dir / 'covar' / '{modality}.covar.tsv',
         fam = f'{geno_prefix}.fam',
     output:
-        plink = interm_dir / 'covar' / '{pheno}.covar.plink.tsv',
+        plink = interm_dir / 'covar' / '{modality}.covar.plink.tsv',
     run:
         covar = pd.read_csv(input.covar, sep='\t', index_col=0)
         covar.index.name = None

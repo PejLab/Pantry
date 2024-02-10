@@ -17,20 +17,20 @@ genome_size: 3e9
 
 ## Optional parameters
 # Path to intermediate file directory, in case you don't want it inside this project directory due to its size:
-# This directory will be created if it doesn't exist, and will contain any generated (i.e. not input) BAM, FASTQ, and all other files besides the final phenotype outputs.
-intermediate_dir: intermediate
+# This directory will be created if it doesn't exist, and will contain any generated (i.e. not input) files besides the final phenotype outputs.
+# intermediate_dir: intermediate
 # Path to directory where intermediate reference files will be created:
 # This will be in the intermediate dir by default, but can be specified to be outside the project dir.
 # This could be useful if running multiple datasets with the same parameters, allowing the intermediate
 # reference files to be generated once and shared by all the dataset runs.
 # intermediate_ref_dir: intermediate/reference
 
-## Phenotypes
+## Modality groups
 # List the modality groups to extract, with list of expected output files for each.
 # A snakefile will be loaded for each group, steps/{groupname}.smk
 # Each group represents one or more modalities that are generated from the same
 # software.
-phenotypes:
+modality_groups:
   alt_TSS_polyA:
     files:
     - alt_TSS.bed.gz
