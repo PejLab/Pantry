@@ -1,46 +1,93 @@
 # Pantry
 
-Pantry (PAN-TRanscriptome phenotYping) is a framework for generating molecular phenotypes from RNA-Seq. Existing tools have been developed to generate different modalities of transcriptomic phenotypes, and Pantry allows you to run them with full flexibility in a convenient and organized process. The goal is to make molecular QTL mapping and other analyses as easy to perform for a multitude of transcriptomic phenotype modalities as for basic gene expression only.
+Pantry (PAN-TRanscriptome phenotYping) is a framework for generating multimodal transcriptomic phenotypes from RNA-Seq and applying them to genetic analyses. The goal is to make genetic analyses as easy to perform with a multitude of transcriptomic phenotype modalities as it is with gene expression alone.
 
-A project is specified with a config file containing general parameters, e.g. paths to FASTQ and reference annotation file, single-end or paired-end, and strandedness. It also lists the modalities to generate.
+**Contact us** if you have a method for an additional modality that you would like to add to Pantry. Your collaboration will result in authorship on a subsequent Pantry publication, and Pantry users will be instructed to cite your original study every time they use the results in a publication.
 
-## Modalities
+The guide below begins with software environment setup, followed by a run-through with a small example dataset to test the setup and demonstrate the overall structure, and finally descriptions of the code and expected file formats so you can run Pantry on real datasets.
 
-Currently Pantry generates RNA phenotypes for six modalities, grouped into four Snakemake modules that run the following tools:
+## Setup
 
-- `alt_TSS_polyA.smk`: Alternative TSS and polyA site usage, quantified using [txrevise](https://github.com/kauralasoo/txrevise) followed by [kallisto](https://pachterlab.github.io/kallisto/).
-- `expression.smk`: Gene-level expression and isoform ratios, quantified using [kallisto](https://pachterlab.github.io/kallisto/), then summing expression over all isoforms per gene for the former, and normalizing to proportion per gene for the latter.
-- `splicing.smk`: Intron excision ratio, quantified using [RegTools](https://regtools.readthedocs.io/en/latest/) followed by [leafCutter](https://davidaknowles.github.io/leafcutter/).
-- `stability.smk`: RNA stability, quantified using [Subread featureCounts](http://subread.sourceforge.net/) to count reads from constitutive exons and all introns and using their ratio.
-
-**Contact us** if you have a method for an additional modality that you would like to add to Pantry. Your collaboration will result in authorship on a subsequent Pantry publication.
-
-## Installation
-
-It is recommended to install Pantry by cloning or downloading the repository, since you will then need to copy the project template directory for your own analysis. If using a conda environment, hold off on installing the Pantry Python package until the conda environment has been created and activated.
+Clone or download the repository:
 
 ```sh
 git clone https://github.com/daniel-munro/Pantry.git
 ```
 
-## Code
+Install dependencies for the phenotyping pipeline. [Miniconda](https://docs.conda.io/en/latest/miniconda.html) is recommended for installation and management of these programs. A conda environment specification is provided in `Project/environment.yml`:
 
-The `Project/` directory is a template for a project. To run Pantry on a dataset, copy the contents of `Project/` to a new directory that you can write to. Your project directory now contains all the data processing code, so that if you modify it or add custom modalities, you have a record of it that stays with the results and is not automatically changed by package updates or other projects.
+```sh
+cd Pantry/Project
+conda env create -n pantry --file environment.yml
+conda activate pantry
+```
 
-The commands and code to run the steps are given in [Snakemake](https://snakemake.github.io/) files, located by default in `Project/steps/`. This package includes sensible defaults for a set of tools, but you can edit the commands and add new modalities.
+### Set up Snakemake
 
-The goal of a project is to generate phenotype tables for a set of samples. Each tool could involve any combination of:
+General guides to using the [Snakemake](https://snakemake.github.io/) workflow management system can be found online to learn its features. It can handle many execution needs such as threads, computational resources, and automatic cluster job submission. You can specify a profile that determines how steps get run (this is different from the Pantry project config files in `Project/` and `Pheast/`). Here is an example profile config for use on a computing cluster with slurm scheduling:
 
-- Setup like indexing or annotation filtering
-- Processing each sample's BAM file
-- Intermediate steps requiring data from all samples, e.g. clustering
-- Final assembly of all results into a phenotype table
+`~/.config/snakemake/slurm/config.yaml`:
 
-Each file in `steps/` contains all of these steps for one modality, or multiple modalities produced in a similar way. Snakemake looks at the inputs and outputs for each rule and figures out the order and number of times to run each step.
+```yaml
+use-conda: true
+cluster: "sbatch -t {resources.walltime}:00:00 --mem={resources.mem_mb} -c {threads} {resources.partition} --mail-type=FAIL --mail-user=myemail@address.edu"
+default-resources: [walltime=4, mem_mb=4000, partition=""]
+# partition should either be empty string for default or something like "--partition=gpu"
+latency-wait: 60
+cluster-cancel: scancel
+```
 
-## Config file
+Resources are specified within some of the snakemake rules, which are plugged into this command and automatically submitted as cluster jobs. Alternatively, you can run snakemake on an interactive node and omit the `cluster` configuration lines.
 
-The config file is a file in YAML format specifying general parameters, input files, and modalities to generate. The project template directory includes a config, which is for a small example dataset and a small subset of the human reference:
+## Run on test data
+
+Before running Pantry on your data, we recommend testing on our test data to ensure the software environment is set up and the pipeline can run successfully.
+
+The test dataset for the phenotyping stage includes reads from 16 Geuvadis samples, subsetted to those that would map to the first 2 Mb of `chr1`. Download [test_input_phenotyping.tar.gz](https://www.dropbox.com/scl/fi/5c4yjrqji9catsazc8nxd/test_input_phenotyping.tar.gz?rlkey=jsppnzu4cdls9fp5z3xxm1i37&dl=0) to `Project/`, make sure there is no existing `input` directory with important files in it, and then try running Snakemake:
+
+```sh
+wget -O test_input_phenotyping.tar.gz "https://www.dropbox.com/scl/fi/5c4yjrqji9catsazc8nxd/test_input_phenotyping.tar.gz?rlkey=jsppnzu4cdls9fp5z3xxm1i37&dl=0"
+tar -xzvf test_input_phenotyping.tar.gz
+rm test_input_phenotyping.tar.gz
+snakemake -j1 -n
+```
+
+The `-n` flag makes it a dry run, just printing which steps would run without executing them. If it does that successfully, remove the `-n` flag to actually run the pipeline. For any snakemake run where you'd need to submit large steps as jobs, add `--profile slurm` (using the name where you placed the config file above).
+
+The second stage of Pantry, Pheast, applies the RNA phenotypes to downstream genetic analyses, and operates in its own project directory. For its dependencies, you can either make a `pheast` environment using `Pheast/environment.yml`, or install those dependencies in the existing `pantry` environment.
+
+You can then download and run test data for the Pheast stage. Since these genetic analyses can run into problems when run with too few samples, the test data for Pheast includes Pantry phenotypes for 200 genes for one non-grouped (`expression`) and one grouped (`alt_polyA`) modality, all on `chr1`, for 445 Geuvadis samples, along with their genotypes subsetted to `chr1`. Download [test_input_pheast.tar.gz](https://www.dropbox.com/scl/fi/5k2ybqyrtmjll2ig6nnxv/test_input_pheast.tar.gz?rlkey=yzybnhb60b3yxoebrhsoaoumz&dl=0) to Pheast (or your copy of that directory), make sure there is no existing `input` directory with important files in it, and then try running Snakemake:
+
+```sh
+cd ../Pheast
+wget -O test_input_pheast.tar.gz "https://www.dropbox.com/scl/fi/5k2ybqyrtmjll2ig6nnxv/test_input_pheast.tar.gz?rlkey=yzybnhb60b3yxoebrhsoaoumz&dl=0"
+tar -xzvf test_input_pheast.tar.gz
+rm test_input_pheast.tar.gz
+snakemake -j1 -n
+```
+
+## Description
+
+Consult these descriptions of the Pantry code and expected file formats to run Pantry on your data.
+
+### Code
+
+The `Project/` directory is a template for phenotyping one dataset (e.g. tissue). To run Pantry on a dataset, copy the contents of `Project/` to a new directory that you can write to. Your project directory now contains all the data processing code, so that if you modify it or add custom modalities, you have a record of it that stays with the results and is not automatically changed by Pantry updates or your other Pantry runs. The `Pheast/` template directory works similarly for the second stage of the pipeline.
+ 
+Currently Pantry generates RNA phenotypes for six modalities, grouped into four Snakemake modules in `steps/` that run the following tools:
+
+- `alt_TSS_polyA.smk`: Alternative TSS and polyA site usage, quantified using [txrevise](https://github.com/kauralasoo/txrevise) followed by [kallisto](https://pachterlab.github.io/kallisto/).
+- `expression.smk`: Gene expression and isoform ratio, quantified using [kallisto](https://pachterlab.github.io/kallisto/). Isoform-level abundances are summed per gene to get gene expression abundances. The same isoform-level abundances are normalized per gene to get isoform proportions.
+- `splicing.smk`: Intron excision ratio, quantified using [RegTools](https://regtools.readthedocs.io/en/latest/) followed by [leafCutter](https://davidaknowles.github.io/leafcutter/).
+- `stability.smk`: RNA stability, quantified using [Subread featureCounts](http://subread.sourceforge.net/) to count reads from constitutive exons and all introns and using their ratio.
+
+Snakemake looks at the inputs and outputs for each rule and figures out the order and number of times to run each step. Pantry includes sensible defaults for this set of tools, but you can edit the commands and add new modalities.
+
+![Phenotyping pipeline diagram](Project/diagram_steps.png)
+
+### Config file
+
+The config file is a file in YAML format specifying general parameters, input files, and modalities to generate. `Project/` includes a default config, which is for the above example dataset above, and must be customized for your data:
 
 ```yaml
 ## Raw RNA-Seq data
@@ -51,13 +98,13 @@ fastq_map: input/fastq_map.txt
 ...
 ```
 
-## Input files
+### Input files
 
 Some phenotypes are extracted from raw sequences (e.g. using kallisto), while others are extracted from aligned reads. Pantry input sequences must be in FASTQ format. If you only have BAM files, you can extract FASTQ from them, e.g. using [`run_SamToFastq.py`](https://github.com/broadinstitute/gtex-pipeline/blob/master/rnaseq/src/run_SamToFastq.py).
 
-Pantry will generate its own BAM files from the FASTQ files using the reference files. These new BAM files will not contain the sequences themselves so they will be smaller than typical BAM files. If you are sure your existing BAM files are compatible with the reference files, you can symlink to them in the intermediate directory, named as expected by the pipeline, and update the timestamps to avoid re-running the alignment step. Note that the BAM files output by STAR are deleted by default after being converted to shrunken BAM files, so it's recommended to use symlinks instead of the actual files, and name the symlinks either as the STAR output BAM files or the final, shrunken BAM files.
+Pantry will generate its own BAM files from the FASTQ files using the reference files. The sequences themselves will be removed from the new BAM files, so they will be smaller than typical BAM files. If you are sure your existing BAM files are compatible with the reference files, you can symlink to them in intermediate directory, named as expected by the pipeline (either as the STAR output or the final, shrunken BAM files), and update the timestamps to avoid re-running the alignment step. **Do NOT** put any important external files into the intermediate directory, as they could be deleted or overwritten.
 
-### FASTQ sample map
+#### FASTQ sample map
 
 A file containing FASTQ file paths and the name of the sample they map to, separated by tabs, with no header. The paths should be relative to the `fastq_dir` specified in the config file.
 
@@ -81,37 +128,18 @@ batch1/sampleB_run1_1.fastq.gz	batch1/sampleB_run1_2.fastq.gz	sampleB
 ...
 ```
 
-### FASTQ files
+#### FASTQ files
 
 FASTQ files must be compressed (decompressible with `zcat`) unless you modify the `STAR` command to handle uncompressed files. Multiple FASTQ files (or paired-end file pairs) can be provided for each sample and the reads will be combined into one BAM file per sample.
 
-### Reference genome and annotations
+#### Reference genome and annotations
 
 - The FASTA file for a reference genome, e.g. `Homo_sapiens.GRCh38.dna.primary_assembly.fa`.
 - A GTF file containing the gene, exon, and other annotations, compatible with the supplied reference genome. For example, `Homo_sapiens.GRCh38.106.gtf`. Any desired quality filtering should be done beforehand, e.g. including only transcripts validated by both Ensembl and HAVANA.
 
-## Running from the command line
+### Phenotype files
 
-Phenotypes are usually computed by running one subprocess per modality per sample. Within the specified output directory, one directory will be created for each modality, containing intermediate (often per-sample) files from each program. These data will then be combined into one BED file per phenotype group so that QTL mapping can be run separately for each.
-
-All this is done using Snakemake, so general guides to using Snakemake can be found online to learn its features. For example, you can specify a profile that determines how steps get run, and is different from the project config file described above. Here is an example profile config for use on a computing cluster with slurm scheduling:
-
-`~/.config/snakemake/slurm/config.yaml`:
-
-```yaml
-use-conda: true
-cluster: "sbatch -t {resources.walltime}:00:00 --mem={resources.mem_mb} -c {threads} {resources.partition} --mail-type=FAIL --mail-user=myemail@address.edu"
-default-resources: [walltime=4, mem_mb=4000, partition=""]
-# partition should either be empty string for default or something like "--partition=gpu"
-latency-wait: 60
-cluster-cancel: scancel
-```
-
-Resources are specified within some of the snakemake rules, which are plugged into this command and automatically submitted as cluster jobs.
-
-## Output files
-
-### BED output files
+The phenotyping stage will result in phenotype tables (RNA phenotypes x samples) in `output/unnorm/`, and normalized versions directly in `output/`.
 
 The [BED](https://genome.ucsc.edu/FAQ/FAQformat.html#format1) files include four annotation columns, `chr`, `start`, `end`, and `phenotype_id`, followed by one column per sample containing the phenotype values. There may be one phenotype per gene (e.g. expression) or multiple (e.g. splicing), but in either case the coordinates indicate the transcription start site of the phenotype's gene. This ensures that the same cis-window variants are tested for all phenotypes of the same gene.
 
@@ -129,8 +157,6 @@ The [BED](https://genome.ucsc.edu/FAQ/FAQformat.html#format1) files include four
 ...
 ```
 
-### Phenotype groups
-
 For phenotypes categories in which multiple phenotypes are produced per gene (e.g., splice junctions), a file is produced that specifies which gene each phenotype belongs to. This is used by tensorQTL for grouped testing:
 
 ```
@@ -143,44 +169,31 @@ ENSG00000279457:1:187577:188130:clu_6_-	ENSG00000279457
 ...
 ```
 
-## Running
+### Pheast
 
-We suggest these steps to run Pantry.
+The second stage of Pantry, `Pheast`, runs downstream genetic analyses such as mapping cis-QTLs and generating TWAS models, on all of the phenotypes generated by Pantry. At this stage, details and files for raw sequencing data, reference data, and phenotyping tools are no longer needed, while genotypes and multiple downstream analyses are now employed. Thus the Pheast stage has its own template directory that is similar in structure to the phenotyping stage, with a config file, snakefiles, and scripts. The phenotyping outputs (BED files and phenotype groups) can be used in place or transfered to a different computer to run Pheast.
 
-### 1. Run Pantry on the test data
+![Pheast pipeline diagram](Pheast/diagram_steps.png)
 
-This will require installation of all programs used in the snakefiles. [Miniconda](https://docs.conda.io/en/latest/miniconda.html) is recommended for easy installation and management of all these programs. A conda environment specification is provided in `conda_env.yaml`:
+#### Combined-modality cis-QTL mapping
 
-```sh
-conda env create -n pantry --file conda_env.yaml
-conda activate pantry
-pip3 install -e Pantry
-```
+`tensorqtl` has a mode to find conditionally independent cis-QTLs per gene. This can handle data with multiple phenotypes per gene, preventing redundant cis-sQTLs, for example. By combining phenotypes across all modalities into one table and one phenotype groups file, conditionally independent cis-QTL mapping will avoid redundant cis-QTLs across modalities too. A script, `combine_modalities.sh`, is provided to combine phenotype tables into an 'all' modality. Add 'all' to the modality list in the Pheast config, and run `tensorqtl` in the same way as for other grouped phenotype data.
 
-The test dataset for the phenotyping stage includes reads from 16 Geuvadis samples, subsetted to those that would map to the first 2 Mb of `chr1`. Download [test_input_phenotyping.tar.gz](https://www.dropbox.com/scl/fi/5c4yjrqji9catsazc8nxd/test_input_phenotyping.tar.gz?rlkey=jsppnzu4cdls9fp5z3xxm1i37&dl=0) to Project, make sure there is no existing `input` directory with important files in it, and from there run:
+#### Pheast output files
 
-```sh
-tar -xzvf test_input_phenotyping.tar.gz
-rm test_input_phenotyping.tar.gz
-snakemake -j1 -n
-```
+Pheast will generate, in its own `output/` directory, results in their typical formats, including cis-QTL files directly from `tensorqtl` and TWAS transcriptomic models in the same compressed archive format as the [models provided in the FUSION documentation](http://gusevlab.org/projects/fusion/#download-pre-computed-predictive-models).
 
-If that works, remove the `-n` flag to actually run the pipeline.
+## Citing
 
-If you plan to use the Pheast module (downstream genetic analysis), you can download the test data for that too and run it. Since these genetic analyses can run into problems when run with too few samples, the test data for Pheast includes Pantry phenotypes for 200 genes for one non-grouped (`expression`) and one grouped (`alt_polyA`) modality, all on `chr1`, for 445 Geuvadis samples, along with their genotypes subsetted to `chr1`. Download [test_input_pheast.tar.gz](https://www.dropbox.com/scl/fi/5k2ybqyrtmjll2ig6nnxv/test_input_pheast.tar.gz?rlkey=yzybnhb60b3yxoebrhsoaoumz&dl=0) to Pheast (or your copy of that directory), make sure there is no existing `input` directory with important files in it, and from there run:
+The Pantry publication is forthcoming.
+If you run Pantry and use the results in a publication, you should also cite the following publications for the components and modalities you used:
 
-```sh
-tar -xzvf test_input_pheast.tar.gz
-rm test_input_pheast.tar.gz
-snakemake -j1 -n
-```
+- Read mapping: [PMID: 23104886](https://pubmed.ncbi.nlm.nih.gov/23104886/)
+- Alternative TSS and polyA: [PMID: 30618377](https://pubmed.ncbi.nlm.nih.gov/30618377/)
+- Expression, isoform ratio: [PMID: 27043002](https://pubmed.ncbi.nlm.nih.gov/27043002/)
+- Intron excision ratio (splicing): [PMID: 29229983](https://pubmed.ncbi.nlm.nih.gov/29229983/) and [PMID: 36949070](https://pubmed.ncbi.nlm.nih.gov/36949070/)
+- RNA stability: [PMID: 26098447](https://pubmed.ncbi.nlm.nih.gov/26098447/) and [PMID: 24227677](https://pubmed.ncbi.nlm.nih.gov/24227677/)
+- cis-heritability: [PMID: 21167468](https://pubmed.ncbi.nlm.nih.gov/21167468/)
+- cis-QTL mapping: [PMID: 31675989](https://pubmed.ncbi.nlm.nih.gov/31675989/)
+- TWAS weights: [PMID: 26854917](https://pubmed.ncbi.nlm.nih.gov/26854917/)
 
-### 2. Run with your data
-
-Snakemake has features to handle many execution needs such as threads, computational resources, and automatic cluster job submission.
-
-## Pheast
-
-Pantry includes another template directory, `Pheast`, which can run downstream analyses, such as mapping QTLs and generating TWAS models, on all of the phenotypes generated by Pantry. At this stage, details and files for raw sequencing data, reference data, and phenotyping tools are no longer needed, while genotypes and multiple downstream analyses are now employed. The Pheast stage is similar in structure to the phenotyping stage, with a config file, snakefiles, and scripts. The phenotyping outputs (BED files and phenotype groups) can be used in place or transfered to a different computer to run Pheast.
-
-`tensorqtl` has a mode to find conditionally independent cis-QTLs per gene. This can handle data with multiple phenotypes per gene, preventing redundant cis-sQTLs, for example. By concatenating phenotype tables across all modalities, and providing an accompanying phenotype group table, conditionally independent cis-QTL mapping will avoid redundant cis-QTLs across modalities too. A script, `combine_modalities.sh`, is provided to combine phenotype tables into an 'all' modality. Add 'all' to the modality list in the Pheast config, and run `tensorqtl` in the same way as for other grouped phenotype data.
