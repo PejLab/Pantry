@@ -7,8 +7,13 @@ dependencies:
   - bioconductor-impute
   - bioconductor-qvalue
   - bioconductor-variantannotation
+  - dask<2024.2
+  - pandas
+  - pandas-plink
   - pip
   - plink2=2
+  - r-glmnet
+  - r-optparse
   - rpy2
   - snakemake
   - pip:
