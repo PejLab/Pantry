@@ -7,6 +7,7 @@ import pandas as pd
 from rpy2.robjects.packages import importr
 import tensorqtl
 from tensorqtl import genotypeio, cis
+import torch
 
 parser = argparse.ArgumentParser(description="Run tensorQTL from command line but with extra options")
 parser.add_argument("geno_prefix")
@@ -21,6 +22,12 @@ args = parser.parse_args()
 # Check for rpy2 and qvalue packages first, since otherwise tensorQTL will do
 # all the eQTL mapping and then fail.
 _ = importr("qvalue")
+
+if torch.cuda.is_available():
+    print(f'  * using GPU ({torch.cuda.get_device_name(torch.cuda.current_device())})')
+else:
+    print('  * WARNING: using CPU!')
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 pheno, pheno_pos = tensorqtl.read_phenotype_bed(args.expression)
 if args.covariates is not None:
