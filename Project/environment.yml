@@ -14,7 +14,7 @@ dependencies:
   - r-tidyverse # for txrevise
   - r-optparse  # for txrevise
   - r-txrevise
-  - regtools
+  - regtools>=1.0.0
   - rsem
   - scikit-learn
   - snakemake

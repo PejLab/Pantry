@@ -24,6 +24,8 @@ samples_file: input/samples.txt
 # must be present in the phenotype_dir, along with a
 # {modality}.phenotype_groups.txt file in the case of grouped phenotypes.
 modalities:
+  # all:
+  #   grouped: true
   alt_polyA:
     grouped: true
   # alt_TSS:

@@ -13,7 +13,7 @@ rule regtools_junctions:
         min_anchor_len = 8,
         min_intron_len = 50,
         max_intron_len = 500000,
-        strandedness = 0,
+        strandedness = "XS",
     shell:
         """
         mkdir -p {params.splice_dir}

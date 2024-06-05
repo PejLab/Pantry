@@ -11,6 +11,7 @@ dependencies:
   - pandas
   - pandas-plink
   - pip
+  - plink
   - plink2=2
   - r-glmnet
   - r-optparse
