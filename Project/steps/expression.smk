@@ -9,6 +9,8 @@ rule kallisto_index:
         ref_dir / 'kallisto.idx',
     params:
         ref_dir = ref_dir,
+    resources:
+        mem_mb = 32000,
     shell:
         """
         mkdir -p {params.ref_dir}
@@ -27,7 +29,7 @@ rule kallisto:
     params:
         expr_dir = interm_dir / 'expression',
         out_dir = str(interm_dir / 'expression' / '{sample_id}'),
-        single_end_flag = '' if paired_end else '--single',
+        single_end_flag = '' if paired_end else f'--single --fragment-length {fragment_length_mean} --sd {fragment_length_sd}',
         # TODO add strandedness parameter
     threads: 16
     resources:

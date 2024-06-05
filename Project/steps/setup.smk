@@ -43,6 +43,10 @@ def validate_config(config: dict):
     for field in fields:
         if field not in config.keys():
             raise Exception(f'{field} not in config file.')
+    if not config['paired_end']:
+        for field in ['fragment_length_mean', 'fragment_length_mean']:
+            if field not in config.keys():
+                raise Exception(f'{field} estimate must be specified in config for single-end reads.')
 
 def process_config(config: dict):
     """Prepare user config for use in the pipeline.
@@ -87,6 +91,9 @@ paired_end = config['paired_end']
 read_length = config['read_length']
 fastq_dir = config['fastq_dir']
 fastq_map = config['fastq_map']
+if not paired_end:
+    fragment_length_mean = config['fragment_length_mean']
+    fragment_length_sd = config['fragment_length_sd']
 
 ref_genome = config['ref_genome']
 ref_anno = config['ref_anno']

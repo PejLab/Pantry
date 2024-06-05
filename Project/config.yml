@@ -3,6 +3,9 @@ paired_end: True
 read_length: 75
 fastq_dir: input/fastq
 fastq_map: input/fastq_map.txt
+# If paired_end is False, kallisto requires estimated fragment (NOT read) length and standard deviation:
+# fragment_length_mean: 200
+# fragment_length_sd: 50
 
 ## Reference files
 # Download and unzip genome, e.g. http://ftp.ensembl.org/pub/release-106/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz

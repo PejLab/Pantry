@@ -97,6 +97,8 @@ rule alt_TSS_polyA_kallisto_index:
         ref_dir / 'txrevise' / 'txrevise.{group}.{position}.fa.gz',
     output:
         ref_dir / 'txrevise' / 'txrevise.{group}.{position}.idx',
+    resources:
+        mem_mb = 32000,
     shell:
         'kallisto index --index {output} {input}'
 
@@ -112,7 +114,7 @@ rule alt_TSS_polyA_kallisto:
     params:
         alt_group_pos_dir = str(interm_dir / 'alt_TSS_polyA' / '{group}.{position}'),
         out_dir = str(interm_dir / 'alt_TSS_polyA' / '{group}.{position}' / '{sample_id}'),
-        single_end_flag = '' if paired_end else '--single',
+        single_end_flag = '' if paired_end else f'--single --fragment-length {fragment_length_mean} --sd {fragment_length_sd}',
         # TODO add strandedness parameter
     threads: 16
     resources:
