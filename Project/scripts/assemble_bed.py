@@ -228,7 +228,7 @@ parser.add_argument('--output2', type=Path, required=False, help='Second output 
 args = parser.parse_args()
 
 if args.samples is not None:
-    samples = pd.read_csv(args.samples, sep='\t', header=None)[0].tolist()
+    samples = pd.read_csv(args.samples, sep='\t', header=None, dtype=str)[0].tolist()
 
 if args.type == 'alt_TSS_polyA':
     assemble_alt_TSS_polyA(samples, args.input_dir, args.input_dir2, 'tpm', args.ref_anno, args.output, min_frac=0.05, max_frac=0.95)

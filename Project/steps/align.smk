@@ -5,10 +5,10 @@ rule star_index:
         ref_anno = ref_anno,
     output:
         # Among other generated files:
-        ref_dir / 'star_index' / 'SAindex',
-        ref_dir / 'star_index' / 'chrNameLength.txt',
+        ref_dir / f'star_index_{read_length}' / 'SAindex',
+        ref_dir / f'star_index_{read_length}' / 'chrNameLength.txt',
     params:
-        index_dir = ref_dir / 'star_index',
+        index_dir = ref_dir / f'star_index_{read_length}',
         overhang = read_length - 1,
         genomeSAindexNbases = int(np.log2(genome_size) / 2 - 1),
     threads: 16
@@ -44,12 +44,12 @@ rule star_align:
     """Align RNA-Seq reads for a sample using STAR."""
     input:
         fastq = fastq_inputs,
-        index = ref_dir / 'star_index' / 'SAindex',
+        index = ref_dir / f'star_index_{read_length}' / 'SAindex',
     output:
         interm_dir / 'bam' / '{sample_id}.Aligned.sortedByCoord.out.bam',
     params:
         fastq_list = fastq_star_param,
-        index_dir = ref_dir / 'star_index',
+        index_dir = ref_dir / f'star_index_{read_length}',
         bam_dir = interm_dir / 'bam',
         prefix = str(interm_dir / 'bam' / '{sample_id}.'),
     threads: 16

@@ -44,7 +44,7 @@ zcat < $BED | awk -vs=$B_START -ve=$B_END 'NR >= s + 1 && NR <= e + 1' | while r
 
 	# Get the gene positions +/- 500kb
 	CHR=`echo $PARAM | awk '{ print $1 }'`
-	P0=`echo $PARAM | awk '{ print $3 - 0.5e6 }'`
+	P0=`echo $PARAM | awk '{ p = $3 - 0.5e6; if (p < 1) p = 1; print p }'`
 	P1=`echo $PARAM | awk '{ print $3 + 0.5e6 }'`
 	GNAME=`echo $PARAM | awk '{ print $4 }'`
 

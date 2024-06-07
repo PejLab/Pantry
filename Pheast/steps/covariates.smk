@@ -14,12 +14,14 @@ rule prune_for_covar:
         pruned_dir = interm_dir / 'covar',
         pruned_prefix = interm_dir / 'covar' / 'geno_pruned',
     shell:
-        # --geno 0.05 filters variants with >5% missing values (the rest will be imputed)
+        # --geno 0.05 filters variants with >5% missing values (the rest will be imputed).
+        # Default is 0 so that samples with many more genotyped variants than others don't
+        # result in other samples having mostly missing values after pruning.
         """
         mkdir -p {params.pruned_dir}
         plink2 \
             --bfile {params.geno_prefix} \
-            --geno 0.05 \
+            --geno 0.00 \
             --maf 0.05 \
             --indep-pairwise 200 100 0.1 \
             --out {params.pruned_prefix}
@@ -60,15 +62,16 @@ rule plink_covariates:
     output:
         plink = interm_dir / 'covar' / '{modality}.covar.plink.tsv',
     run:
-        covar = pd.read_csv(input.covar, sep='\t', index_col=0)
+        covar = pd.read_csv(input.covar, sep='\t', index_col=0, dtype=str)
         covar.index.name = None
         covar = covar.T
         covar.index.name = 'IID'
         covar = covar.reset_index()
         # covar.insert(0, 'FID', 0)  # Family must match that in the genotype files.
         ## Get FIDs from genotypes:
-        fam = pd.read_csv(input.fam, sep='\t', header=None, index_col=1)
-        fam = fam.to_dict()[0]
+        fam = pd.read_csv(input.fam, sep='\t', header=None, dtype=str)
+        # In some versions, dtype doesn't apply to index, so set index later:
+        fam = fam.set_index(1).to_dict()[0]
         ## Insert FIDs as first column of covar, joining by IID:
         covar.insert(0, 'FID', covar['IID'].map(fam))
         covar.to_csv(output.plink, sep='\t', index=False, header=False)
