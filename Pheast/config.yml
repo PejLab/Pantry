@@ -51,6 +51,7 @@ analyses:
     files:
     - '{modality}.cis_qtl.txt.gz'
     - '{modality}.cis_independent_qtl.txt.gz'
+    # - '{modality}.trans_qtl.txt.gz'
   twas:
     files:
     - '{modality}.tar.bz2'

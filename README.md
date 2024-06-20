@@ -30,9 +30,9 @@ General guides to using the [Snakemake](https://snakemake.github.io/) workflow m
 
 ```yaml
 use-conda: true
-cluster: "sbatch -t {resources.walltime}:00:00 --mem={resources.mem_mb} -c {threads} {resources.partition} --mail-type=FAIL --mail-user=myemail@address.edu"
-default-resources: [walltime=4, mem_mb=4000, partition=""]
-# partition should either be empty string for default or something like "--partition=gpu"
+cluster: "sbatch --parsable -t {resources.walltime}:00:00 --mem={resources.mem_mb} -c {threads} {resources.partition_etc} --mail-type=FAIL --mail-user=myemail@address.edu"
+default-resources: [walltime=4, mem_mb=8000, partition_etc=""]
+# partition_etc should either be empty string for default or something like "--partition=gpu --gres=gpu:1"
 latency-wait: 60
 cluster-cancel: scancel
 ```
