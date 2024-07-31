@@ -11,7 +11,7 @@ The guide below begins with software environment setup, followed by a run-throug
 Clone or download the repository:
 
 ```sh
-git clone https://github.com/daniel-munro/Pantry.git
+git clone https://github.com/PejLab/Pantry.git
 ```
 
 Install dependencies for the phenotyping pipeline. [Miniconda](https://docs.conda.io/en/latest/miniconda.html) is recommended for installation and management of these programs. A conda environment specification is provided in `Project/environment.yml`:

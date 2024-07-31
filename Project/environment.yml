@@ -9,7 +9,7 @@ dependencies:
   - graphviz  # for plotting pipeline diagrams
   - gtfparse
   - htslib # for bgzip
-  - kallisto
+  - kallisto=0.48.0
   - pysam=0.16.0.1
   - r-tidyverse # for txrevise
   - r-optparse  # for txrevise

@@ -92,6 +92,7 @@ rule tensorqtl_trans:
         qtl_dir = output_dir / 'qtl',
     resources:
         walltime = 12,
+        mem_mb = 32000,
         partition_etc = '--partition=gpu --gres=gpu:1',
     shell:
         ## Cluster environments may require cuda to be loaded, e.g.:
