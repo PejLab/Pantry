@@ -1,6 +1,6 @@
 # Pantry
 
-Pantry (PAN-TRanscriptome phenotYping) is a framework for generating multimodal transcriptomic phenotypes from RNA-Seq and applying them to genetic analyses. The goal is to make genetic analyses as easy to perform with a multitude of transcriptomic phenotype modalities as it is with gene expression alone.
+Pantry (PAN-TRanscriptomic phenotYping) is a framework for generating multimodal transcriptomic phenotypes from RNA-Seq and applying them to genetic analyses. The goal is to make genetic analyses as easy to perform with a multitude of transcriptomic phenotype modalities as it is with gene expression alone.
 
 **Contact us** if you have a method for an additional modality that you would like to add to Pantry. Your collaboration will result in authorship on a subsequent Pantry publication, and Pantry users will be instructed to cite your original study every time they use the results in a publication.
 

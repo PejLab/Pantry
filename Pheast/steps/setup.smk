@@ -49,7 +49,7 @@ geno_prefix = config['geno_prefix']
 # samples_file = Path(config['samples_file'])
 # samples = pd.read_csv(samples_file, sep='\t', header=None)[0].tolist()
 samples = config['samples']
-geno_samples = pd.read_csv(geno_prefix + '.fam', sep='\t', header=None)[1].tolist()
+geno_samples = pd.read_csv(geno_prefix + '.fam', sep=r'\s+', header=None)[1].tolist()
 missing_samples = [s for s in samples if s not in geno_samples]
 if len(missing_samples) > 0:
     raise Exception(f'Samples missing from genotypes: {missing_samples}')

@@ -4,18 +4,19 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - bioconductor-impute
-  - bioconductor-qvalue
-  - bioconductor-variantannotation
-  - dask<2024.2
+  - bioconductor-impute  # for covariates
+  - bioconductor-qvalue  # for tensorqtl
+  - bioconductor-variantannotation  # for covariates
+  - dask<2024.2  # for tensorqtl (pandas-plink)
+  - gcta  # for heritability
   - pandas
-  - pandas-plink
+  - pandas-plink  # for tensorqtl
   - pip
   - plink
   - plink2=2
-  - r-glmnet
+  - r-glmnet  # for FUSION
   - r-optparse
-  - rpy2
+  - rpy2  # for tensorqtl
   - snakemake
   - pip:
     - tensorqtl
