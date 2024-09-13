@@ -67,7 +67,7 @@ def process_config(config: dict):
         if path in config.keys():
             config[path] = Path(config[path]).expanduser()
 
-    samples = pd.read_csv(config['samples_file'], sep='\t', header=None)[0].tolist()
+    samples = pd.read_csv(config['samples_file'], sep='\t', header=None, dtype=str)[0].tolist()
     config['samples'] = samples
 
     if 'intermediate_dir' not in config:

@@ -33,7 +33,7 @@ def process_config(config: dict):
         if path in config.keys():
             config[path] = Path(config[path]).expanduser()
 
-    config['samples'] = pd.read_csv(config['samples_file'], sep='\t', header=None)[0].tolist()
+    config['samples'] = pd.read_csv(config['samples_file'], sep='\t', header=None, dtype=str)[0].tolist()
 
     if 'intermediate_dir' not in config:
         config['intermediate_dir'] = Path('intermediate')
@@ -49,7 +49,7 @@ geno_prefix = config['geno_prefix']
 # samples_file = Path(config['samples_file'])
 # samples = pd.read_csv(samples_file, sep='\t', header=None)[0].tolist()
 samples = config['samples']
-geno_samples = pd.read_csv(geno_prefix + '.fam', sep=r'\s+', header=None)[1].tolist()
+geno_samples = pd.read_csv(geno_prefix + '.fam', sep=r'\s+', header=None, dtype=str)[1].tolist()
 missing_samples = [s for s in samples if s not in geno_samples]
 if len(missing_samples) > 0:
     raise Exception(f'Samples missing from genotypes: {missing_samples}')

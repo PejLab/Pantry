@@ -46,19 +46,19 @@ rule star_align:
         fastq = fastq_inputs,
         index = ref_dir / f'star_index_{read_length}' / 'SAindex',
     output:
-        interm_dir / 'bam' / '{sample_id}.Aligned.sortedByCoord.out.bam',
+        interm_dir / 'star_out' / '{sample_id}.Aligned.sortedByCoord.out.bam',
     params:
         fastq_list = fastq_star_param,
         index_dir = ref_dir / f'star_index_{read_length}',
-        bam_dir = interm_dir / 'bam',
-        prefix = str(interm_dir / 'bam' / '{sample_id}.'),
+        star_out_dir = interm_dir / 'star_out',
+        prefix = str(interm_dir / 'star_out' / '{sample_id}.'),
     threads: 16
     resources:
         mem_mb = 60000,
         walltime = 8,
     shell:
         """
-        mkdir -p {params.bam_dir}
+        mkdir -p {params.star_out_dir}
         STAR --runMode alignReads \
             --genomeDir {params.index_dir} \
             --readFilesIn {params.fastq_list} \
@@ -73,11 +73,14 @@ rule star_align:
 rule shrink_bam:
     """Remove SEQ and QUAL fields from BAM file to reduce size."""
     input:
-        interm_dir / 'bam' / '{sample_id}.Aligned.sortedByCoord.out.bam',
+        interm_dir / 'star_out' / '{sample_id}.Aligned.sortedByCoord.out.bam',
     output:
         interm_dir / 'bam' / '{sample_id}.bam',
+    params:
+        bam_dir = interm_dir / 'bam',
     shell:
         """
+        mkdir -p {params.bam_dir}
         samtools view -h {input} \
             | awk -v OFS="\t" '{{if (substr($0, 1, 1) != "@") {{$10="*"; $11="*"}}; print ;}}' \
             | samtools view -h -b \
