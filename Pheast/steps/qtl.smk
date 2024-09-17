@@ -30,7 +30,7 @@ rule tensorqtl_perm:
         groups_arg = groups_arg,
     resources:
         walltime = 12,
-        partition_etc = '--partition=gpu --gres=gpu:1',
+        partition_etc = gpu_partition_etc,
     shell:
         ## Cluster environments may require cuda to be loaded, e.g.:
         # module load cuda
@@ -61,7 +61,7 @@ rule tensorqtl_independent:
         groups_arg = groups_arg,
     resources:
         walltime = 20,
-        partition_etc = '--partition=gpu --gres=gpu:1',
+        partition_etc = gpu_partition_etc,
     shell:
         ## Cluster environments may require cuda to be loaded, e.g.:
         # module load cuda
@@ -93,7 +93,7 @@ rule tensorqtl_trans:
     resources:
         walltime = 12,
         mem_mb = 32000,
-        partition_etc = '--partition=gpu --gres=gpu:1',
+        partition_etc = gpu_partition_etc,
     shell:
         ## Cluster environments may require cuda to be loaded, e.g.:
         # module load cuda
