@@ -111,6 +111,7 @@ rule twas_pos_file:
         cut -d'/' -f2 {input.file_list} \
             | sed 's/.wgt.RDat//' \
             | paste {input.file_list} - \
+            | sort -k 2b,2 \
             | join -1 2 -2 4 - <(zcat {input.bed} | cut -f1-4 | sort -k4) \
             | awk '{{OFS="\t"; print $2, $1, $3, $4, $5, {params.n_samples}}}' \
             >> {output.pos_file}

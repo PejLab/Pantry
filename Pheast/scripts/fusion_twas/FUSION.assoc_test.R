@@ -1,3 +1,7 @@
+# This script has been updated separately from the official FUSION repo. Changes:
+# - Update the coloc command for compatibility with newer coloc versions (specifically, to avoid the error "Error in check_dataset(d = dataset1, 1) : dataset 1: missing required element(s) snp").
+# - Make the separation of MHC results optional and off by default, since input data may be non-human and the human-specific MHC region is hard-coded here.
+
 suppressMessages(library('plink2R'))
 suppressMessages(library("optparse"))
 
@@ -33,7 +37,9 @@ option_list = list(
   make_option("--GWASN", action="store", default=NA, type='integer',
               help="Total GWAS/sumstats sample size for inference of standard GWAS effect size."),
   make_option("--PANELN", action="store", default=NA, type='character',
-              help="File listing sample size for each panel for inference of standard QTL effect size, cross-referenced against 'PANEL' column in weights file")      
+              help="File listing sample size for each panel for inference of standard QTL effect size, cross-referenced against 'PANEL' column in weights file"),
+  make_option("--separate_human_MHC", action="store_true", default=FALSE,
+			  help="Separate MHC results into a separate file, for human data ONLY (default: FALSE)"),
 )
 
 opt = parse_args(OptionParser(option_list=option_list))
@@ -359,7 +365,12 @@ for ( w in 1:nrow(wgtlist) ) {
 		vb1 = rep(1/wgtlist$N[w],length(b1))
 		vb2 = rep(1/opt$GWASN,length(b2))
 
-		err = suppressMessages(capture.output(clc <- coloc.abf(dataset1=list(beta=b1,varbeta=vb1,type="quant",N=wgtlist$N[w],sdY=1),dataset2=list(beta=b2,varbeta=vb2,type="quant",N=opt$GWASN,sdY=1))))
+		# err = suppressMessages(capture.output(clc <- coloc.abf(dataset1=list(beta=b1,varbeta=vb1,type="quant",N=wgtlist$N[w],sdY=1),dataset2=list(beta=b2,varbeta=vb2,type="quant",N=opt$GWASN,sdY=1))))
+		# Update for newer versions of coloc requiring snp vectors:
+		err = suppressMessages(capture.output(
+		    clc <- coloc.abf(dataset1 = list(beta = b1, varbeta = vb1, snp = names(b1), type = "quant", N = wgtlist$N[w], sdY = 1),
+		                     dataset2 = list(beta = b2, varbeta = vb2, snp = names(b1), type = "quant", N = opt$GWASN, sdY = 1))
+		))
 		out.tbl$COLOC.PP0[w] = round(clc$summary[2],3)
 		out.tbl$COLOC.PP1[w] = round(clc$summary[3],3)
 		out.tbl$COLOC.PP2[w] = round(clc$summary[4],3)
@@ -379,13 +390,17 @@ cat("Or consider pre-imputing your summary statistics to the LDREF markers using
 #out.tbl$TWAS.P = 2*(pnorm( abs(out.tbl$TWAS.Z) , lower.tail=F))
 
 # WRITE MHC TO SEPARATE FILE
-mhc = as.numeric(out.tbl$CHR) == 6 & as.numeric(out.tbl$P0) > 26e6 & as.numeric(out.tbl$P1) < 34e6
+mhc = as.character(out.tbl$CHR) %in% c("6", "chr6") & as.numeric(out.tbl$P0) > 26e6 & as.numeric(out.tbl$P1) < 34e6
 
 out.tbl$P0 = apply( as.matrix(out.tbl$P0) , 1 , toString )
 out.tbl$P1 = apply( as.matrix(out.tbl$P1) , 1 , toString )
 
-if ( sum( mhc ) > 0 ) {
-	cat("Results in the MHC are written to",paste(opt$out,".MHC",sep=''),", evaluate with caution due to complex LD structure\n")
-	write.table( format( out.tbl[mhc,] , digits=3 ) , quote=F , row.names=F , sep='\t' , file=paste(opt$out,".MHC",sep='') )
+if ( opt$separate_human_MHC ) {
+	if ( sum( mhc ) > 0 ) {
+		cat("Results in the MHC are written to",paste(opt$out,".MHC",sep=''),", evaluate with caution due to complex LD structure\n")
+		write.table( format( out.tbl[mhc,] , digits=3 ) , quote=F , row.names=F , sep='\t' , file=paste(opt$out,".MHC",sep='') )
+	}
+	write.table( format( out.tbl[!mhc,] , digits=3 ) , quote=F , row.names=F , sep='\t' , file=opt$out )
+} else {
+	write.table( format( out.tbl , digits=3 ) , quote=F , row.names=F , sep='\t' , file=opt$out )
 }
-write.table( format( out.tbl[!mhc,] , digits=3 ) , quote=F , row.names=F , sep='\t' , file=opt$out )
