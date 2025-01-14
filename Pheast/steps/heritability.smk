@@ -17,7 +17,7 @@ rule calculate_heritability_chr_batch:
         tmp_dir = str(interm_dir / 'heritability' / 'tmp_{modality}_{chrom}'),
     resources:
         mem_mb = 8000,
-        walltime = 24,
+        runtime = '24h',
     shell:
         """
         mkdir -p {params.grm_dir}

@@ -34,7 +34,7 @@ rule run_featureCounts:
         # TODO add strandedness parameter
     threads: 8
     resources:
-        walltime = 16,
+        runtime = '16h',
     shell:
         """
         mkdir -p {params.stab_dir}

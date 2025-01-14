@@ -14,7 +14,7 @@ rule star_index:
     threads: 16
     resources:
         mem_mb = 60000,
-        walltime = 4,
+        runtime = '4h',
     shell:
         """
         mkdir -p {params.index_dir}
@@ -55,7 +55,7 @@ rule star_align:
     threads: 16
     resources:
         mem_mb = 60000,
-        walltime = 8,
+        runtime = '8h',
     shell:
         """
         mkdir -p {params.star_out_dir}

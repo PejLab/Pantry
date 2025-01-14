@@ -49,7 +49,7 @@ rule txrevise_construct_events:
         batch_str = "'{batch} {n_batches}'",
         outdir = ref_dir / 'txrevise' / 'batch',
     resources:
-        walltime = 16,
+        runtime = '16h',
     shell:
         """
         Rscript scripts/txrevise/constructEvents.R \
@@ -118,7 +118,7 @@ rule alt_TSS_polyA_kallisto:
         # TODO add strandedness parameter
     threads: 16
     resources:
-        walltime = 16,
+        runtime = '16h',
     shell:
         """
         mkdir -p {params.alt_group_pos_dir}

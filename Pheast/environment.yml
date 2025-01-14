@@ -18,5 +18,7 @@ dependencies:
   - r-optparse
   - rpy2  # for tensorqtl
   - snakemake
+  - snakemake-executor-plugin-slurm # change as needed for your cluster
   - pip:
     - tensorqtl
+    - torch==2.3.1 # for tensorqtl

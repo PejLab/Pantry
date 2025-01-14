@@ -11,7 +11,6 @@ def validate_config(config: dict):
         'phenotype_dir',
         'geno_prefix',
         'samples_file',
-        'gpu_partition_etc',
         'modalities',
         'analyses',
     ]
@@ -46,7 +45,6 @@ pheno_dir = config['phenotype_dir']
 interm_dir = config['intermediate_dir']
 output_dir = Path('output')
 geno_prefix = config['geno_prefix']
-gpu_partition_etc = config['gpu_partition_etc']
 
 # samples_file = Path(config['samples_file'])
 # samples = pd.read_csv(samples_file, sep='\t', header=None)[0].tolist()

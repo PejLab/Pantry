@@ -45,7 +45,7 @@ rule twas_compute_weights_batch:
         twas_geno_prefix = twas_geno_prefix,
         twas_interm_dir = interm_dir / 'twas',
     resources:
-        walltime = 8,
+        runtime = '8h',
     shell:
         """
         sh scripts/fusion_compute_weights.sh \

@@ -12,7 +12,7 @@ def groups_input(wildcards):
     else:
         return []
 
-rule tensorqtl_perm:
+rule tensorqtl_cis:
     """Map cis-QTLs, determining significance using permutations.
     Outputs the top association per phenotype.
     """
@@ -29,8 +29,7 @@ rule tensorqtl_perm:
         qtl_dir = output_dir / 'qtl',
         groups_arg = groups_arg,
     resources:
-        walltime = 12,
-        partition_etc = gpu_partition_etc,
+        runtime = '12h',
     shell:
         ## Cluster environments may require cuda to be loaded, e.g.:
         # module load cuda
@@ -45,7 +44,7 @@ rule tensorqtl_perm:
             --mode cis
         """
 
-rule tensorqtl_independent:
+rule tensorqtl_cis_independent:
     """Use stepwise regression to identify multiple conditionally independent cis-QTLs per phenotype."""
     input:
         geno = multiext(geno_prefix, '.bed', '.bim', '.fam'),
@@ -60,8 +59,7 @@ rule tensorqtl_independent:
         geno_prefix = geno_prefix,
         groups_arg = groups_arg,
     resources:
-        walltime = 20,
-        partition_etc = gpu_partition_etc,
+        runtime = '20h',
     shell:
         ## Cluster environments may require cuda to be loaded, e.g.:
         # module load cuda
@@ -91,9 +89,8 @@ rule tensorqtl_trans:
         geno_prefix = geno_prefix,
         qtl_dir = output_dir / 'qtl',
     resources:
-        walltime = 12,
+        runtime = '12h',
         mem_mb = 32000,
-        partition_etc = gpu_partition_etc,
     shell:
         ## Cluster environments may require cuda to be loaded, e.g.:
         # module load cuda

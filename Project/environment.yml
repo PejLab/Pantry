@@ -10,14 +10,13 @@ dependencies:
   - gtfparse
   - htslib # for bgzip
   - kallisto=0.48.0
-  - pysam=0.16.0.1
   - r-tidyverse # for txrevise
   - r-optparse  # for txrevise
   - r-txrevise
   - regtools>=1.0.0
-  - rsem
+  - samtools
   - scikit-learn
   - snakemake
+  - snakemake-executor-plugin-slurm # change as needed for your cluster
   - star
   - subread
-  - telescope
