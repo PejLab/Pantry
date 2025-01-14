@@ -84,6 +84,5 @@ rule shrink_bam:
         samtools view -h {input} \
             | awk -v OFS="\t" '{{if (substr($0, 1, 1) != "@") {{$10="*"; $11="*"}}; print ;}}' \
             | samtools view -h -b \
-            > {output} \
-            && rm {input}
+            > {output}
         """
