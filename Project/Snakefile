@@ -24,20 +24,25 @@ rule all:
 
 def fastq_inputs(wildcards) -> list:
     """Get the list of FASTQ file paths for a sample.
-
-    This is called by several Snakemake rules to get input names.
-    If paired_end is True, file pairs are adjacent in the list, e.g.
-    [runA_1.fq.gz runA_2.fq.gz runB_1.fq.gz runB_2.fq.gz].
+    
+    Returns a list of paths. For paired-end samples, file pairs are adjacent
+    in the list, e.g. [runA_1.fq.gz runA_2.fq.gz runB_1.fq.gz runB_2.fq.gz].
+    For single-end samples, returns just the list of files.
     """
-    fastqs = fastq_map[wildcards.sample_id]
-    if paired_end:
-        paths = []
-        for i in range(len(fastqs[0])):
-            paths.append(fastqs[0][i])
-            paths.append(fastqs[1][i])
-        return paths
+    paths, is_paired = fastq_map[wildcards.sample_id]
+    if is_paired:
+        result = []
+        for i in range(len(paths[0])):
+            result.append(paths[0][i])
+            result.append(paths[1][i])
+        return result
     else:
-        return fastqs
+        return paths
+
+def kallisto_single_end_flag(wildcards):
+    """Get the kallisto single-end flag for a sample."""
+    paths, is_paired = fastq_map[wildcards.sample_id]
+    return '' if is_paired else f'--single --fragment-length {fragment_length_mean} --sd {fragment_length_sd}'
 
 ## Load rules from all the snakefiles
 

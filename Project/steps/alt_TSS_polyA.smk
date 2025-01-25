@@ -114,7 +114,7 @@ rule alt_TSS_polyA_kallisto:
     params:
         alt_group_pos_dir = str(interm_dir / 'alt_TSS_polyA' / '{group}.{position}'),
         out_dir = str(interm_dir / 'alt_TSS_polyA' / '{group}.{position}' / '{sample_id}'),
-        single_end_flag = '' if paired_end else f'--single --fragment-length {fragment_length_mean} --sd {fragment_length_sd}',
+        single_end_flag = kallisto_single_end_flag,
         # TODO add strandedness parameter
     threads: 16
     resources:

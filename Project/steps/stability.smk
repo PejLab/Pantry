@@ -28,7 +28,7 @@ rule run_featureCounts:
         interm_dir / 'stability' / '{sample_id}.{feature_type}.counts.txt',
     params:
         stab_dir = interm_dir / 'stability',
-        paired_flag = '-p' if paired_end else '',
+        paired_flag = lambda w: '-p' if fastq_map[w.sample_id][1] else '',
         feature_id = lambda w: {'constit_exons': 'exon', 'introns': 'intron'}[w.feature_type],
         frac_overlap = lambda w: {'constit_exons': 1, 'introns': 0}[w.feature_type],
         # TODO add strandedness parameter

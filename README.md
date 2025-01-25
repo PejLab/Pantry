@@ -121,7 +121,7 @@ Pantry will generate its own BAM files from the FASTQ files using the reference 
 
 #### FASTQ sample map
 
-A file containing FASTQ file paths and the name of the sample they map to, separated by tabs, with no header. The paths should be relative to the `fastq_dir` specified in the config file.
+A file containing FASTQ file paths and the name of the sample they map to, separated by tabs, with no header. The paths should be relative to the `fastq_dir` specified in the config file, which itself is relative to the project directory.
 
 Example for single-end reads:
 
@@ -143,13 +143,13 @@ batch1/sampleB_run1_1.fastq.gz	batch1/sampleB_run1_2.fastq.gz	sampleB
 ...
 ```
 
+FASTQ files must be compressed (decompressible with `zcat`) unless you modify the `STAR` command to handle uncompressed files. Multiple FASTQ files (or paired-end file pairs) can be provided for each sample and the reads will be combined into one BAM file per sample.
+
+If your dataset includes both single-end and paired-end samples, the FASTQ map will have some rows with two paths (plus sample ID) and some with one path (plus sample ID). The endedness of each sample is determined by the number of paths and will be run accordingly. Omit `paired_end` from the config so that it doesn't enforce a single endedness. If a sample has multiple FASTQ files (or paired-end file pairs), they must all have the same endedness.
+
 #### Sample list
 
 This file, whose path is specified in the config file, is the list of samples to include in the phenotyping stage. It contains a single column of sample IDs, no header. Any samples in the FASTQ sample map that are not in this list will be ignored.
-
-#### FASTQ files
-
-FASTQ files must be compressed (decompressible with `zcat`) unless you modify the `STAR` command to handle uncompressed files. Multiple FASTQ files (or paired-end file pairs) can be provided for each sample and the reads will be combined into one BAM file per sample.
 
 #### Reference genome and annotations
 

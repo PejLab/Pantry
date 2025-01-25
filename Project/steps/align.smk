@@ -34,11 +34,11 @@ def fastq_star_param(wildcards):
     
     This is the string supplied directly to the STAR command.
     """
-    files = fastq_map[wildcards.sample_id]
-    if paired_end:
-        return ' '.join([','.join(files[0]), ','.join(files[1])])
+    paths, is_paired = fastq_map[wildcards.sample_id]
+    if is_paired:
+        return ' '.join([','.join(paths[0]), ','.join(paths[1])])
     else:
-        return ','.join(files)
+        return ','.join(paths)
 
 rule star_align:
     """Align RNA-Seq reads for a sample using STAR."""

@@ -29,7 +29,7 @@ rule kallisto:
     params:
         expr_dir = interm_dir / 'expression',
         out_dir = str(interm_dir / 'expression' / '{sample_id}'),
-        single_end_flag = '' if paired_end else f'--single --fragment-length {fragment_length_mean} --sd {fragment_length_sd}',
+        single_end_flag = kallisto_single_end_flag,
         # TODO add strandedness parameter
     threads: 16
     resources:
