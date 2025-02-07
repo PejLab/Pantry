@@ -111,7 +111,7 @@ paired_end = config['paired_end']
 read_length = config['read_length']
 fastq_dir = config['fastq_dir']
 fastq_map = config['fastq_map']
-if not paired_end:
+if paired_end is not None and not paired_end:
     fragment_length_mean = config['fragment_length_mean']
     fragment_length_sd = config['fragment_length_sd']
 

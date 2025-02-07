@@ -10,7 +10,7 @@ B_END=$6
 OUTDIR=$7
 
 # I don't think set -e can be used because plink has error when no cis-window variants present, in which case this script should skip it and continue.
-# set -e
+set -e
 
 echo $GENO $BED $COVAR $PHENO $B_START $B_END $OUTDIR
 
@@ -57,41 +57,40 @@ zcat < $BED | awk -vs=$B_START -ve=$B_END 'NR >= s + 1 && NR <= e + 1' | while r
 
 	# Get the locus genotypes for all samples and set current gene expression as the phenotype
 	# Omit filtering to LD reference SNPs. Instead, Pantry does optional pre-filtering.
-		# --extract $LDREF/1000G.EUR.$CHR.bim \
-		# --force-intersect
-	plink --bfile $GENO \
+	if plink --bfile $GENO \
 		--pheno $G_TMP.pheno \
 		--keep $G_TMP.pheno \
 		--make-bed \
 		--out $G_TMP \
 		--chr $CHR \
 		--from-bp $P0 \
-		--to-bp $P1
+		--to-bp $P1; then
 
-	G_OUT="$OUTDIR/$PHENO/$GNAME"
+		G_OUT="$OUTDIR/$PHENO/$GNAME"
 
-	Rscript scripts/fusion_twas/FUSION.compute_weights.R \
-		--bfile $G_TMP \
-		--covar $COVAR \
-		--tmp $G_TMP.tmp \
-		--out $G_OUT \
-		--verbose 0 \
-		--save_hsq \
-		--PATH_plink plink \
-		--PATH_gcta ./scripts/fusion_twas/gcta_nr_robust \
-		--PATH_gemma ./scripts/fusion_twas/gemma \
-		--models blup,lasso,top1,enet
+		Rscript scripts/fusion_twas/FUSION.compute_weights.R \
+			--bfile $G_TMP \
+			--covar $COVAR \
+			--tmp $G_TMP.tmp \
+			--out $G_OUT \
+			--verbose 0 \
+			--save_hsq \
+			--PATH_plink plink \
+			--PATH_gcta ./scripts/fusion_twas/gcta_nr_robust \
+			--PATH_gemma ./scripts/fusion_twas/gemma \
+			--models blup,lasso,top1,enet
 
-	# Append heritability output to hsq file
-	if [ -f "$G_OUT.hsq" ]; then
-		cat $G_OUT.hsq >> $OUTDIR/tmp_$PHENO/$NR.hsq
+		# Append heritability output to hsq file
+		if [ -f "$G_OUT.hsq" ]; then
+			cat $G_OUT.hsq >> $OUTDIR/tmp_$PHENO/$NR.hsq
+		fi
+
+		# Clean-up just in case
+		rm -f $G_OUT.hsq $G_TMP.tmp.*
 	fi
 
-	# Clean-up just in case
-	rm -f $G_OUT.hsq $G_TMP.tmp.*
-
 	# Remove all intermediate files
-	rm $G_TMP.*
+	rm -f $G_TMP.*
 
 done
 

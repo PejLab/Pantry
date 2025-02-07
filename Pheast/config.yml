@@ -14,7 +14,7 @@ samples_file: input/samples.txt
 ## Optional parameters
 # Provide a list of SNP IDs to include when computing TWAS weights:
 # It is recommended to include only SNPs present in the LD reference used later for TWAS.
-# twas_snps: /path/to/list/of/snps.txt
+twas_snps: /path/to/list/of/snps.txt
 # Path to intermediate file directory, in case you don't want it inside this project directory due to its size:
 # This directory will be created if it doesn't exist, and will contain any generated (i.e. not input) files besides the final analysis results.
 # intermediate_dir: intermediate
