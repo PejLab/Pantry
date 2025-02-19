@@ -6,7 +6,7 @@ channels:
 dependencies:
   - bioconductor-impute  # for covariates
   - bioconductor-qvalue  # for tensorqtl
-  - bioconductor-variantannotation  # for covariates
+  - bioconductor-snpstats  # for covariates
   - dask<2024.2  # for tensorqtl (pandas-plink)
   - gcta  # for heritability
   - pandas

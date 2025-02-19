@@ -2,7 +2,7 @@
 # * Make sure BLUP/BSLMM weights are being scaled properly based on MAF
 
 suppressMessages(library("optparse"))
-suppressMessages(library('plink2R'))
+suppressMessages(library(snpStats))
 suppressMessages(library('glmnet'))
 suppressMessages(library('methods'))
 
@@ -63,6 +63,34 @@ if ( opt$verbose == 2 ) {
   SYS_PRINT = F
 } else {
   SYS_PRINT = T
+}
+
+# Replacement for plink2R::read_plink function
+read_plink <- function(prefix, impute="avg") {
+    # Read PLINK files using snpStats
+    geno <- read.plink(prefix)
+    
+    # Preserve zeros in fam file
+    geno$fam[is.na(geno$fam)] <- 0
+    
+    # Convert to numeric matrix (0,1,2 coding)
+    bed <- as(geno$genotypes, "numeric")
+    
+    if (impute == "avg") {
+        # Impute missing values with column means
+        col_means <- colMeans(bed, na.rm=TRUE)
+        for (i in 1:ncol(bed)) {
+            bed[is.na(bed[,i]), i] <- col_means[i]
+        }
+    } else {
+        stopifnot(is.null(impute))
+    }
+        
+    return(list(
+        bed=bed,
+        fam=geno$fam,
+        bim=geno$map
+    ))
 }
 
 # --- PREDICTION MODELS
@@ -380,4 +408,6 @@ snps = genos$bim
 save( wgt.matrix , snps , cv.performance , hsq, hsq.pv, N.tot , file = paste( opt$out , ".wgt.RDat" , sep='' ) )
 # --- CLEAN-UP
 if ( opt$verbose >= 1 ) cat("Cleaning up\n")
-cleanup()
+# cleanup()
+
+print(length(genos$bim))

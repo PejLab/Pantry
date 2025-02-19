@@ -1,2 +1,0 @@
-useDynLib(plink2R)
-exportPattern("^[[:alpha:]]+")

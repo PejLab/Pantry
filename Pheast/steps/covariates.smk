@@ -8,7 +8,7 @@ rule prune_for_covar:
     input:
         multiext(geno_prefix, '.bed', '.bim', '.fam'),
     output:
-        interm_dir / 'covar' / 'geno_pruned.vcf.gz',
+        multiext(str(interm_dir / 'covar' / 'geno_pruned'), '.bed', '.bim', '.fam'),
     params:
         geno_prefix = geno_prefix,
         pruned_dir = interm_dir / 'covar',
@@ -28,18 +28,19 @@ rule prune_for_covar:
         plink2 \
             --bfile {params.geno_prefix} \
             --extract {params.pruned_prefix}.prune.in \
-            --export vcf bgz id-paste=iid \
+            --make-bed \
             --out {params.pruned_prefix}
         """
 
 rule covariates:
     """Compute genotype and expression PCs and combine."""
     input:
-        vcf = interm_dir / 'covar' / 'geno_pruned.vcf.gz',
+        geno = multiext(str(interm_dir / 'covar' / 'geno_pruned'), '.bed', '.bim', '.fam'),
         bed = pheno_dir / '{modality}.bed.gz',
     output:
         interm_dir / 'covar' / '{modality}.covar.tsv',
     params:
+        pruned_prefix = interm_dir / 'covar' / 'geno_pruned',
         n_geno_pcs = 5,
         n_pheno_pcs = 20,
     resources:
@@ -47,7 +48,7 @@ rule covariates:
     shell:
         """
         Rscript scripts/covariates.R \
-            {input.vcf} \
+            {params.pruned_prefix} \
             {input.bed} \
             {params.n_geno_pcs} \
             {params.n_pheno_pcs} \

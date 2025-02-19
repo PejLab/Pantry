@@ -33,9 +33,7 @@ mkdir -p $OUTDIR/hsq_$PHENO
 # THIS IS DIRECTORY WHERE THE OUTPUT WILL GO:
 mkdir -p $OUTDIR/$PHENO
 
-if [ -f "$OUTDIR/tmp_$PHENO/$NR.hsq" ]; then
-	rm $OUTDIR/tmp_$PHENO/$NR.hsq
-fi
+rm -f $OUTDIR/tmp_$PHENO/$NR.hsq
 # Create batch hsq file even if empty to indicate the batch has been run
 touch $OUTDIR/tmp_$PHENO/$NR.hsq
 
@@ -90,7 +88,7 @@ zcat < $BED | awk -vs=$B_START -ve=$B_END 'NR >= s + 1 && NR <= e + 1' | while r
 	fi
 
 	# Remove all intermediate files
-	rm -f $G_TMP.*
+	# rm -f $G_TMP.*
 
 done
 

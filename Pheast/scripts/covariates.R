@@ -1,12 +1,11 @@
-suppressPackageStartupMessages(library(VariantAnnotation))
+suppressPackageStartupMessages(library(snpStats))
 library(impute)
 
 load_geno <- function(filename) {
-    gt <- readGT(filename)
-    geno <- apply(gt, 2, function(x) c("0|0" = 0, "0|1" = 1, "1|0" = 1, "1|1" = 2,
-                                       "0/0" = 0, "0/1" = 1, "1/0" = 1, "1/1" = 2)[x])
-    rownames(geno) <- rownames(gt)
-    geno
+    geno <- read.plink(filename)
+    # Convert to 0,1,2 coding
+    geno_mat <- as(geno$genotypes, "numeric")
+    t(geno_mat)
 }
 
 get_PCs <- function(df, n_pcs) {
@@ -23,19 +22,18 @@ get_PCs <- function(df, n_pcs) {
 }
 
 args <- commandArgs(trailingOnly = TRUE)
-VCF_FILE <- args[1]
+GENO_PREFIX <- args[1]
 BED_FILE <- args[2]
 N_GENO_PCS <- as.integer(args[3])
 N_PHENO_PCS <- as.integer(args[4])
 OUT_FILE <- args[5]
-# OUT_FILE_PLINK <- args[6]
 
 pheno <- read.delim(BED_FILE, check.names = FALSE, row.names = 4)[, -(1:3)]
 if (ncol(pheno) < 2) stop("Computing covariate PCs requires more than 1 sample.")
 pheno_pcs <- get_PCs(pheno, N_PHENO_PCS)
 pheno_pcs$ID <- paste("pheno", pheno_pcs$ID, sep = "_")
 
-geno <- load_geno(VCF_FILE)
+geno <- load_geno(GENO_PREFIX)
 geno <- geno[, colnames(pheno)]
 geno_pcs <- get_PCs(geno, N_GENO_PCS)
 geno_pcs$ID <- paste("geno", geno_pcs$ID, sep = "_")
@@ -43,12 +41,3 @@ geno_pcs$ID <- paste("geno", geno_pcs$ID, sep = "_")
 stopifnot(identical(colnames(geno_pcs), colnames(pheno_pcs)))
 covars <- rbind(geno_pcs, pheno_pcs)
 write.table(covars, OUT_FILE, sep = "\t", quote = FALSE, row.names = FALSE)
-
-# plink <- covars
-# rownames(plink) <- plink$ID
-# plink$ID <- NULL
-# plink <- as.data.frame(t(plink))
-# plink$FID <- "0"
-# plink$IID <- rownames(plink)
-# plink <- plink[, c("FID", "IID", colnames(plink)[1:(ncol(plink) - 2)])]
-# write.table(plink, OUT_FILE_PLINK, sep = "\t", quote = FALSE, row.names = FALSE)
