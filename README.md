@@ -14,17 +14,17 @@ Clone or download the repository:
 git clone https://github.com/PejLab/Pantry.git
 ```
 
-Install dependencies for the phenotyping pipeline. [Miniconda](https://docs.conda.io/en/latest/miniconda.html) is recommended for installation and management of these programs. A conda environment specification is provided in `Project/environment.yml`:
+Install dependencies for the phenotyping pipeline. [Miniconda](https://docs.conda.io/en/latest/miniconda.html) is recommended for installation and management of these programs. A conda environment specification is provided in `phenotyping/environment.yml`:
 
 ```sh
-cd Pantry/Project
+cd Pantry/phenotyping
 conda env create -n pantry --file environment.yml
 conda activate pantry
 ```
 
 ### Set up Snakemake
 
-General guides to using the [Snakemake](https://snakemake.github.io/) workflow management system can be found online to learn its features. It can handle many execution needs such as threads, computational resources, and automatic cluster job submission. You can specify a profile that determines how steps get run (this is different from the Pantry project config files in `Project/` and `Pheast/`). Here is an example profile config for use on a computing cluster with slurm scheduling:
+General guides to using the [Snakemake](https://snakemake.github.io/) workflow management system can be found online to learn its features. It can handle many execution needs such as threads, computational resources, and automatic cluster job submission. You can specify a profile that determines how steps get run (this is different from the Pantry project config files in `phenotyping/` and `pheast/`). Here is an example profile config for use on a computing cluster with slurm scheduling:
 
 `~/.config/snakemake/slurm/config.yaml`:
 
@@ -58,7 +58,7 @@ This uses snakemake v8 or higher and the `snakemake-executor-plugin-slurm` plugi
 
 Before running Pantry on your data, we recommend testing on our test data to ensure the software environment is set up and the pipeline can run successfully.
 
-The test dataset for the phenotyping stage includes reads from 16 Geuvadis samples, subsetted to those that would map to the first 2 Mb of `chr1`. Download [test_input_phenotyping.tar.gz](https://www.dropbox.com/scl/fi/5c4yjrqji9catsazc8nxd/test_input_phenotyping.tar.gz?rlkey=jsppnzu4cdls9fp5z3xxm1i37&dl=0) to `Project/`, make sure there is no existing `input` directory with important files in it, and then try running Snakemake:
+The test dataset for the phenotyping stage includes reads from 16 Geuvadis samples, subsetted to those that would map to the first 2 Mb of `chr1`. Download [test_input_phenotyping.tar.gz](https://www.dropbox.com/scl/fi/5c4yjrqji9catsazc8nxd/test_input_phenotyping.tar.gz?rlkey=jsppnzu4cdls9fp5z3xxm1i37&dl=0) to `/`, make sure there is no existing `input` directory with important files in it, and then try running Snakemake:
 
 ```sh
 wget -O test_input_phenotyping.tar.gz "https://www.dropbox.com/scl/fi/5c4yjrqji9catsazc8nxd/test_input_phenotyping.tar.gz?rlkey=jsppnzu4cdls9fp5z3xxm1i37&dl=0"
@@ -69,12 +69,12 @@ snakemake -j1 -n
 
 The `-n` flag makes it a dry run, just printing which steps would run without executing them. If it does that successfully, remove the `-n` flag to actually run the pipeline. For any snakemake run where you'd need to submit large steps as jobs, add `--profile slurm` (using the name where you placed the config file above).
 
-The second stage of Pantry, Pheast, applies the RNA phenotypes to downstream genetic analyses, and operates in its own project directory. For its dependencies, you can either make a `pheast` environment using `Pheast/environment.yml`, or install those dependencies in the existing `pantry` environment.
+The second stage of Pantry, Pheast, applies the RNA phenotypes to downstream genetic analyses, and operates in its own project directory. For its dependencies, you can either make a `pheast` environment using `pheast/environment.yml`, or install those dependencies in the existing `pantry` environment.
 
 You can then download and run test data for the Pheast stage. Since these genetic analyses can run into problems when run with too few samples, the test data for Pheast includes Pantry phenotypes for 200 genes for one non-grouped (`expression`) and one grouped (`alt_polyA`) modality, all on `chr1`, for 445 Geuvadis samples, along with their genotypes subsetted to `chr1`. Download [test_input_pheast.tar.gz](https://www.dropbox.com/scl/fi/5k2ybqyrtmjll2ig6nnxv/test_input_pheast.tar.gz?rlkey=yzybnhb60b3yxoebrhsoaoumz&dl=0) to Pheast (or your copy of that directory), make sure there is no existing `input` directory with important files in it, and then try running Snakemake:
 
 ```sh
-cd ../Pheast
+cd ../pheast
 wget -O test_input_pheast.tar.gz "https://www.dropbox.com/scl/fi/5k2ybqyrtmjll2ig6nnxv/test_input_pheast.tar.gz?rlkey=yzybnhb60b3yxoebrhsoaoumz&dl=0"
 tar -xzvf test_input_pheast.tar.gz
 rm test_input_pheast.tar.gz
@@ -87,7 +87,7 @@ Consult these descriptions of the Pantry code and expected file formats to run P
 
 ### Code
 
-The `Project/` directory is a template for phenotyping one dataset (e.g. tissue). To run Pantry on a dataset, copy the contents of `Project/` to a new directory that you can write to. Your project directory now contains all the data processing code, so that if you modify it or add custom modalities, you have a record of it that stays with the results and is not automatically changed by Pantry updates or your other Pantry runs. The `Pheast/` template directory works similarly for the second stage of the pipeline.
+The `phenotyping/` directory is a template for phenotyping one dataset (e.g. tissue). To run Pantry on a dataset, copy the contents of `phenotyping/` to a new directory that you can write to. Your project directory now contains all the data processing code, so that if you modify it or add custom modalities, you have a record of it that stays with the results and is not automatically changed by Pantry updates or your other Pantry runs. The `pheast/` template directory works similarly for the second stage of the pipeline.
  
 Currently Pantry generates RNA phenotypes for six modalities, grouped into four Snakemake modules in `steps/` that run the following tools:
 
@@ -98,11 +98,11 @@ Currently Pantry generates RNA phenotypes for six modalities, grouped into four 
 
 Snakemake looks at the inputs and outputs for each rule and figures out the order and number of times to run each step. Pantry includes sensible defaults for this set of tools, but you can edit the commands and add new modalities.
 
-![Phenotyping pipeline diagram](Project/diagram_steps.png)
+![Phenotyping pipeline diagram](phenotyping/diagram_steps.png)
 
 ### Config file
 
-The config file is a file in YAML format specifying general parameters, input files, and modalities to generate. `Project/` includes a default config, which is for the above example dataset above, and must be customized for your data:
+The config file is a file in YAML format specifying general parameters, input files, and modalities to generate. `phenotyping/` includes a default config, which is for the above example dataset above, and must be customized for your data:
 
 ```yaml
 ## Raw RNA-Seq data
@@ -190,13 +190,13 @@ ENSG00000279457:1:187577:188130:clu_6_-	ENSG00000279457
 
 ### Pheast
 
-The second stage of Pantry, `Pheast`, runs downstream genetic analyses such as mapping cis-QTLs and generating TWAS models, on all of the phenotypes generated by Pantry. At this stage, details and files for raw sequencing data, reference data, and phenotyping tools are no longer needed, while genotypes and multiple downstream analyses are now employed. Thus the Pheast stage has its own template directory that is similar in structure to the phenotyping stage, with a config file, snakefiles, and scripts. The phenotyping outputs (BED files and phenotype groups) can be used in place or transfered to a different computer to run Pheast.
+The second stage of Pantry, Pheast, runs downstream genetic analyses such as mapping cis-QTLs and generating TWAS models, on all of the phenotypes generated by Pantry. At this stage, details and files for raw sequencing data, reference data, and phenotyping tools are no longer needed, while genotypes and multiple downstream analyses are now employed. Thus the Pheast stage has its own template directory that is similar in structure to the phenotyping stage, with a config file, snakefiles, and scripts. The phenotyping outputs (BED files and phenotype groups) can be used in place or transfered to a different computer to run Pheast.
 
-![Pheast pipeline diagram](Pheast/diagram_steps.png)
+![Pheast pipeline diagram](pheast/diagram_steps.png)
 
 #### Combined-modality cis-QTL mapping
 
-`tensorqtl` has a mode to find conditionally independent cis-QTLs per gene. This can handle data with multiple phenotypes per gene, preventing redundant cis-sQTLs, for example. By combining phenotypes across all modalities into one table and one phenotype groups file, conditionally independent cis-QTL mapping will avoid redundant cis-QTLs across modalities too. A script, `combine_modalities.sh`, is provided to combine phenotype tables into an 'all' modality. Add 'all' to the modality list in the Pheast config, and run `tensorqtl` in the same way as for other grouped phenotype data.
+`tensorqtl` has a mode to find conditionally independent cis-QTLs per gene. This can handle data with multiple phenotypes per gene, preventing redundant cis-sQTLs, for example. By combining phenotypes across all modalities into one table and one phenotype groups file, conditionally independent cis-QTL mapping will avoid redundant cis-QTLs across modalities too. A script, `combine_modalities.sh`, is provided to combine phenotype tables into a 'cross_modality' modality. Add (or uncomment) 'cross_modality' to the modality list in the Pheast config, and run `tensorqtl` in the same way as for other grouped phenotype data.
 
 #### Pheast output files
 
