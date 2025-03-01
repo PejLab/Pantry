@@ -5,10 +5,10 @@
 ##
 ## Usage: bash scripts/combine_modalities.sh alt_polyA alt_TSS expression isoforms splicing stability
 ##
-## Outputs: output/all.bed.gz, output/all.bed.gz.tbi, output/all.phenotype_groups.txt
+## Outputs: output/cross_modality.bed.gz, output/cross_modality.bed.gz.tbi, output/cross_modality.phenotype_groups.txt
 ##
 ## The phenotype names are modified by prepending '{modality}:' so they are
-## unique and so their modalities can be recovered. After running, add 'all' as
+## unique and so their modalities can be recovered. After running, add 'cross_modality' as
 ## a modality in the Pheast config and generate QTLs for it.
 
 if [ "$#" -lt 1 ]; then
@@ -24,13 +24,13 @@ done
 for modality in "$@"; do
     echo $modality
     # Prepend modality name to phenotype names:
-    zcat output/$modality.bed.gz | tail -n+2 | awk -v OFS='\t' '{$4 = "'$modality':"$4; print}' >> output/all_tmp.bed
+    zcat output/$modality.bed.gz | tail -n+2 | awk -v OFS='\t' '{$4 = "'$modality':"$4; print}' >> output/cross_modality_tmp.bed
 done
-zcat output/$1.bed.gz | head -n1 > output/all.bed
-sort -k1,1 -k2,2n output/all_tmp.bed >> output/all.bed
-rm output/all_tmp.bed
-bgzip output/all.bed
-tabix -p bed output/all.bed.gz
+zcat output/$1.bed.gz | head -n1 > output/cross_modality.bed
+sort -k1,1 -k2,2n output/cross_modality_tmp.bed >> output/cross_modality.bed
+rm output/cross_modality_tmp.bed
+bgzip output/cross_modality.bed
+tabix -p bed output/cross_modality.bed.gz
 
 ## Make phenotype_groups file:
-zcat output/all.bed.gz | tail -n+2 | cut -f4 | awk -F'[:.]' '{print $0"\t"$2}' > output/all.phenotype_groups.txt
+zcat output/cross_modality.bed.gz | tail -n+2 | cut -f4 | awk -F'[:.]' '{print $0"\t"$2}' > output/cross_modality.phenotype_groups.txt

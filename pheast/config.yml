@@ -23,9 +23,9 @@ twas_snps: input/ld_snps_chr1.txt
 # List the modalities to use. The phenotype table ({modality}.bed.gz)
 # must be present in the phenotype_dir, along with a
 # {modality}.phenotype_groups.txt file in the case of grouped phenotypes.
-# 'all' is used to run cross-modality QTL mapping. See Project/scripts/combine_modalities.sh for more details.
+# 'cross_modality' is used to run cross-modality QTL mapping. See Project/scripts/combine_modalities.sh for more details.
 modalities:
-  # all:
+  # cross_modality:
   #   grouped: true
   alt_polyA:
     grouped: true
