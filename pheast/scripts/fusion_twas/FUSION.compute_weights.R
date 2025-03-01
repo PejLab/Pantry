@@ -314,6 +314,13 @@ cv.performance = matrix(NA,nrow=2,ncol=M)
 rownames(cv.performance) = c("rsq","pval")
 colnames(cv.performance) = models
 
+# Stop if we only have a single SNP (glmnet will fail)
+if (ncol(genos$bed) == 1) {
+	cat("Only one SNP available, skipping this gene\n")
+	cleanup()
+	q()
+}
+
 if ( opt$crossval <= 1 ) {
 if ( opt$verbose >= 1 ) cat("### Skipping cross-validation\n")
 } else {

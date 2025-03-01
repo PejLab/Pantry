@@ -198,6 +198,29 @@ The second stage of Pantry, Pheast, runs downstream genetic analyses such as map
 
 `tensorqtl` has a mode to find conditionally independent cis-QTLs per gene. This can handle data with multiple phenotypes per gene, preventing redundant cis-sQTLs, for example. By combining phenotypes across all modalities into one table and one phenotype groups file, conditionally independent cis-QTL mapping will avoid redundant cis-QTLs across modalities too. A script, `combine_modalities.sh`, is provided to combine phenotype tables into a 'cross_modality' modality. Add (or uncomment) 'cross_modality' to the modality list in the Pheast config, and run `tensorqtl` in the same way as for other grouped phenotype data.
 
+#### Matching phenotypes to genotypes
+
+For multi-tissue datasets like GTEx where RNA-seq samples have IDs that differ from individual IDs,
+A script is provided to make the RNA phenotypes compabible with the genotypes. It loads the phenotypes produced in the phenotyping stage, and has several functions, all optional:
+
+- If a sample ID to individual ID map (tab-delimited, no header) is provided:
+  - The samples in the phenotype files will be subsetted to those present in the map.
+  - The sample IDs in the header will be replaced with individual IDs.
+  - The script checks for replicates from the same individual, and if so, throws an error.
+- If a file listing individual IDs is provided:
+  - The individuals will be subsetted to those in the list.
+
+```sh
+cd pheast
+./scripts/prepare_phenotypes.py \
+    --indir ../phenotyping/output/ \
+    --outdir input/phenotypes/ \
+    --map input/sample_map.txt \
+    --individuals input/individuals.txt
+```
+
+It is recommended to run the script before executing the Pheast snakemake workflow to prepare your phenotype files and save to `input/phenotypes/`. The script is not necessary for the example data, since different inputs for phenotyping and Pheast are provided.
+
 #### Pheast output files
 
 Pheast will generate, in its own `output/` directory, results in their typical formats, including cis-QTL files directly from `tensorqtl` and TWAS transcriptomic models in the same compressed archive format as the [models provided in the FUSION documentation](http://gusevlab.org/projects/fusion/#download-pre-computed-predictive-models).
