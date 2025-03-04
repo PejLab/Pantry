@@ -189,6 +189,6 @@ rule alt_TSS_polyA_pheno_groups:
         zcat < {input} \
             | tail -n +2 \
             | cut -f4 \
-            | awk '{{ g=$1; sub(/\\..*$/, "", g); print $1 "\\t" g }}' \
+            | awk '{{ g=$1; sub(/__.*$/, "", g); print $1 "\\t" g }}' \
             > {output}
         """

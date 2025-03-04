@@ -94,8 +94,8 @@ def assemble_alt_TSS_polyA(sample_ids: list, group1_dir: Path, group2_dir: Path,
     df1 = load_kallisto(sample_ids, group1_dir, units)
     df2 = load_kallisto(sample_ids, group2_dir, units)
     # This assumes target_id is e.g. {gene_id}.grp_1.downstream.{transcript_id}
-    df1['gene_id'] = df1.index.str.split('.').str[0]
-    df2['gene_id'] = df2.index.str.split('.').str[0]
+    df1['gene_id'] = df1.index.str.split('.grp_').str[0]
+    df2['gene_id'] = df2.index.str.split('.grp_').str[0]
     # Calculate proportion of each transcript in each gene_id:
     gene_ids = df1['gene_id'] # groupby/apply removes gene_id, so save it to add back
     df1 = df1.groupby('gene_id', group_keys=False).apply(lambda x: x / x.sum(axis=0))
@@ -108,6 +108,11 @@ def assemble_alt_TSS_polyA(sample_ids: list, group1_dir: Path, group2_dir: Path,
     df2 = df2[(df2.mean(axis=1) >= min_frac) & (df2.mean(axis=1) <= max_frac)]
     df2 = df2.join(gene_ids, how='left')
     df = pd.concat([df1, df2], axis=0)
+    # Use __ to separate gene ID from other info in phenotype IDs
+    df.index = df.index.str.replace('.grp_', '__grp_', 1)
+    # Replace period separators for easier parsing in case of periods in transcript IDs
+    df.index = df.index.str.replace('.upstream.', '_upstream_', 1)
+    df.index = df.index.str.replace('.downstream.', '_downstream_', 1)
     df.index = df.index.rename('phenotype_id')
     df = df.reset_index()
     # Use gene's TSS for all of its isoforms:
@@ -149,7 +154,7 @@ def assemble_expression(sample_ids: list, kallisto_dir: Path, units: str, ref_an
 
     anno = load_tss(ref_anno)
     df_iso = anno.merge(df_iso.reset_index(), on='gene_id', how='inner')
-    df_iso['phenotype_id'] = df_iso['gene_id'] + ':' + df_iso['transcript_id']
+    df_iso['phenotype_id'] = df_iso['gene_id'] + '__' + df_iso['transcript_id']
     df_iso = df_iso[['#chr', 'start', 'end', 'phenotype_id'] + sample_ids]
     df_iso.to_csv(bed_iso, sep='\t', index=False, float_format='%g')
     df_gene = anno.merge(df_gene.reset_index(), on='gene_id', how='inner')
@@ -163,7 +168,7 @@ def assemble_latent(data: Path, ref_anno: Path, bed: Path):
     sample_ids = list(df.columns[2:])
     anno = load_tss(ref_anno)
     df = anno.merge(df, on='gene_id', how='inner')
-    df['phenotype_id'] = df['gene_id'] + ':' + df['PC']
+    df['phenotype_id'] = df['gene_id'] + '__' + df['PC']
     df = df[['#chr', 'start', 'end', 'phenotype_id'] + sample_ids]
     df.to_csv(bed, sep='\t', index=False, float_format='%g')
 
@@ -183,7 +188,8 @@ def assemble_splicing(counts: Path, ref_anno: Path, bed: Path, min_frac: float =
     df = df.merge(genes, on='cluster', how='left')
     anno = load_tss(ref_anno)
     df = anno.merge(df, on='gene_id', how='inner')
-    df['phenotype_id'] = df['gene_id'] + ':' + df['intron']
+    df['intron'] = df['intron'].str.replace(':', '_')
+    df['phenotype_id'] = df['gene_id'] + '__' + df['intron']
     df = df[['#chr', 'start', 'end', 'phenotype_id'] + sample_ids]
     df.to_csv(bed, sep='\t', index=False, float_format='%g')
 
