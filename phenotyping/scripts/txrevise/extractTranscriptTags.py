@@ -18,7 +18,9 @@ file_handle = gzip.open(args.gtf, "r")
 for line in file_handle:
 	line = line.decode("utf8").rstrip()
 	#Remove headers
-	if (line[0:2] == "#!"):
+	# Edit by Daniel Munro: In some GTF files such as some Gencode versions, header lines start with ##
+	# if (line[0:2] == "#!"):
+	if (line[0:1] == "#"):
 		pass
 	else:
 		fields = line.split("\t")

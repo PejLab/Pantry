@@ -147,6 +147,8 @@ rule assemble_alt_TSS_polyA_bed:
         unnorm_dir = str(output_dir / 'unnorm'),
         alt_group1_pos_dir = lambda w: str(interm_dir / 'alt_TSS_polyA' / f"grp_1.{dict(TSS='upstream', polyA='downstream')[w.type]}"),
         alt_group2_pos_dir = lambda w: str(interm_dir / 'alt_TSS_polyA' / f"grp_2.{dict(TSS='upstream', polyA='downstream')[w.type]}"),
+    resources:
+        mem_mb = 16000,
     shell:
         """
         mkdir -p {params.unnorm_dir}

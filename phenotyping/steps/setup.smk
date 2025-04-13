@@ -52,6 +52,9 @@ def validate_config(config: dict):
     for field in required:
         if field not in config:
             raise KeyError(f'Required config field missing: {field}')
+
+    if not config['ref_anno'].lower().endswith('.gtf'):
+        raise ValueError('ref_anno must be an uncompressed GTF file')
     
     # paired_end is now optional
     if 'paired_end' in config:
