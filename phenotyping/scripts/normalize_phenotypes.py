@@ -76,7 +76,6 @@ parser = argparse.ArgumentParser(description="Normalize phenotypes in a BED file
 parser.add_argument("-i", "--input", help="Input BED file", required=True)
 parser.add_argument("-s", "--samples", help="File with list of samples to include in output", required=False)
 parser.add_argument("-o", "--output", help="Output BED file", required=True)
-# parser.add_argument("--upper-quartile", help="Prior to quantile transformation, scale values per sample such that the upper quartile value is the same across samples", action="store_true", required=True)
 args = parser.parse_args()
 
 df = pd.read_csv(args.input, sep="\t", dtype={"#chr": str, "start": int, "end": int, "phenotype_id": str})

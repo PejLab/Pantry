@@ -93,20 +93,24 @@ def assemble_alt_TSS_polyA(sample_ids: list, group1_dir: Path, group2_dir: Path,
     """
     df1 = load_kallisto(sample_ids, group1_dir, units)
     df2 = load_kallisto(sample_ids, group2_dir, units)
+
     # This assumes target_id is e.g. {gene_id}.grp_1.downstream.{transcript_id}
     df1['gene_id'] = df1.index.str.split('.grp_').str[0]
     df2['gene_id'] = df2.index.str.split('.grp_').str[0]
+
     # Calculate proportion of each transcript in each gene_id:
     gene_ids = df1['gene_id'] # groupby/apply removes gene_id, so save it to add back
     df1 = df1.groupby('gene_id', group_keys=False).apply(lambda x: x / x.sum(axis=0))
     # Remove sites with mean relative usage < `min_frac` or > `max_frac`:
     df1 = df1[(df1.mean(axis=1) >= min_frac) & (df1.mean(axis=1) <= max_frac)]
     df1 = df1.join(gene_ids, how='left')
+
     gene_ids = df2['gene_id']
     df2 = df2.groupby('gene_id', group_keys=False).apply(lambda x: x / x.sum(axis=0))
     # Remove sites with mean relative usage < `min_frac` or > `max_frac`:
     df2 = df2[(df2.mean(axis=1) >= min_frac) & (df2.mean(axis=1) <= max_frac)]
     df2 = df2.join(gene_ids, how='left')
+
     df = pd.concat([df1, df2], axis=0)
     # Use __ to separate gene ID from other info in phenotype IDs
     df.index = df.index.str.replace('.grp_', '__grp_', 1)
@@ -115,6 +119,7 @@ def assemble_alt_TSS_polyA(sample_ids: list, group1_dir: Path, group2_dir: Path,
     df.index = df.index.str.replace('.downstream.', '_downstream_', 1)
     df.index = df.index.rename('phenotype_id')
     df = df.reset_index()
+
     # Use gene's TSS for all of its isoforms:
     anno = load_tss(ref_anno)
     df = anno.merge(df.reset_index(), on='gene_id', how='inner')
@@ -141,8 +146,10 @@ def assemble_expression(sample_ids: list, kallisto_dir: Path, units: str, ref_an
     gene_map = transcript_to_gene_map(ref_anno).set_index('transcript_id')
     df_iso = df_iso.join(gene_map, how='inner')
     assert df_iso.shape[0] > 0, 'No matching isoforms in kallisto output and reference annotation'
+
     # Also get gene-level expression:
     df_gene = df_iso.reset_index().drop('transcript_id', axis=1).groupby('gene_id', group_keys=True).sum()
+
     # Calculate proportion of each transcript in each gene_id:
     df_iso = df_iso.groupby('gene_id', group_keys=False).apply(lambda x: x / x.sum(axis=0))
     # Remove isoforms with mean read count < `min_count`:
@@ -157,6 +164,7 @@ def assemble_expression(sample_ids: list, kallisto_dir: Path, units: str, ref_an
     df_iso['phenotype_id'] = df_iso['gene_id'] + '__' + df_iso['transcript_id']
     df_iso = df_iso[['#chr', 'start', 'end', 'phenotype_id'] + sample_ids]
     df_iso.to_csv(bed_iso, sep='\t', index=False, float_format='%g')
+
     df_gene = anno.merge(df_gene.reset_index(), on='gene_id', how='inner')
     df_gene = df_gene.rename(columns={'gene_id': 'phenotype_id'})
     df_gene = df_gene[['#chr', 'start', 'end', 'phenotype_id'] + sample_ids]
@@ -183,9 +191,11 @@ def assemble_splicing(counts: Path, ref_anno: Path, bed: Path, min_frac: float =
     df['cluster'] = df.index.str.extract(r'clu_(\d+)_', expand=False)
     df.index = df.index.rename('intron')
     df = df.reset_index()
+
     exons = load_exons(ref_anno)
     genes = map_introns_to_genes(df['intron'], exons)
     df = df.merge(genes, on='cluster', how='left')
+
     anno = load_tss(ref_anno)
     df = anno.merge(df, on='gene_id', how='inner')
     df['intron'] = df['intron'].str.replace(':', '_')
@@ -211,11 +221,11 @@ def assemble_stability(sample_ids: list, stab_dir: Path, ref_anno: Path, bed: Pa
     exon = load_featureCounts(sample_ids, stab_dir, 'constit_exons')
     intron = load_featureCounts(sample_ids, stab_dir, 'introns')
     genes = exon.index[np.isin(exon.index, intron.index)]
-    # genes = set(exon.index).intersection(intron.index)
     assert exon.loc[genes, :].index.equals(intron.loc[genes, :].index)
     assert exon.columns.equals(intron.columns)
     df = exon.loc[genes, :] / intron.loc[genes, :]
     df = df[df.isnull().mean(axis=1) <= 0.5]
+
     anno = load_tss(ref_anno)
     anno = anno.rename(columns={'gene_id': 'phenotype_id'})
     df.index = df.index.rename('phenotype_id')

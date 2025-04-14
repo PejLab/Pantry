@@ -13,10 +13,8 @@ ref_genome: input/ref/Homo_sapiens.GRCh38.dna.primary_assembly.chr1_0-2Mb.fa
 # Download and unzip gene annotations, e.g. http://ftp.ensembl.org/pub/release-106/gtf/homo_sapiens/Homo_sapiens.GRCh38.106.gtf.gz
 ref_anno: input/ref/Homo_sapiens.GRCh38.106.chr1_0-2Mb.gtf
 
-## Samples to include:
+## Samples to include (any samples in the FASTQ map but not listed here will be ignored):
 samples_file: input/samples.txt
-## Approximate size of the genome in bp, e.g. 3e9 for full human genome
-genome_size: 3e9
 
 ## Optional parameters
 # Path to intermediate file directory, in case you don't want it inside this project directory due to its size:

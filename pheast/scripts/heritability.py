@@ -51,7 +51,6 @@ df.insert(0, 'family', 0)  # Family must match that in the genotype files.
 
 stats = {}
 for pheno in phenos:
-    # print(pheno)
     prefix = args.tmp_dir / pheno.replace(':', '_')
     ph = df[['family', 'sample', pheno]]
     ph.to_csv(f'{prefix}.pheno', sep='\t', index=False, header=False)

@@ -33,4 +33,4 @@ bgzip output/cross_modality.bed
 tabix -p bed output/cross_modality.bed.gz
 
 ## Make phenotype_groups file:
-zcat output/cross_modality.bed.gz | tail -n+2 | cut -f4 | awk -F'[:.]' '{print $0"\t"$2}' > output/cross_modality.phenotype_groups.txt
+zcat output/cross_modality.bed.gz | tail -n+2 | cut -f4 | awk -F':' '{ g=$2; sub(/__.*$/, "", g); print $0"\t"g }' > output/cross_modality.phenotype_groups.txt

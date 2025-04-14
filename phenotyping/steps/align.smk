@@ -1,3 +1,8 @@
+def genome_size(ref_genome: Path) -> int:
+    """Estimate genome size from a FASTA file."""
+    assert ref_genome.suffix != '.gz', 'Reference genome must be uncompressed'
+    return ref_genome.stat().st_size
+
 rule star_index:
     """Generate the index for STAR."""
     input:
@@ -10,7 +15,7 @@ rule star_index:
     params:
         index_dir = ref_dir / f'star_index_{read_length}',
         overhang = read_length - 1,
-        genomeSAindexNbases = int(np.log2(genome_size) / 2 - 1),
+        genomeSAindexNbases = lambda w: int(np.log2(genome_size(ref_genome)) / 2 - 1),
     threads: 16
     resources:
         mem_mb = 60000,

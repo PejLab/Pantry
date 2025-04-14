@@ -68,7 +68,6 @@ rule plink_covariates:
         covar = covar.T
         covar.index.name = 'IID'
         covar = covar.reset_index()
-        # covar.insert(0, 'FID', 0)  # Family must match that in the genotype files.
         ## Get FIDs from genotypes:
         fam = pd.read_csv(input.fam, sep=r'\s+', header=None, dtype=str)
         # In some versions, dtype doesn't apply to index, so set index later:

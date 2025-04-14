@@ -9,7 +9,6 @@ B_START=$5
 B_END=$6
 OUTDIR=$7
 
-# I don't think set -e can be used because plink has error when no cis-window variants present, in which case this script should skip it and continue.
 set -e
 
 echo $GENO $BED $COVAR $PHENO $B_START $B_END $OUTDIR
@@ -19,9 +18,7 @@ echo $GENO $BED $COVAR $PHENO $B_START $B_END $OUTDIR
 # THIS IS USED TO RESTRICT INPUT SNPS TO REFERENCE IDS ONLY
 mkdir -p $OUTDIR
 
-# Setting family ID to 0, which is current plink default when coverting from VCF
-# zcat < $BED | head -n1 | tr '\t' '\n' | tail -n+5 | awk '{ print 0,$1 }' > $OUTDIR/$PHENO.ID
-# Instead of assuming family ID is 0, get it from $GENO.fam plink file:
+# Get family ID from $GENO.fam plink file
 zcat < $BED | head -n1 | tr '\t' '\n' | tail -n+5 \
 	| awk 'NR==FNR{a[$2]=$0;next}{print a[$1]}' $GENO.fam - \
 	| awk '{ print $1,$2 }' \

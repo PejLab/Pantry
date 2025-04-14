@@ -123,7 +123,6 @@ ref_anno = config['ref_anno']
 ref_cdna = ref_dir / 'cDNA.fa.gz'
 
 modality_groups = config['modality_groups']
-genome_size = config['genome_size'] # TODO: compute from fasta file
 
 outputs = []
 for modality_group, params in modality_groups.items():
