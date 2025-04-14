@@ -47,7 +47,6 @@ def validate_config(config: dict):
         'ref_anno',
         'samples_file',
         'modality_groups',
-        'genome_size',
     ]
     for field in required:
         if field not in config:
@@ -76,7 +75,6 @@ def process_config(config: dict):
     
     Updates some values in place to expand paths and parse numbers.
     """
-    config['genome_size'] = int(float(config['genome_size'])) # float() handles scientific notation
     paths = [
         'fastq_dir',
         'fastq_map',
