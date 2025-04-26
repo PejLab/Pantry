@@ -61,7 +61,7 @@ rule assemble_stability_bed:
         unnorm_dir = output_dir / 'unnorm',
         stab_dir = interm_dir / 'stability',
     resources:
-        mem_mb = 16000,
+        mem_mb = 32000,
     shell:
         """
         mkdir -p {params.unnorm_dir}

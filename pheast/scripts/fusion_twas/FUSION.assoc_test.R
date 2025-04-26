@@ -1,4 +1,5 @@
 # This script has been updated separately from the official FUSION repo. Changes:
+# - Edited to output an empty table if no weights are found
 # - Update the coloc command for compatibility with newer coloc versions (specifically, to avoid the error "Error in check_dataset(d = dataset1, 1) : dataset 1: missing required element(s) snp").
 # - Make the separation of MHC results optional and off by default, since input data may be non-human and the human-specific MHC region is hard-coded here.
 
@@ -86,6 +87,13 @@ chr = unique(wgtlist$CHR)
 
 N = nrow(wgtlist)
 out.tbl = data.frame( "PANEL" = rep(NA,N) , "FILE" = character(N) , "ID" = character(N) , "CHR" = numeric(N) , "P0" = character(N) , "P1" = character(N) ,"HSQ" = numeric(N) , "BEST.GWAS.ID" = character(N) , "BEST.GWAS.Z" = numeric(N) , "EQTL.ID" = character(N) , "EQTL.R2" = numeric(N) , "EQTL.Z" = numeric(N) , "EQTL.GWAS.Z" = numeric(N) , "NSNP" = numeric(N) , "NWGT" = numeric(N) , "MODEL" = character(N) , "MODELCV.R2" = character(N) , "MODELCV.PV" = character(N) , "TWAS.Z" = numeric(N) , "TWAS.P" = numeric(N) , stringsAsFactors=FALSE )
+
+## Edited to output an empty table if no weights are found
+if (N == 0) {
+    cat("No weights found for chromosome", chr, "\n")
+    write.table(out.tbl, quote=F, row.names=F, sep='\t', file=opt$out)
+    quit()
+}
 
 if ( opt$jlim ) {
 	suppressMessages(library('jlimR'))

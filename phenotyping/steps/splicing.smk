@@ -60,7 +60,7 @@ rule assemble_splicing_bed:
     params:
         unnorm_dir = output_dir / 'unnorm',
     resources:
-        mem_mb = 16000,
+        mem_mb = 32000,
     shell:
         """
         mkdir -p {params.unnorm_dir}
