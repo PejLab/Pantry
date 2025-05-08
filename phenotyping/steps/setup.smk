@@ -98,6 +98,29 @@ def process_config(config: dict):
 
     config['fastq_map'] = load_fastq_map(config['fastq_map'], config['fastq_dir'], config['paired_end'])
 
+def validate_reference(ref_genome: Path, ref_anno: Path):
+    """Validate the reference genome and annotations
+    
+    Confirm both files exist and that the GTF file comes from Ensembl.
+    """
+    print('start')
+    if not ref_genome.exists():
+        raise FileNotFoundError(f'Reference genome file not found: {ref_genome}')
+    if not ref_anno.exists():
+        raise FileNotFoundError(f'Reference annotation file not found: {ref_anno}')
+    
+    with open(ref_anno) as f:
+        lines = [next(f) for _ in range(1000)]
+    
+    has_biotype = any('transcript_biotype' in line for line in lines)
+    has_ensembl_source = any('transcript_source "ensembl' in line for line in lines)
+    
+    if not has_biotype:
+        raise ValueError(f'GTF file {ref_anno} does not appear to be from Ensembl (missing transcript_biotype field)')
+    if not has_ensembl_source:
+        raise ValueError(f'GTF file {ref_anno} does not appear to be from Ensembl (missing ensembl transcript source)')
+    print('done')
+
 validate_config(config)
 process_config(config)
 
@@ -119,6 +142,7 @@ if paired_end is not None and not paired_end:
 ref_genome = config['ref_genome']
 ref_anno = config['ref_anno']
 ref_cdna = ref_dir / 'cDNA.fa.gz'
+validate_reference(ref_genome, ref_anno)
 
 modality_groups = config['modality_groups']
 

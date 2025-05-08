@@ -29,6 +29,7 @@ rule tensorqtl_cis:
         qtl_dir = output_dir / 'qtl',
         groups_arg = groups_arg,
     resources:
+        mem_mb = 32000,
         runtime = '12h',
     shell:
         ## Cluster environments may require cuda to be loaded, e.g.:
@@ -59,6 +60,7 @@ rule tensorqtl_cis_independent:
         geno_prefix = geno_prefix,
         groups_arg = groups_arg,
     resources:
+        mem_mb = 32000,
         runtime = '20h',
     shell:
         ## Cluster environments may require cuda to be loaded, e.g.:
@@ -89,8 +91,8 @@ rule tensorqtl_trans:
         geno_prefix = geno_prefix,
         qtl_dir = output_dir / 'qtl',
     resources:
-        runtime = '12h',
         mem_mb = 32000,
+        runtime = '12h',
     shell:
         ## Cluster environments may require cuda to be loaded, e.g.:
         # module load cuda

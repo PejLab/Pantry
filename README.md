@@ -153,8 +153,10 @@ This file, whose path is specified in the config file, is the list of samples to
 
 #### Reference genome and annotations
 
+**NOTE:** Pantry currently only supports gene annotations from Ensembl, not RefSeq or Gencode. Be sure the chromosome names in the GTF file match those in the reference genome FASTA file.
+
 - The FASTA file for a reference genome, e.g. `Homo_sapiens.GRCh38.dna.primary_assembly.fa`.
-- A GTF file containing the gene, exon, and other annotations, compatible with the supplied reference genome. For example, `Homo_sapiens.GRCh38.106.gtf`. Any desired quality filtering should be done beforehand, e.g. including only transcripts validated by both Ensembl and HAVANA.
+- A GTF file containing the gene, exon, and other annotations, compatible with the supplied reference genome. For example, `Homo_sapiens.GRCh38.113.chr.gtf`. Any desired quality filtering should be done beforehand, e.g. including only transcripts validated by both Ensembl and HAVANA.
 
 ### Phenotype files
 
