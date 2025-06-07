@@ -1,36 +1,43 @@
-## Raw RNA-Seq data
+### Raw RNA-Seq data
 paired_end: True
 read_length: 75
 fastq_dir: input/fastq
 fastq_map: input/fastq_map.txt
-# If paired_end is False, kallisto requires estimated fragment (NOT read) length and standard deviation:
+## If paired_end is False, kallisto requires estimated fragment (NOT read) length and standard deviation:
 # fragment_length_mean: 200
 # fragment_length_sd: 50
 
-## Reference files
-# Download and unzip genome, e.g. http://ftp.ensembl.org/pub/release-106/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz
+### Reference files
+## Download and unzip genome, e.g. http://ftp.ensembl.org/pub/release-106/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz
 ref_genome: input/ref/Homo_sapiens.GRCh38.dna.primary_assembly.chr1_0-2Mb.fa
-# Download and unzip gene annotations, e.g. http://ftp.ensembl.org/pub/release-106/gtf/homo_sapiens/Homo_sapiens.GRCh38.106.gtf.gz
+## Download and unzip gene annotations, e.g. http://ftp.ensembl.org/pub/release-106/gtf/homo_sapiens/Homo_sapiens.GRCh38.106.gtf.gz
 ref_anno: input/ref/Homo_sapiens.GRCh38.106.chr1_0-2Mb.gtf
 
-## Samples to include (any samples in the FASTQ map but not listed here will be ignored):
+### Samples to include (any samples in the FASTQ map but not listed here will be ignored):
 samples_file: input/samples.txt
 
-## Optional parameters
-# Path to intermediate file directory, in case you don't want it inside this project directory due to its size:
-# This directory will be created if it doesn't exist, and will contain any generated (i.e. not input) files besides the final phenotype outputs.
+### RNA editing
+## Edit sites reference file (make sure chromosome names are consistent with the reference genome)
+edit_sites_bed: input/ref/All.AG.stranded.annovar.Hg38_multianno.AnnoAlu.AnnoRep.NR.1-22.nochr.bed
+## Minimum coverage and samples required for a given site to be included
+edit_sites_min_coverage: 20
+edit_sites_min_samples: 60
+
+### Optional parameters
+## Path to intermediate file directory, in case you don't want it inside this project directory due to its size:
+## This directory will be created if it doesn't exist, and will contain any generated (i.e. not input) files besides the final phenotype outputs.
 # intermediate_dir: intermediate
-# Path to directory where intermediate reference files will be created:
-# This will be in the intermediate dir by default, but can be specified to be outside the project dir.
-# This could be useful if running multiple datasets with the same parameters, allowing the intermediate
-# reference files to be generated once and shared by all the dataset runs.
+## Path to directory where intermediate reference files will be created:
+## This will be in the intermediate dir by default, but can be specified to be outside the project dir.
+## This could be useful if running multiple datasets with the same parameters, allowing the intermediate
+## reference files to be generated once and shared by all the dataset runs.
 # intermediate_ref_dir: intermediate/reference
 
-## Modality groups
-# List the modality groups to extract, with list of expected output files for each.
-# A snakefile will be loaded for each group, steps/{groupname}.smk
-# Each group represents one or more modalities that are generated from the same
-# software.
+### Modality groups
+## List the modality groups to extract, with list of expected output files for each.
+## A snakefile will be loaded for each group, steps/{groupname}.smk
+## Each group represents one or more modalities that are generated from the same
+## software.
 modality_groups:
   alt_TSS_polyA:
     files:
@@ -47,6 +54,11 @@ modality_groups:
     - isoforms.bed.gz
     - isoforms.bed.gz.tbi
     - isoforms.phenotype_groups.txt
+  RNA_editing:
+    files:
+    - RNA_editing.bed.gz
+    - RNA_editing.bed.gz.tbi
+    - RNA_editing.phenotype_groups.txt
   splicing:
     files:
     - splicing.bed.gz

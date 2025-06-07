@@ -180,6 +180,42 @@ def assemble_latent(data: Path, ref_anno: Path, bed: Path):
     df = df[['#chr', 'start', 'end', 'phenotype_id'] + sample_ids]
     df.to_csv(bed, sep='\t', index=False, float_format='%g')
 
+def assemble_RNA_editing(data: Path, edit_sites_to_genes: Path, ref_anno: Path, bed: Path):
+    """Convert RNA editing output into BED file
+    
+    Input data columns after 'site' contain fractions (e.g. '12/27'). These are processed by:
+    1. Adding pseudocount of 0.5 to numerator and denominator
+    2. Removing rows with >40% missing values
+    3. Replacing remaining missing values with row means
+    """
+    df = pd.read_csv(data, sep='\t', dtype=str)
+    sample_ids = list(df.columns[1:])  # Skip first column (site)
+    for col in sample_ids:
+        num_den = df[col].str.split('/', expand=True)
+        num = pd.to_numeric(num_den[0], errors='coerce')
+        den = pd.to_numeric(num_den[1], errors='coerce')
+        
+        # Add pseudocount and calculate fraction
+        df[col] = (num + 0.5) / (den + 0.5)
+    
+    # Remove rows with >40% missing values
+    missing_threshold = len(sample_ids) * 0.4
+    df = df[df[sample_ids].isna().sum(axis=1) <= missing_threshold]
+    
+    # Replace remaining missing values with row means
+    df[sample_ids] = df[sample_ids].apply(lambda x: x.fillna(x.mean()), axis=1)
+    
+    site_to_gene = pd.read_csv(edit_sites_to_genes, sep='\t', header=None, names=['site', 'gene_id'])
+    
+    # Add gene IDs (sites mapping to multiple genes are duplicated for each gene, sites mapping to no genes are dropped)
+    df = df.merge(site_to_gene, on='site', how='inner')
+    
+    anno = load_tss(ref_anno)
+    df = anno.merge(df, on='gene_id', how='inner')
+    df['phenotype_id'] = df['gene_id'] + '__' + df['site']
+    df = df[['#chr', 'start', 'end', 'phenotype_id'] + sample_ids]
+    df.to_csv(bed, sep='\t', index=False, float_format='%g')
+
 def assemble_splicing(counts: Path, ref_anno: Path, bed: Path, min_frac: float = 0.05, max_frac: float = 0.95):
     """Convert leafcutter output into splicing BED file"""
     df = pd.read_csv(counts, sep=' ')
@@ -233,12 +269,13 @@ def assemble_stability(sample_ids: list, stab_dir: Path, ref_anno: Path, bed: Pa
     df.to_csv(bed, sep='\t', index=False, float_format='%g')
 
 parser = argparse.ArgumentParser(description='Assemble data into an RNA phenotype BED file')
-parser.add_argument('--type', choices=['alt_TSS_polyA', 'expression', 'latent', 'splicing', 'stability'], required=True, help='Type of data to assemble')
+parser.add_argument('--type', choices=['alt_TSS_polyA', 'expression', 'latent', 'RNA_editing', 'splicing', 'stability'], required=True, help='Type of data to assemble')
 parser.add_argument('--input', type=Path, required=False, help='Input file, for phenotype groups in which all data is already in a single file')
 parser.add_argument('--input-dir', type=Path, required=False, help='Directory containing input files, for phenotype groups with per-sample input files')
 parser.add_argument('--input-dir2', type=Path, required=False, help='Second input directory, for phenotype groups with per-sample input files in two directories')
 parser.add_argument('--samples', type=Path, required=False, help='File listing sample IDs, for phenotype groups with per-sample input files')
 parser.add_argument('--ref_anno', type=Path, required=True, help='Reference annotation file')
+parser.add_argument('--edit_sites_to_genes', type=Path, required=False, help='For RNA editing, file mapping edit sites to genes')
 parser.add_argument('--output', type=Path, required=True, help='Output file ("*.bed")')
 parser.add_argument('--output2', type=Path, required=False, help='Second output file ("*.bed") for phenotype groups with two output files, e.g. log2 and tpm expression')
 args = parser.parse_args()
@@ -252,6 +289,9 @@ elif args.type == 'expression':
     assemble_expression(samples, args.input_dir, 'tpm', args.ref_anno, args.output, args.output2, min_count=10, min_frac=0.05, max_frac=0.95)
 elif args.type == 'latent':
     assemble_latent(args.input, args.ref_anno, args.output)
+elif args.type == 'RNA_editing':
+    assert args.edit_sites_to_genes is not None, 'RNA editing requires --edit_sites_to_genes'
+    assemble_RNA_editing(args.input, args.edit_sites_to_genes, args.ref_anno, args.output)
 elif args.type == 'splicing':
     assemble_splicing(args.input, args.ref_anno, args.output, min_frac=0.05, max_frac=0.95)
 elif args.type == 'stability':

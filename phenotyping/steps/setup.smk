@@ -144,6 +144,10 @@ ref_anno = config['ref_anno']
 ref_cdna = ref_dir / 'cDNA.fa.gz'
 validate_reference(ref_genome, ref_anno)
 
+edit_sites_bed = config['edit_sites_bed']
+edit_sites_min_coverage = config['edit_sites_min_coverage']
+edit_sites_min_samples = config['edit_sites_min_samples']
+
 modality_groups = config['modality_groups']
 
 outputs = []
