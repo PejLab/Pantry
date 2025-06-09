@@ -38,8 +38,7 @@ def main():
     for sample in samples:
         file_path = f"{path_edit_files}{sample}.rnaeditlevel.tsv.gz"
         if not os.path.exists(file_path):
-            print(f"Warning: File not found for sample {sample}: {file_path}")
-            continue
+            raise FileNotFoundError(f"File not found for sample {sample}: {file_path}")
 
         print(f"Analyzing: {sample}")
         
@@ -65,11 +64,12 @@ def main():
                         totalhash[site] = 1
                         lvlhash[site] = ratio
 
-    # Remove existing output file if it exists
-    if os.path.exists(args.output_file):
-        os.remove(args.output_file)
-
     print(f"Output file: {args.output_file}")
+
+    # Check if any sites meet the minimum sample threshold
+    sites_to_write = [site for site in totalhash if totalhash[site] >= args.min_samples]
+    if not sites_to_write:
+        raise ValueError(f"No sites found with at least {args.min_samples} samples meeting the minimum coverage threshold of {args.min_coverage}")
 
     # Write output matrix
     with open(args.output_file, 'w') as outfile:
@@ -80,15 +80,14 @@ def main():
         outfile.write("\n")
 
         # Write data rows
-        for site in totalhash:
-            if totalhash[site] >= args.min_samples:
-                outfile.write(site)
-                for sample in samples:
-                    if sample in sitehash and site in sitehash[sample]:
-                        outfile.write(f"\t{sitehash[sample][site]}")
-                    else:
-                        outfile.write("\t0/0")
-                outfile.write("\n")
+        for site in sites_to_write:
+            outfile.write(site)
+            for sample in samples:
+                if sample in sitehash and site in sitehash[sample]:
+                    outfile.write(f"\t{sitehash[sample][site]}")
+                else:
+                    outfile.write("\t0/0")
+            outfile.write("\n")
 
 if __name__ == "__main__":
     main()

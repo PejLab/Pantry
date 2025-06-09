@@ -33,6 +33,12 @@ genes_grange <- GRanges(
 
 # Find strand-specific overlaps
 hits <- findOverlaps(edit_ref_grange, genes_grange, ignore.strand = FALSE)
+
+# Check if any overlaps were found
+if (length(hits) == 0) {
+  stop("No overlapping regions found between edit sites and genes. This likely indicates an input data problem, such as a mismatch between chromosome names in the input files.")
+}
+
 pairs <- tibble(
   edit_site = edit_ref$site_id[queryHits(hits)],
   gene_id = genes$gene_id[subjectHits(hits)]

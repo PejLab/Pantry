@@ -142,12 +142,19 @@ ref_anno = config['ref_anno']
 ref_cdna = ref_dir / 'cDNA.fa.gz'
 validate_reference(ref_genome, ref_anno)
 
-edit_sites_bed = config['edit_sites_bed']
-edit_sites_min_coverage = config['edit_sites_min_coverage']
-edit_sites_min_samples = config['edit_sites_min_samples']
-
 modality_groups = config['modality_groups']
 
+if 'RNA_editing' in modality_groups:
+    edit_sites_bed = config['edit_sites_bed']
+    edit_sites_min_coverage = config['edit_sites_min_coverage']
+    edit_sites_min_samples = min(config['edit_sites_min_samples'], len(samples))
+    edit_sites_bed = Path(edit_sites_bed).expanduser()
+    if not edit_sites_bed.exists():
+        raise FileNotFoundError(f'Edit sites BED file not found: {edit_sites_bed}')
+if edit_sites_min_samples > len(samples):
+        print(f'Note: edit_sites_min_samples ({edit_sites_min_samples}) is greater than the number of samples ({len(samples)}). Setting to {len(samples)}.')
+        edit_sites_min_samples = len(samples)
+    
 outputs = []
 for modality_group, params in modality_groups.items():
     for f in params['files']:

@@ -5,6 +5,7 @@
 import argparse
 import os
 import subprocess
+import sys
 from parse_pileup_query import parse_pileup
 
 def main():
@@ -69,6 +70,7 @@ def main():
     os.remove(piletemp)
 
     # Process input file and write output
+    all_zeros = True
     with open(args.edit_sites, 'r') as infile, open(outputfile, 'w') as outfile:
         outfile.write("#chrom\tposition\tcoverage\teditedreads\teditlevel\n")
         
@@ -95,10 +97,16 @@ def main():
                 if newcov:
                     varfreq = f"{newmismatch/newcov:.3f}"
                     outfile.write(f"{fields[0]}\t{fields[2]}\t{newcov}\t{newmismatch}\t{varfreq}\n")
+                    all_zeros = False
                 else:
                     outfile.write(f"{fields[0]}\t{fields[2]}\t0\t0\tN/A\n")
             else:
                 outfile.write(f"{fields[0]}\t{fields[2]}\t0\t0\tN/A\n")
+
+    if all_zeros:
+        # Clean up output file before raising error
+        os.remove(outputfile)
+        sys.exit("Error: All output values are zero. This likely indicates an input data problem, such as a mismatch between chromosome names in the edit_sites file and those in the BAM/genome files.")
 
     if args.output.endswith('.gz'):
         # Compress output file
