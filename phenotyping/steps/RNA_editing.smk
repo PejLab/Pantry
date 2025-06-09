@@ -10,10 +10,12 @@ rule query_editing_level:
         levels = interm_dir / 'RNA_editing' / 'edit_levels' / '{sample_id}.rnaeditlevel.tsv.gz',
     params:
         edit_levels_dir = interm_dir / 'RNA_editing' / 'edit_levels',
+    resources:
+        runtime = '8h',
     shell:
         """
         mkdir -p {params.edit_levels_dir}
-        perl scripts/RNA_editing/query_editing_level.pl \
+        python3 scripts/RNA_editing/query_editing_level.py \
             --edit_sites {input.edit_sites} \
             --ref {input.ref_genome} \
             --bam {input.bam} \
@@ -32,7 +34,7 @@ rule shared_sample_sites:
         min_sam = edit_sites_min_samples,
     shell:
         """
-        perl scripts/RNA_editing/shared_samples_sites_matrix.pl \
+        python3 scripts/RNA_editing/shared_samples_sites_matrix.py \
             --path_to_edit_files {params.edit_levels_dir} \
             --samples_file {input.samples} \
             --output_file {output.matrix} \
