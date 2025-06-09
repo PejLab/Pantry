@@ -14,7 +14,7 @@ Clone or download the repository:
 git clone https://github.com/PejLab/Pantry.git
 ```
 
-Install dependencies for the phenotyping pipeline. [Miniconda](https://docs.conda.io/en/latest/miniconda.html) is recommended for installation and management of these programs. A conda environment specification is provided in `phenotyping/environment.yml`:
+Install dependencies for the phenotyping pipeline. [Miniconda](https://docs.conda.io/en/latest/miniconda.html) or [Miniforge](https://github.com/conda-forge/miniforge) is recommended for installation and management of these programs. A conda environment specification is provided in `phenotyping/environment.yml`:
 
 ```sh
 cd Pantry/phenotyping
@@ -50,6 +50,8 @@ set-resources:
     slurm_extra: "'--gres=gpu:1'"
 use-conda: true
 latency-wait: 60
+max-jobs-per-timespan: "1/1s"
+max-status-checks-per-second: 5
 ```
 
 This uses snakemake v8 or higher and the `snakemake-executor-plugin-slurm` plugin. The `tensorqtl` steps should be run on GPU for reasonable runtime, so they are specified by name here to override the default resources. Adjust as needed for your cluster. Additional resources are specified within some of the snakemake rules, which are passed to slurm when those jobs are submitted. Alternatively, you can run snakemake on an interactive node.
@@ -89,10 +91,11 @@ Consult these descriptions of the Pantry code and expected file formats to run P
 
 The `phenotyping/` directory is a template for phenotyping one dataset (e.g. tissue). To run Pantry on a dataset, copy the contents of `phenotyping/` to a new directory that you can write to. Your project directory now contains all the data processing code, so that if you modify it or add custom modalities, you have a record of it that stays with the results and is not automatically changed by Pantry updates or your other Pantry runs. The `pheast/` template directory works similarly for the second stage of the pipeline.
  
-Currently Pantry generates RNA phenotypes for six modalities, grouped into four Snakemake modules in `steps/` that run the following tools:
+Currently Pantry generates RNA phenotypes for seven modalities, grouped into five Snakemake modules in `steps/` that run the following tools:
 
 - `alt_TSS_polyA.smk`: Alternative TSS and polyA site usage, quantified using [txrevise](https://github.com/kauralasoo/txrevise) followed by [kallisto](https://pachterlab.github.io/kallisto/).
 - `expression.smk`: Gene expression and isoform ratio, quantified using [kallisto](https://pachterlab.github.io/kallisto/). Isoform-level abundances are summed per gene to get gene expression abundances. The same isoform-level abundances are normalized per gene to get isoform proportions.
+- `RNA_editing.smk`: RNA editing, quantified using [`samtools mpileup`](https://www.htslib.org/doc/samtools-mpileup.html) with a pre-defined set of edit sites, plus subsequent processing to get edit ratios.
 - `splicing.smk`: Intron excision ratio, quantified using [RegTools](https://regtools.readthedocs.io/en/latest/) followed by [leafCutter](https://davidaknowles.github.io/leafcutter/).
 - `stability.smk`: RNA stability, quantified using [Subread featureCounts](http://subread.sourceforge.net/) to count reads from constitutive exons and all introns and using their ratio.
 
@@ -157,6 +160,7 @@ This file, whose path is specified in the config file, is the list of samples to
 
 - The FASTA file for a reference genome, e.g. `Homo_sapiens.GRCh38.dna.primary_assembly.fa`.
 - A GTF file containing the gene, exon, and other annotations, compatible with the supplied reference genome. For example, `Homo_sapiens.GRCh38.113.chr.gtf`. Any desired quality filtering should be done beforehand, e.g. including only transcripts validated by both Ensembl and HAVANA.
+- For RNA editing only: A BED file (including at least the first six standard columns) containing the edit sites to quantify. The edit site ID should be unique and consistent with the reference genome. The names in the fourth column are not used, as site IDs will be generated from the coordinates.
 
 ### Phenotype files
 
@@ -202,8 +206,7 @@ The second stage of Pantry, Pheast, runs downstream genetic analyses such as map
 
 #### Matching phenotypes to genotypes
 
-For multi-tissue datasets like GTEx where RNA-seq samples have IDs that differ from individual IDs,
-A script is provided to make the RNA phenotypes compabible with the genotypes. It loads the phenotypes produced in the phenotyping stage, and has several functions, all optional:
+For multi-tissue datasets like GTEx where RNA-seq samples have IDs that differ from individual IDs, a script is provided to make the RNA phenotypes compabible with the genotypes. It loads the phenotypes produced in the phenotyping stage, and has several functions, all optional:
 
 - If a sample ID to individual ID map (tab-delimited, no header) is provided:
   - The samples in the phenotype files will be subsetted to those present in the map.
@@ -237,6 +240,7 @@ If you run Pantry and use the results in a publication, you should also cite the
 - Alternative TSS and polyA: [PMID: 30618377](https://pubmed.ncbi.nlm.nih.gov/30618377/)
 - Expression, isoform ratio: [PMID: 27043002](https://pubmed.ncbi.nlm.nih.gov/27043002/)
 - Intron excision ratio (splicing): [PMID: 29229983](https://pubmed.ncbi.nlm.nih.gov/29229983/) and [PMID: 36949070](https://pubmed.ncbi.nlm.nih.gov/36949070/)
+- RNA editing: [PMID: 35922514](https://pubmed.ncbi.nlm.nih.gov/35922514/) and [PMID: 33590861](https://pubmed.ncbi.nlm.nih.gov/33590861/)
 - RNA stability: [PMID: 26098447](https://pubmed.ncbi.nlm.nih.gov/26098447/) and [PMID: 24227677](https://pubmed.ncbi.nlm.nih.gov/24227677/)
 - cis-heritability: [PMID: 21167468](https://pubmed.ncbi.nlm.nih.gov/21167468/)
 - cis-QTL mapping: [PMID: 31675989](https://pubmed.ncbi.nlm.nih.gov/31675989/)

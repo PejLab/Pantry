@@ -1,29 +1,29 @@
-## Point to the Pantry output directory containing BED files:
-# phenotype_dir: ../Project/output
-# Since the tables produced by the main test dataset may be too small for
-# downstream analyses, the Pheast tests use another test dataset produced by
-# Pheast/scripts/test_prepare_data.sh:
+### Point to the Pantry output directory containing BED files:
+# phenotype_dir: ../phenotyping/output
+## Since the tables produced by the main test dataset may be too small for
+## downstream analyses, the Pheast tests use another test dataset produced by
+## Pheast/scripts/test_prepare_data.sh:
 phenotype_dir: input/phenotypes
 
-## Give the path prefix to genotypes in plink1 (bed/bim/fam) format:
+### Give the path prefix to genotypes in plink1 (bed/bim/fam) format:
 geno_prefix: input/GEUVADIS.445_samples.GRCh38.chr1
 
-## Samples to include:
+### Samples to include:
 samples_file: input/samples.txt
 
-## Optional parameters
-# Provide a list of SNP IDs to include when computing TWAS weights:
-# It is recommended to include only SNPs present in the LD reference used later for TWAS.
+### Optional parameters
+## Provide a list of SNP IDs to include when computing TWAS weights:
+## It is recommended to include only SNPs present in the LD reference used later for TWAS.
 twas_snps: input/ld_snps_chr1.txt
-# Path to intermediate file directory, in case you don't want it inside this project directory due to its size:
-# This directory will be created if it doesn't exist, and will contain any generated (i.e. not input) files besides the final analysis results.
+## Path to intermediate file directory, in case you don't want it inside this project directory due to its size:
+## This directory will be created if it doesn't exist, and will contain any generated (i.e. not input) files besides the final analysis results.
 # intermediate_dir: intermediate
 
-## Modalities
-# List the modalities to use. The phenotype table ({modality}.bed.gz)
-# must be present in the phenotype_dir, along with a
-# {modality}.phenotype_groups.txt file in the case of grouped phenotypes.
-# 'cross_modality' is used to run cross-modality QTL mapping. See Project/scripts/combine_modalities.sh for more details.
+### Modalities
+## List the modalities to use. The phenotype table ({modality}.bed.gz)
+## must be present in the phenotype_dir, along with a
+## {modality}.phenotype_groups.txt file in the case of grouped phenotypes.
+## 'cross_modality' is used to run cross-modality QTL mapping. See phenotyping/scripts/combine_modalities.sh for more details.
 modalities:
   # cross_modality:
   #   grouped: true
@@ -35,15 +35,17 @@ modalities:
     grouped: false
   # isoforms:
   #   grouped: true
+  # RNA_editing:
+  #   grouped: true
   # splicing:
   #   grouped: true
   # stability:
   #   grouped: false
 
-## Analyses
-# List the analyses to run. A snakefile will be loaded for each analysis,
-# steps/{analysis}.smk, and results will be written to output/{analysis}/.
-# {modality} will be replaced with each modality name.
+### Analyses
+## List the analyses to run. A snakefile will be loaded for each analysis,
+## steps/{analysis}.smk, and results will be written to output/{analysis}/.
+## {modality} will be replaced with each modality name.
 analyses:
   heritability:
     files:
