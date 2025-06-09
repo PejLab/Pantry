@@ -103,7 +103,6 @@ def validate_reference(ref_genome: Path, ref_anno: Path):
     
     Confirm both files exist and that the GTF file comes from Ensembl.
     """
-    print('start')
     if not ref_genome.exists():
         raise FileNotFoundError(f'Reference genome file not found: {ref_genome}')
     if not ref_anno.exists():
@@ -119,7 +118,6 @@ def validate_reference(ref_genome: Path, ref_anno: Path):
         raise ValueError(f'GTF file {ref_anno} does not appear to be from Ensembl (missing transcript_biotype field)')
     if not has_ensembl_source:
         raise ValueError(f'GTF file {ref_anno} does not appear to be from Ensembl (missing ensembl transcript source)')
-    print('done')
 
 validate_config(config)
 process_config(config)
