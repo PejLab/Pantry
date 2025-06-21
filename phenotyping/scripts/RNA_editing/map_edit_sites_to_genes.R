@@ -12,7 +12,7 @@ edit_site_file <- args[1]
 gtf_file <- args[2]
 output_file <- args[3]
 
-edit_ref <- read_tsv(edit_site_file, col_names = c("chrom", "start", "end", "strand"), col_types = "cii--c") |>
+edit_ref <- read_table(edit_site_file, col_names = c("chrom", "start", "end", "strand"), col_types = "cii--c") |>
   mutate(site_id = str_glue("{chrom}_{end}"))
 
 genes <- rtracklayer::readGFF(gtf_file) |>

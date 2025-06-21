@@ -9,6 +9,7 @@ dependencies:
   - bioconductor-snpstats  # for covariates
   - dask<2024.2  # for tensorqtl (pandas-plink)
   - gcta  # for heritability
+  - htslib # for bgzip
   - pandas
   - pandas-plink  # for tensorqtl
   - pip

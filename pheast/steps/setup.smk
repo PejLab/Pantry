@@ -18,10 +18,10 @@ def validate_config(config: dict):
         if field not in config.keys():
             raise Exception(f'{field} not in config file.')
 
-    # 'all' pseudomodality should only be used for cross-modality QTL mapping
-    if 'all' in config['modalities']:
-        if any([x != 'qtl' for x in config['analyses']]):
-            raise ValueError('The "all" modality should only be used with analysis "qtl" (for cross-modality QTL mapping)')
+    # 'cross_modality' pseudomodality should only be used for cross-modality cis-QTL mapping
+    if 'cross_modality' in config['modalities']:
+        if any([x != 'qtl' for x in config['analyses']]) or '{modality}.trans_qtl.txt.gz' in config['analyses']['qtl']['files']:
+            raise ValueError('The "cross_modality" modality should only be used with analysis "qtl" for cross-modality cis-QTL mapping.')
 
 def process_config(config: dict):
     """Prepare user config for use in the pipeline.
