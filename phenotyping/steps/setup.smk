@@ -108,17 +108,6 @@ def validate_reference(ref_genome: Path, ref_anno: Path):
     if not ref_anno.exists():
         raise FileNotFoundError(f'Reference annotation file not found: {ref_anno}')
     
-    with open(ref_anno) as f:
-        lines = [next(f) for _ in range(1000)]
-    
-    has_biotype = any('transcript_biotype' in line for line in lines)
-    has_ensembl_source = any('transcript_source "ensembl' in line for line in lines)
-    
-    if not has_biotype:
-        raise ValueError(f'GTF file {ref_anno} does not appear to be from Ensembl (missing transcript_biotype field)')
-    if not has_ensembl_source:
-        raise ValueError(f'GTF file {ref_anno} does not appear to be from Ensembl (missing ensembl transcript source)')
-
 validate_config(config)
 process_config(config)
 
