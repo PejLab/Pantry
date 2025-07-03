@@ -108,17 +108,6 @@ def validate_reference(ref_genome: Path, ref_anno: Path):
     if not ref_anno.exists():
         raise FileNotFoundError(f'Reference annotation file not found: {ref_anno}')
     
-    with open(ref_anno) as f:
-        lines = [next(f) for _ in range(1000)]
-    
-    has_biotype = any('transcript_biotype' in line for line in lines)
-    has_ensembl_source = any('transcript_source "ensembl' in line for line in lines)
-    
-    if not has_biotype:
-        raise ValueError(f'GTF file {ref_anno} does not appear to be from Ensembl (missing transcript_biotype field)')
-    if not has_ensembl_source:
-        raise ValueError(f'GTF file {ref_anno} does not appear to be from Ensembl (missing ensembl transcript source)')
-
 validate_config(config)
 process_config(config)
 
@@ -151,9 +140,9 @@ if 'RNA_editing' in modality_groups:
     edit_sites_bed = Path(edit_sites_bed).expanduser()
     if not edit_sites_bed.exists():
         raise FileNotFoundError(f'Edit sites BED file not found: {edit_sites_bed}')
-if edit_sites_min_samples > len(samples):
-        print(f'Note: edit_sites_min_samples ({edit_sites_min_samples}) is greater than the number of samples ({len(samples)}). Setting to {len(samples)}.')
-        edit_sites_min_samples = len(samples)
+    if edit_sites_min_samples > len(samples):
+            print(f'Note: edit_sites_min_samples ({edit_sites_min_samples}) is greater than the number of samples ({len(samples)}). Setting to {len(samples)}.')
+            edit_sites_min_samples = len(samples)
     
 outputs = []
 for modality_group, params in modality_groups.items():

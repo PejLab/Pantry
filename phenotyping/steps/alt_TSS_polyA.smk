@@ -3,13 +3,26 @@ localrules:
 
 TXREVISE_N_BATCHES = 100
 
+rule preprocess_gtf_for_txrevise:
+    """Preprocess the GTF file for txrevise"""
+    input:
+        ref_anno,
+    output:
+        ref_dir / 'txrevise' / 'gene_annotations.gtf',
+    shell:
+        """
+        python3 scripts/txrevise/preprocess_gtf.py \
+            --input {input} \
+            --output {output}
+        """
+
 rule txrevise_extract_tags:
     """Extract transcript tags from the GTF file
     
     txrevise rules are adapted from https://github.com/kauralasoo/txrevise/blob/master/scripts/Snakefile
     """
     input:
-        ref_anno,
+        ref_dir / 'txrevise' / 'gene_annotations.gtf',
     output:
         tags = ref_dir / 'txrevise' / 'transcript_tags.txt',
     shell:
@@ -22,7 +35,7 @@ rule txrevise_extract_tags:
 rule txrevise_prepare_annotations:
     """Prepare annotations"""
     input:
-        gtf = ref_anno,
+        gtf = ref_dir / 'txrevise' / 'gene_annotations.gtf',
         tags = ref_dir / 'txrevise' / 'transcript_tags.txt',
     output:
         ref_dir / 'txrevise' / 'txrevise_annotations.rds',
