@@ -151,10 +151,10 @@ if 'RNA_editing' in modality_groups:
     edit_sites_bed = Path(edit_sites_bed).expanduser()
     if not edit_sites_bed.exists():
         raise FileNotFoundError(f'Edit sites BED file not found: {edit_sites_bed}')
-if edit_sites_min_samples > len(samples):
+    if edit_sites_min_samples > len(samples):
         print(f'Note: edit_sites_min_samples ({edit_sites_min_samples}) is greater than the number of samples ({len(samples)}). Setting to {len(samples)}.')
         edit_sites_min_samples = len(samples)
-    
+
 outputs = []
 for modality_group, params in modality_groups.items():
     for f in params['files']:
