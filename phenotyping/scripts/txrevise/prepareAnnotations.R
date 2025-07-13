@@ -25,7 +25,12 @@ transcript_tags = readr::read_tsv(tags_file) %>%
 transcript_meta = txrevise::importTranscriptMetadataFromGTF(gtf_file, transcript_tags)
 
 #Filter the metadata
-filtered_metadata = txrevise::filterTranscriptMetadata(transcript_meta)
+# Default complete_transcripts is c("protein_coding", "lincRNA"), but Ensembl
+# uses "lncRNA" instead of "lincRNA"
+filtered_metadata = txrevise::filterTranscriptMetadata(
+  transcript_meta,
+  complete_transcripts = c("protein_coding", "lincRNA", "lncRNA")
+)
 
 #Construct TxDb
 txdb = GenomicFeatures::makeTxDbFromGFF(gtf_file)
