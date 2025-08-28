@@ -44,7 +44,7 @@ rule covariates:
         n_geno_pcs = 5,
         n_pheno_pcs = 20,
     resources:
-        mem_mb = 16000,
+        mem_mb = 32000,
     shell:
         """
         Rscript scripts/covariates.R \

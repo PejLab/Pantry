@@ -83,6 +83,8 @@ rule normalize_expression:
         output_dir / 'expression.bed.gz',
     params:
         bed = str(output_dir / 'expression.bed'),
+    resources:
+        mem_mb = 32000,
     shell:
         """
         python3 scripts/normalize_phenotypes.py \
@@ -101,6 +103,8 @@ rule normalize_isoforms:
         output_dir / 'isoforms.bed.gz',
     params:
         bed = str(output_dir / 'isoforms.bed'),
+    resources:
+        mem_mb = 32000,
     shell:
         """
         mkdir -p {output_dir}

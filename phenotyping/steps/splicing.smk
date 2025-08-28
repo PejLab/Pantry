@@ -80,6 +80,8 @@ rule normalize_splicing:
         output_dir / 'splicing.bed.gz',
     params:
         bed = output_dir / 'splicing.bed',
+    resources:
+        mem_mb = 32000,
     shell:
         """
         mkdir -p {output_dir}
