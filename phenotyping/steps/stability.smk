@@ -1,13 +1,13 @@
-rule exons_introns_from_GTF:
-    """Extract exons and introns from GTF"""
+rule exonic_intronic_from_GTF:
+    """Extract exonic and intronic regions from GTF"""
     input:
         ref_anno = ref_anno,
     output:
-        exon_gtf = ref_dir / 'constit_exons.gtf',
-        intron_gtf = ref_dir / 'introns.gtf',
+        exon_gtf = ref_dir / 'exonic.gtf',
+        intron_gtf = ref_dir / 'intronic.gtf',
     shell:
         """
-        sh scripts/exons_introns_from_gtf.sh \
+        python3 scripts/exonic_intronic_from_gtf.py \
             {input.ref_anno} \
             {output.exon_gtf} \
             {output.intron_gtf}
@@ -29,8 +29,8 @@ rule run_featureCounts:
     params:
         stab_dir = interm_dir / 'stability',
         paired_flag = lambda w: '-p' if fastq_map[w.sample_id][1] else '',
-        feature_id = lambda w: {'constit_exons': 'exon', 'introns': 'intron'}[w.feature_type],
-        frac_overlap = lambda w: {'constit_exons': 1, 'introns': 0}[w.feature_type],
+        feature_id = lambda w: {'exonic': 'exon', 'intronic': 'intron'}[w.feature_type],
+        frac_overlap = lambda w: {'exonic': 1, 'intronic': 0}[w.feature_type],
         # TODO add strandedness parameter
     threads: 8
     resources:
@@ -51,8 +51,8 @@ rule run_featureCounts:
 rule assemble_stability_bed:
     """Assemble exon to intron read ratios into mRNA stability BED file"""
     input:
-        exon = expand(str(interm_dir / 'stability' / '{sample_id}.constit_exons.counts.txt'), sample_id=samples),
-        intron = expand(str(interm_dir / 'stability' / '{sample_id}.introns.counts.txt'), sample_id=samples),
+        exon = expand(str(interm_dir / 'stability' / '{sample_id}.exonic.counts.txt'), sample_id=samples),
+        intron = expand(str(interm_dir / 'stability' / '{sample_id}.intronic.counts.txt'), sample_id=samples),
         samples = samples_file,
         ref_anno = ref_anno,
     output:

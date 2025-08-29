@@ -254,8 +254,8 @@ def load_featureCounts(sample_ids: list, counts_dir: Path, feature: str, min_cou
 
 def assemble_stability(sample_ids: list, stab_dir: Path, ref_anno: Path, bed: Path):
     """Assemble exon to intron read ratios into mRNA stability BED file"""
-    exon = load_featureCounts(sample_ids, stab_dir, 'constit_exons')
-    intron = load_featureCounts(sample_ids, stab_dir, 'introns')
+    exon = load_featureCounts(sample_ids, stab_dir, 'exonic')
+    intron = load_featureCounts(sample_ids, stab_dir, 'intronic')
     genes = exon.index[np.isin(exon.index, intron.index)]
     assert exon.loc[genes, :].index.equals(intron.loc[genes, :].index)
     assert exon.columns.equals(intron.columns)
