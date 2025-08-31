@@ -46,8 +46,7 @@ rule cluster_junctions:
             --rundir {params.splice_dir} \
             --maxintronlen {params.max_intron_len} \
             --minclureads {params.min_clust_reads} \
-            --mincluratio {params.min_clust_ratio} \
-            --checkchrom False
+            --mincluratio {params.min_clust_ratio}
         """
 
 rule assemble_splicing_bed:

@@ -26,10 +26,10 @@ transcript_meta = txrevise::importTranscriptMetadataFromGTF(gtf_file, transcript
 
 #Filter the metadata
 # Default complete_transcripts is c("protein_coding", "lincRNA"), but Ensembl
-# uses "lncRNA" instead of "lincRNA"
+# uses "lncRNA" instead of "lincRNA" and RefSeq uses "mRNA" and "lnc_RNA"
 filtered_metadata = txrevise::filterTranscriptMetadata(
   transcript_meta,
-  complete_transcripts = c("protein_coding", "lincRNA", "lncRNA")
+  complete_transcripts = c("protein_coding", "mRNA", "lincRNA", "lncRNA", "lnc_RNA")
 )
 
 #Construct TxDb
@@ -38,6 +38,8 @@ exons = GenomicFeatures::exonsBy(txdb, by = "tx", use.names = TRUE)
 cdss = GenomicFeatures::cdsBy(txdb, by = "tx", use.names = TRUE)
 
 #Export data for txrevise event construction
+# Added because a small number of transcripts were missing exons at this stage - Daniel Munro
+filtered_metadata <- dplyr::filter(filtered_metadata, ensembl_transcript_id %in% names(exons))
 txrevise_data = list(transcript_metadata = filtered_metadata, 
                      exons = exons[filtered_metadata$ensembl_transcript_id], 
                      cdss = cdss[intersect(names(cdss),filtered_metadata$ensembl_transcript_id)])

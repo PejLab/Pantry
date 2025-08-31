@@ -54,7 +54,12 @@ def map_introns_to_genes(introns: list, exons: pd.DataFrame) -> pd.DataFrame:
     exons['exonStart'] = exons['exonStart'].astype(str)
     exons['exonEnd'] = exons['exonEnd'].astype(str)
     df = pd.DataFrame({'intron': introns})
-    df[['chrom', 'chr_start', 'chr_end', 'clu', 'cluster', 'strand']] = df['intron'].str.split(r':|_', expand=True)
+    # Expected intron format: chrom:start:end:clu_<cluster>_<strand>
+    # Some chromosome IDs contain underscores (e.g. "NC_000001.11"), so split
+    # first by colon and then split the last field by underscores.
+    print(df)
+    df[['chrom', 'chr_start', 'chr_end', 'cluster_info']] = df['intron'].str.split(':', expand=True)
+    df[['clu', 'cluster', 'strand']] = df['cluster_info'].str.split('_', expand=True)
     df['start'] = np.where(df['strand'] == '+', df['chr_start'], df['chr_end'])
     df['end'] = np.where(df['strand'] == '+', df['chr_end'], df['chr_start'])
     start_matches = df.merge(
@@ -254,8 +259,8 @@ def load_featureCounts(sample_ids: list, counts_dir: Path, feature: str, min_cou
 
 def assemble_stability(sample_ids: list, stab_dir: Path, ref_anno: Path, bed: Path):
     """Assemble exon to intron read ratios into mRNA stability BED file"""
-    exon = load_featureCounts(sample_ids, stab_dir, 'constit_exons')
-    intron = load_featureCounts(sample_ids, stab_dir, 'introns')
+    exon = load_featureCounts(sample_ids, stab_dir, 'exonic')
+    intron = load_featureCounts(sample_ids, stab_dir, 'intronic')
     genes = exon.index[np.isin(exon.index, intron.index)]
     assert exon.loc[genes, :].index.equals(intron.loc[genes, :].index)
     assert exon.columns.equals(intron.columns)

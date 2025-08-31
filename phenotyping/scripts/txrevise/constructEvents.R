@@ -32,6 +32,27 @@ library("purrr")
 suppressMessages(library("dplyr"))
 suppressMessages(library("rtracklayer"))
 
+constructEventMetadata <- function(transcript_ids){
+  # Parse IDs without assuming no periods in gene_id or transcript_id
+  # Pattern: (gene_id).(grp_id).(event_type).(transcript_id)
+  # where grp_id starts with "grp_" and event_type has no periods
+  
+  regex <- "^(.*?)\\.(grp_\\d+)\\.(upstream|downstream|contained)\\.(.*)$"
+  ensembl_gene_id <- sub(regex, "\\1", transcript_ids)
+  grp_id <- sub(regex, "\\2", transcript_ids)
+  event_type <- sub(regex, "\\3", transcript_ids)
+  ensembl_transcript_id <- sub(regex, "\\4", transcript_ids)
+  
+  dplyr::tibble(
+    transcript_id = as.character(transcript_ids),
+    ensembl_gene_id = ensembl_gene_id,
+    grp_id = grp_id,
+    event_type = event_type,
+    ensembl_transcript_id = ensembl_transcript_id
+  ) |>
+    dplyr::mutate(gene_id = paste(ensembl_gene_id, grp_id, event_type, sep = "."))
+}
+
 #Import prepared transcript annotations
 txrevise_data = readRDS(annot_file)
 
@@ -79,7 +100,7 @@ if (length(selected_gene_ids) > 0){
   alt_events = purrr::flatten(alt_events) %>% txrevise::flattenAlternativeEvents(min_alt_event_count = 1)
 
   #Construct event metadata
-  event_metadata = txrevise::constructEventMetadata(names(alt_events))
+  event_metadata = constructEventMetadata(names(alt_events))
 
   #Iterate over groups and positions and export annotations to gff files
   for (group in c("grp_1", "grp_2")){

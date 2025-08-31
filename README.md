@@ -156,10 +156,8 @@ This file, whose path is specified in the config file, is the list of samples to
 
 #### Reference genome and annotations
 
-**NOTE:** Pantry currently only supports gene annotations from Ensembl, not RefSeq or Gencode. Be sure the chromosome names in the GTF file match those in the reference genome FASTA file.
-
 - The FASTA file for a reference genome, e.g. `Homo_sapiens.GRCh38.dna.primary_assembly.fa`.
-- A GTF file containing the gene, exon, and other annotations, compatible with the supplied reference genome. For example, `Homo_sapiens.GRCh38.113.chr.gtf`. Any desired quality filtering should be done beforehand, e.g. including only transcripts validated by both Ensembl and HAVANA.
+- A GTF file containing the gene, exon, and other annotations, compatible with the supplied reference genome (e.g., same chromosome names). For example, `Homo_sapiens.GRCh38.113.chr.gtf`. Pantry has been most extensively tested with Ensembl annotations, but it should work with GTFs from other sources such as Gencode or RefSeq. Any desired quality filtering should be done beforehand.
 - For RNA editing only: A BED file (including at least the first six standard columns) containing the edit sites to quantify. The edit site ID should be unique and consistent with the reference genome. The names in the fourth column are not used, as site IDs will be generated from the coordinates.
 
 ### Phenotype files
