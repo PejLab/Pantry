@@ -5,6 +5,7 @@
 """
 
 import argparse
+import os
 from gtfparse import read_gtf
 
 def update_line(line, gene_type_dict):
@@ -27,6 +28,10 @@ parser = argparse.ArgumentParser(description="Alter non-Ensembl GTF files to be 
 parser.add_argument("--input", "-i", required=True, help="Input GTF file")
 parser.add_argument("--output", "-o", required=True, help="Output GTF file")
 args = parser.parse_args()
+
+output_dir = os.path.dirname(args.output)
+if output_dir:
+    assert os.path.exists(output_dir), f"Output directory {output_dir} does not exist"
 
 anno = read_gtf(args.input)
 # Newer versions return a polars DF by default, but not all versions allow

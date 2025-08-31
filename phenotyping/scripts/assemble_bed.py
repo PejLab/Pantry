@@ -54,7 +54,12 @@ def map_introns_to_genes(introns: list, exons: pd.DataFrame) -> pd.DataFrame:
     exons['exonStart'] = exons['exonStart'].astype(str)
     exons['exonEnd'] = exons['exonEnd'].astype(str)
     df = pd.DataFrame({'intron': introns})
-    df[['chrom', 'chr_start', 'chr_end', 'clu', 'cluster', 'strand']] = df['intron'].str.split(r':|_', expand=True)
+    # Expected intron format: chrom:start:end:clu_<cluster>_<strand>
+    # Some chromosome IDs contain underscores (e.g. "NC_000001.11"), so split
+    # first by colon and then split the last field by underscores.
+    print(df)
+    df[['chrom', 'chr_start', 'chr_end', 'cluster_info']] = df['intron'].str.split(':', expand=True)
+    df[['clu', 'cluster', 'strand']] = df['cluster_info'].str.split('_', expand=True)
     df['start'] = np.where(df['strand'] == '+', df['chr_start'], df['chr_end'])
     df['end'] = np.where(df['strand'] == '+', df['chr_end'], df['chr_start'])
     start_matches = df.merge(

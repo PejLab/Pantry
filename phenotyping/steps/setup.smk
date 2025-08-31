@@ -101,13 +101,30 @@ def process_config(config: dict):
 def validate_reference(ref_genome: Path, ref_anno: Path):
     """Validate the reference genome and annotations
     
-    Confirm both files exist and that the GTF file comes from Ensembl.
+    Confirm both files exist and that the GTF includes transcript entries (which
+    are lacking in, e.g., RefSeq Select GTFs).
     """
     if not ref_genome.exists():
         raise FileNotFoundError(f'Reference genome file not found: {ref_genome}')
     if not ref_anno.exists():
         raise FileNotFoundError(f'Reference annotation file not found: {ref_anno}')
     
+    has_transcript = False
+    with open(ref_anno, 'r') as fh:
+        checked = 0
+        for line in fh:
+            if line.startswith('#'):
+                continue
+            cols = line.split('\t')
+            if cols[2] == 'transcript':
+                has_transcript = True
+                break
+            checked += 1
+            if checked >= 1000:
+                break
+    if not has_transcript:
+        raise ValueError(f'Reference annotation file does not contain transcript entries (at least not in the first 1000 lines): {ref_anno}')
+
 validate_config(config)
 process_config(config)
 

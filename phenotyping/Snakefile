@@ -84,11 +84,21 @@ rule index_fasta:
         'samtools faidx {input}'
 
 rule extract_cdna:
-    """Extract cDNA sequences from a genome and GTF file."""
+    """Extract cDNA sequences from a genome and GTF file.
+    
+    Empty transcript_id fields, which appear in gene entries in some GTFs,
+    results in 'Error: no valid ID found for GFF record', so they are removed
+    before running gffread.
+    """
     input:
         ref_genome = ref_genome,
         ref_anno = ref_anno,
     output:
         ref_cdna,
     shell:
-        'gffread {input.ref_anno} -g {input.ref_genome} -w - | bgzip -c > {output}'
+        """
+        sed '/transcript_id "";/d' {input.ref_anno} \
+            | gffread -g {input.ref_genome} -w - - \
+            | bgzip -c \
+            > {output}
+        """
