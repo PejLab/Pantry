@@ -9,7 +9,7 @@ B_START=$5
 B_END=$6
 OUTDIR=$7
 
-set -e
+# set -e
 
 echo $GENO $BED $COVAR $PHENO $B_START $B_END $OUTDIR
 

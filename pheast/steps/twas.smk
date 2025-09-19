@@ -90,7 +90,12 @@ rule twas_assemble_summary:
         # Avoid using relative path in case intermediate dir is a symlink:
         scripts_dir="$(realpath scripts)"
         cd {params.twas_interm_dir}
-        ls {wildcards.modality}/*.wgt.RDat > {wildcards.modality}.list
+        # List weight files and sort by phenotype ID (basename without extension)
+        find {wildcards.modality} -maxdepth 1 -type f -name '*.wgt.RDat' \
+            | awk -F'/' '{{fn=$NF; sub(/\.wgt\.RDat$/, "", fn); print fn "\t" $0}}' \
+            | sort -k1,1 \
+            | cut -f2- \
+            > {wildcards.modality}.list
         Rscript $scripts_dir/fusion_twas/utils/FUSION.profile_wgt.R \
             {wildcards.modality}.list \
             > {wildcards.modality}.profile \

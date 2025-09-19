@@ -96,7 +96,7 @@ def process_config(config: dict):
     if 'intermediate_ref_dir' not in config:
         config['intermediate_ref_dir'] = config['intermediate_dir'] / 'reference'
 
-    config['fastq_map'] = load_fastq_map(config['fastq_map'], config['fastq_dir'], config['paired_end'])
+    config['fastq_map'] = load_fastq_map(config['fastq_map'], config['fastq_dir'], config.get('paired_end', None))
 
 def validate_reference(ref_genome: Path, ref_anno: Path):
     """Validate the reference genome and annotations
@@ -135,11 +135,11 @@ output_dir = Path('output')
 samples_file = config['samples_file']
 samples = config['samples']
 
-paired_end = config['paired_end']
+paired_end = config.get('paired_end', None)
 read_length = config['read_length']
 fastq_dir = config['fastq_dir']
 fastq_map = config['fastq_map']
-if paired_end is not None and not paired_end:
+if any(not is_paired for paths, is_paired in fastq_map.values()):
     fragment_length_mean = config['fragment_length_mean']
     fragment_length_sd = config['fragment_length_sd']
 
