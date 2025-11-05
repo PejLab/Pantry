@@ -65,11 +65,10 @@ rule assemble_stability_bed:
     shell:
         """
         mkdir -p {params.unnorm_dir}
-        python3 scripts/assemble_bed.py \
-            --type stability \
+        python3 scripts/assemble_bed.py stability \
             --input-dir {params.stab_dir} \
             --samples {input.samples} \
-            --ref_anno {input.ref_anno} \
+            --ref-anno {input.ref_anno} \
             --output {output.bed}
         """
 

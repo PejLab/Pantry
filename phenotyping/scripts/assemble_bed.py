@@ -57,7 +57,6 @@ def map_introns_to_genes(introns: list, exons: pd.DataFrame) -> pd.DataFrame:
     # Expected intron format: chrom:start:end:clu_<cluster>_<strand>
     # Some chromosome IDs contain underscores (e.g. "NC_000001.11"), so split
     # first by colon and then split the last field by underscores.
-    print(df)
     df[['chrom', 'chr_start', 'chr_end', 'cluster_info']] = df['intron'].str.split(':', expand=True)
     df[['clu', 'cluster', 'strand']] = df['cluster_info'].str.split('_', expand=True)
     df['start'] = np.where(df['strand'] == '+', df['chr_start'], df['chr_end'])
@@ -131,7 +130,7 @@ def assemble_alt_TSS_polyA(sample_ids: list, group1_dir: Path, group2_dir: Path,
     df = df[['#chr', 'start', 'end', 'phenotype_id'] + sample_ids]
     df.to_csv(bed, sep='\t', index=False, float_format='%g')
 
-def assemble_expression(sample_ids: list, kallisto_dir: Path, units: str, ref_anno: Path, bed_iso: Path, bed_gene: Path, min_count: int = 10, min_frac: float = 0.05, max_frac: float = 0.95):
+def assemble_expression(sample_ids: list, kallisto_dir: Path, units: str, ref_anno: Path, bed_iso: Path, bed_gene: Path, min_count: int = 10, min_frac: float = 0.05, max_frac: float = 0.95, log2_expr: bool = False):
     """Assemble kallisto est_counts or tpm outputs into isoform- and gene-level BED files
     
     Isoform values are normalized to relative abundance in each gene. Isoforms
@@ -154,6 +153,8 @@ def assemble_expression(sample_ids: list, kallisto_dir: Path, units: str, ref_an
 
     # Also get gene-level expression:
     df_gene = df_iso.reset_index().drop('transcript_id', axis=1).groupby('gene_id', group_keys=True).sum()
+    if log2_expr:
+        df_gene = np.log2(df_gene + 1)
 
     # Calculate proportion of each transcript in each gene_id:
     df_iso = df_iso.groupby('gene_id', group_keys=False).apply(lambda x: x / x.sum(axis=0))
@@ -273,31 +274,90 @@ def assemble_stability(sample_ids: list, stab_dir: Path, ref_anno: Path, bed: Pa
     df = anno.merge(df.reset_index(), on='phenotype_id', how='inner')
     df.to_csv(bed, sep='\t', index=False, float_format='%g')
 
-parser = argparse.ArgumentParser(description='Assemble data into an RNA phenotype BED file')
-parser.add_argument('--type', choices=['alt_TSS_polyA', 'expression', 'latent', 'RNA_editing', 'splicing', 'stability'], required=True, help='Type of data to assemble')
-parser.add_argument('--input', type=Path, required=False, help='Input file, for phenotype groups in which all data is already in a single file')
-parser.add_argument('--input-dir', type=Path, required=False, help='Directory containing input files, for phenotype groups with per-sample input files')
-parser.add_argument('--input-dir2', type=Path, required=False, help='Second input directory, for phenotype groups with per-sample input files in two directories')
-parser.add_argument('--samples', type=Path, required=False, help='File listing sample IDs, for phenotype groups with per-sample input files')
-parser.add_argument('--ref_anno', type=Path, required=True, help='Reference annotation file')
-parser.add_argument('--edit_sites_to_genes', type=Path, required=False, help='For RNA editing, file mapping edit sites to genes')
-parser.add_argument('--output', type=Path, required=True, help='Output file ("*.bed")')
-parser.add_argument('--output2', type=Path, required=False, help='Second output file ("*.bed") for phenotype groups with two output files, e.g. log2 and tpm expression')
-args = parser.parse_args()
+def _load_samples(path: Path) -> list[str]:
+    return pd.read_csv(path, sep='\t', header=None, dtype=str)[0].tolist()
 
-if args.samples is not None:
-    samples = pd.read_csv(args.samples, sep='\t', header=None, dtype=str)[0].tolist()
+def main():
+    parser = argparse.ArgumentParser(description='Assemble data into an RNA phenotype BED file')
+    sub = parser.add_subparsers(dest='cmd', required=True)
 
-if args.type == 'alt_TSS_polyA':
-    assemble_alt_TSS_polyA(samples, args.input_dir, args.input_dir2, 'tpm', args.ref_anno, args.output, min_frac=0.05, max_frac=0.95)
-elif args.type == 'expression':
-    assemble_expression(samples, args.input_dir, 'tpm', args.ref_anno, args.output, args.output2, min_count=10, min_frac=0.05, max_frac=0.95)
-elif args.type == 'latent':
-    assemble_latent(args.input, args.ref_anno, args.output)
-elif args.type == 'RNA_editing':
-    assert args.edit_sites_to_genes is not None, 'RNA editing requires --edit_sites_to_genes'
-    assemble_RNA_editing(args.input, args.edit_sites_to_genes, args.ref_anno, args.output)
-elif args.type == 'splicing':
-    assemble_splicing(args.input, args.ref_anno, args.output, min_frac=0.05, max_frac=0.95)
-elif args.type == 'stability':
-    assemble_stability(samples, args.input_dir, args.ref_anno, args.output)
+    # alt_TSS_polyA
+    p_tss = sub.add_parser('alt-tss-polya', help='Assemble txrevise alt TSS or polyA usage')
+    p_tss.add_argument('--samples', type=Path, required=True, help='Path to sample IDs file (one sample ID per line)')
+    p_tss.add_argument('--group1-dir', type=Path, required=True, help='Group 1 directory (path of grp_1.upstream for TSS, grp_1.downstream for polyA) containing kallisto output directories named by sample')
+    p_tss.add_argument('--group2-dir', type=Path, required=True, help='Group 2 directory (path of grp_2.upstream for TSS, grp_2.downstream for polyA) containing kallisto output directories named by sample')
+    p_tss.add_argument('--ref-anno', dest='ref_anno', type=Path, required=True, help='Reference annotation GTF file')
+    p_tss.add_argument('--output', type=Path, required=True, help='Output BED file')
+    p_tss.add_argument('--min-frac', type=float, default=0.05, help='Minimum mean fraction for TSS/polyA site to be included')
+    p_tss.add_argument('--max-frac', type=float, default=0.95, help='Maximum mean fraction for TSS/polyA site to be included')
+
+    # expression
+    p_expr = sub.add_parser('expression', help='Assemble isoform- and gene-level expression')
+    p_expr.add_argument('--samples', type=Path, required=True, help='Path to sample IDs file (one sample ID per line)')
+    p_expr.add_argument('--input-dir', type=Path, required=True, help='Directory containing kallisto output directories named by sample')
+    p_expr.add_argument('--ref-anno', dest='ref_anno', type=Path, required=True, help='Reference annotation GTF file')
+    p_expr.add_argument('--output-isoforms', type=Path, required=True, help='Isoform ratio BED')
+    p_expr.add_argument('--output-expression', type=Path, required=True, help='Gene-level expression BED')
+    p_expr.add_argument('--min-count', type=int, default=10, help='Minimum mean count for isoform to be included in isoform-level BED')
+    p_expr.add_argument('--min-frac', type=float, default=0.05, help='Minimum mean relative abundance for isoform to be included in isoform-level BED')
+    p_expr.add_argument('--max-frac', type=float, default=0.95, help='Maximum mean relative abundance for isoform to be included in isoform-level BED')
+    p_expr.add_argument('--units', choices=['tpm', 'est_counts'], default='tpm',
+                        help='Units to read from kallisto abundance.tsv (tpm or est_counts). Defaults to tpm')
+    p_expr.add_argument('--log2-expr', action='store_true',
+                        help='If set, gene-level expression values are log2 transformed (log2(x + 1)) before being written to BED file')
+
+    # latent
+    p_lat = sub.add_parser('latent', help='Assemble latent RNA PCs')
+    p_lat.add_argument('--input', type=Path, required=True, help='Phenotype table produced by LaDDR')
+    p_lat.add_argument('--ref-anno', dest='ref_anno', type=Path, required=True, help='Reference annotation GTF file')
+    p_lat.add_argument('--output', type=Path, required=True, help='Output BED file')
+
+    # RNA editing
+    p_edit = sub.add_parser('rna-editing', help='Assemble RNA editing phenotypes')
+    p_edit.add_argument('--input', type=Path, required=True, help='RNA editing matrix with fractions as num/den strings')
+    p_edit.add_argument('--edit-sites-to-genes', dest='edit_sites_to_genes', type=Path, required=True, help='Mapping of RNA editing sites to gene IDs (TSV)')
+    p_edit.add_argument('--ref-anno', dest='ref_anno', type=Path, required=True, help='Reference annotation GTF file')
+    p_edit.add_argument('--output', type=Path, required=True, help='Output BED file')
+
+    # splicing
+    p_sp = sub.add_parser('splicing', help='Assemble leafcutter splicing phenotypes')
+    p_sp.add_argument('--input', type=Path, required=True, help='leafcutter per-junction counts')
+    p_sp.add_argument('--ref-anno', dest='ref_anno', type=Path, required=True, help='Reference annotation GTF file')
+    p_sp.add_argument('--output', type=Path, required=True, help='Output BED file')
+    p_sp.add_argument('--min-frac', type=float, default=0.05, help='Minimum mean fraction for junction to be included')
+    p_sp.add_argument('--max-frac', type=float, default=0.95, help='Maximum mean fraction for junction to be included')
+
+    # stability
+    p_stab = sub.add_parser('stability', help='Assemble mRNA stability (exon/intron ratios)')
+    p_stab.add_argument('--samples', type=Path, required=True, help='Path to sample IDs file (one sample ID per line)')
+    p_stab.add_argument('--input-dir', type=Path, required=True, help='Directory containing {sample}.exonic.counts.txt and {sample}.intronic.counts.txt files')
+    p_stab.add_argument('--ref-anno', dest='ref_anno', type=Path, required=True, help='Reference annotation GTF file')
+    p_stab.add_argument('--output', type=Path, required=True, help='Output BED file')
+
+    args = parser.parse_args()
+
+    if args.cmd == 'alt-tss-polya':
+        samples = _load_samples(args.samples)
+        assemble_alt_TSS_polyA(samples, args.group1_dir, args.group2_dir, 'tpm',
+                               args.ref_anno, args.output,
+                               min_frac=args.min_frac, max_frac=args.max_frac)
+    elif args.cmd == 'expression':
+        samples = _load_samples(args.samples)
+        assemble_expression(samples, args.input_dir, args.units,
+                            args.ref_anno, args.output_isoforms, args.output_expression,
+                            min_count=args.min_count,
+                            min_frac=args.min_frac, max_frac=args.max_frac,
+                            log2_expr=args.log2_expr)
+    elif args.cmd == 'latent':
+        assemble_latent(args.input, args.ref_anno, args.output)
+    elif args.cmd == 'rna-editing':
+        assemble_RNA_editing(args.input, args.edit_sites_to_genes, args.ref_anno, args.output)
+    elif args.cmd == 'splicing':
+        assemble_splicing(args.input, args.ref_anno, args.output,
+                          min_frac=args.min_frac, max_frac=args.max_frac)
+    elif args.cmd == 'stability':
+        samples = _load_samples(args.samples)
+        assemble_stability(samples, args.input_dir, args.ref_anno, args.output)
+
+if __name__ == '__main__':
+    main()

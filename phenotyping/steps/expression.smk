@@ -65,13 +65,12 @@ rule assemble_expression_bed:
     shell:
         """
         mkdir -p {params.unnorm_dir}
-        python3 scripts/assemble_bed.py \
-            --type expression \
+        python3 scripts/assemble_bed.py expression \
             --input-dir {params.expr_dir} \
             --samples {input.samples} \
-            --ref_anno {input.ref_anno} \
-            --output {output.iso} \
-            --output2 {output.gene}
+            --ref-anno {input.ref_anno} \
+            --output-isoforms {output.iso} \
+            --output-expression {output.gene}
         """
 
 rule normalize_expression:
@@ -115,7 +114,7 @@ rule normalize_isoforms:
         bgzip {params.bed}
         """
 
-rule isoforms_pheno_groups:
+rule pheno_groups_isoforms:
     """Group phenotypes by gene for tensorQTL"""
     input:
         output_dir / 'isoforms.bed.gz',

@@ -68,11 +68,10 @@ rule assemble_RNA_editing_bed:
     shell:
         """
         mkdir -p {params.unnorm_dir}
-        python3 scripts/assemble_bed.py \
-            --type RNA_editing \
+        python3 scripts/assemble_bed.py rna-editing \
             --input {input.matrix} \
-            --ref_anno {input.ref_anno} \
-            --edit_sites_to_genes {input.edit_sites_to_genes} \
+            --ref-anno {input.ref_anno} \
+            --edit-sites-to-genes {input.edit_sites_to_genes} \
             --output {output.bed}
         """
 
@@ -95,7 +94,7 @@ rule normalize_RNA_editing:
         bgzip {params.bed}
         """
 
-rule RNA_editing_pheno_groups:
+rule pheno_groups_RNA_editing:
     """Group phenotypes by gene for tensorQTL"""
     input:
         output_dir / 'RNA_editing.bed.gz',

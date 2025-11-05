@@ -63,10 +63,9 @@ rule assemble_splicing_bed:
     shell:
         """
         mkdir -p {params.unnorm_dir}
-        python3 scripts/assemble_bed.py \
-            --type splicing \
+        python3 scripts/assemble_bed.py splicing \
             --input {input.counts} \
-            --ref_anno {input.ref_anno} \
+            --ref-anno {input.ref_anno} \
             --output {output.bed}
         """
 
@@ -91,7 +90,7 @@ rule normalize_splicing:
         bgzip {params.bed}
         """
 
-rule splicing_pheno_groups:
+rule pheno_groups_splicing:
     """Group phenotypes by gene for tensorQTL"""
     input:
         output_dir / 'splicing.bed.gz',

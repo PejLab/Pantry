@@ -165,12 +165,11 @@ rule assemble_alt_TSS_polyA_bed:
     shell:
         """
         mkdir -p {params.unnorm_dir}
-        python3 scripts/assemble_bed.py \
-            --type alt_TSS_polyA \
-            --input-dir {params.alt_group1_pos_dir} \
-            --input-dir2 {params.alt_group2_pos_dir} \
+        python3 scripts/assemble_bed.py alt-tss-polya \
+            --group1-dir {params.alt_group1_pos_dir} \
+            --group2-dir {params.alt_group2_pos_dir} \
             --samples {input.samples} \
-            --ref_anno {input.ref_anno} \
+            --ref-anno {input.ref_anno} \
             --output {output}
         """
 
@@ -193,7 +192,7 @@ rule normalize_alt_TSS_polyA:
         bgzip {params.bed}
         """
 
-rule alt_TSS_polyA_pheno_groups:
+rule pheno_groups_alt_TSS_polyA:
     """Group phenotypes by gene for tensorQTL"""
     input:
         output_dir / 'alt_{type}.bed.gz',
