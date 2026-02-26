@@ -151,9 +151,10 @@ validate_reference(ref_genome, ref_anno)
 modality_groups = config['modality_groups']
 
 if 'RNA_editing' in modality_groups:
-    edit_sites_bed = config['edit_sites_bed']
-    edit_sites_min_coverage = config['edit_sites_min_coverage']
-    edit_sites_min_samples = min(config['edit_sites_min_samples'], len(samples))
+    rna_editing_params = modality_groups['RNA_editing']
+    edit_sites_bed = rna_editing_params['edit_sites_bed']
+    edit_sites_min_coverage = rna_editing_params['edit_sites_min_coverage']
+    edit_sites_min_samples = min(rna_editing_params['edit_sites_min_samples'], len(samples))
     edit_sites_bed = Path(edit_sites_bed).expanduser()
     if not edit_sites_bed.exists():
         raise FileNotFoundError(f'Edit sites BED file not found: {edit_sites_bed}')
@@ -165,4 +166,3 @@ outputs = []
 for modality_group, params in modality_groups.items():
     for f in params['files']:
         outputs.append(output_dir / f)
-

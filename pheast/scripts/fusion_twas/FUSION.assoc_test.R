@@ -40,7 +40,7 @@ option_list = list(
   make_option("--PANELN", action="store", default=NA, type='character',
               help="File listing sample size for each panel for inference of standard QTL effect size, cross-referenced against 'PANEL' column in weights file"),
   make_option("--separate_human_MHC", action="store_true", default=FALSE,
-			  help="Separate MHC results into a separate file, for human data ONLY (default: FALSE)"),
+			  help="Separate MHC results into a separate file, for human data ONLY (default: FALSE)")
 )
 
 opt = parse_args(OptionParser(option_list=option_list))
