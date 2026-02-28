@@ -7,6 +7,7 @@ dependencies:
   - bedtools
   - bioconductor-genomicranges  # for RNA editing
   - bioconductor-rtracklayer  # for RNA editing
+  - deeptools  # for bamCoverage used by optional LaDDR workflow
   - gffread  # for txrevise
   - graphviz  # for plotting pipeline diagrams
   - gtfparse

@@ -49,6 +49,8 @@ def kallisto_single_end_flag(wildcards):
 include: 'steps/align.smk'
 for modality_group in modality_groups:
     include: f'steps/{modality_group}.smk'
+if laddr_enabled:
+    include: 'steps/laddr.smk'
 
 ## Additional general rules
 

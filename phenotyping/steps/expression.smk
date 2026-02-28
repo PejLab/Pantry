@@ -1,5 +1,5 @@
 localrules:
-    isoforms_pheno_groups,
+    pheno_groups_isoforms,
 
 rule kallisto_index:
     """Generate the index for kallisto."""

@@ -1,5 +1,5 @@
 localrules:
-    splicing_pheno_groups,
+    pheno_groups_splicing,
 
 rule regtools_junctions:
     """Run regtools junctions for LeafCutter"""

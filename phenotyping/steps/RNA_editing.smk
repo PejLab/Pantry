@@ -1,5 +1,6 @@
 localrules:
     map_edit_sites_to_genes,
+    pheno_groups_RNA_editing,
 
 rule query_editing_level:
     input:
