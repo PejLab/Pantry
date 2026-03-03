@@ -6,7 +6,7 @@
 phenotype_dir: input/phenotypes
 
 ### Give the path prefix to genotypes in plink1 (bed/bim/fam) format:
-geno_prefix: input/GEUVADIS.445_samples.GRCh38.chr1
+geno_prefix: input/GEUVADIS.445_samples.GRCh38.chr1_120Mb
 
 ### Samples to include:
 samples_file: input/samples.txt
@@ -29,18 +29,18 @@ modalities:
   #   grouped: true
   alt_polyA:
     grouped: true
-  # alt_TSS:
-  #   grouped: true
+  alt_TSS:
+    grouped: true
   expression:
     grouped: false
-  # isoforms:
-  #   grouped: true
-  # RNA_editing:
-  #   grouped: true
-  # splicing:
-  #   grouped: true
-  # stability:
-  #   grouped: false
+  isoforms:
+    grouped: true
+  RNA_editing:
+    grouped: true
+  splicing:
+    grouped: true
+  stability:
+    grouped: false
 
 ### Analyses
 ## List the analyses to run. A snakefile will be loaded for each analysis,
@@ -49,12 +49,12 @@ modalities:
 analyses:
   heritability:
     files:
-    - '{modality}.hsq.tsv'
+      - "{modality}.hsq.tsv"
   qtl:
     files:
-    - '{modality}.cis_qtl.txt.gz'
-    - '{modality}.cis_independent_qtl.txt.gz'
-    # - '{modality}.trans_qtl.txt.gz'
+      - "{modality}.cis_qtl.txt.gz"
+      - "{modality}.cis_independent_qtl.txt.gz"
+      # - '{modality}.trans_qtl.txt.gz'
   twas:
     files:
-    - '{modality}.tar.bz2'
+      - "{modality}.tar.bz2"
