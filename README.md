@@ -22,6 +22,13 @@ conda env create -n pantry --file environment.yml
 conda activate pantry
 ```
 
+If you want optional latent residual phenotypes via [LaDDR](https://www.biorxiv.org/content/10.64898/2026.02.20.707100v1), [download](https://github.com/PejLab/LaDDR) and install LaDDR in the same environment (example from sibling repo checkout):
+
+```sh
+cd ../LaDDR
+pip install -e .
+```
+
 ### Set up Snakemake
 
 General guides to using the [Snakemake](https://snakemake.github.io/) workflow management system can be found online to learn its features. It can handle many execution needs such as threads, computational resources, and automatic cluster job submission. You can specify a profile that determines how steps get run (this is different from the Pantry project config files in `phenotyping/` and `pheast/`). Here is an example profile config for use on a computing cluster with slurm scheduling:
@@ -90,8 +97,8 @@ Consult these descriptions of the Pantry code and expected file formats to run P
 ### Code
 
 The `phenotyping/` directory is a template for phenotyping one dataset (e.g. tissue). To run Pantry on a dataset, copy the contents of `phenotyping/` to a new directory that you can write to. Your project directory now contains all the data processing code, so that if you modify it or add custom modalities, you have a record of it that stays with the results and is not automatically changed by Pantry updates or your other Pantry runs. The `pheast/` template directory works similarly for the second stage of the pipeline.
- 
-Currently Pantry generates RNA phenotypes for seven modalities, grouped into five Snakemake modules in `steps/` that run the following tools:
+
+Currently Pantry generates RNA phenotypes for seven core modalities, grouped into five Snakemake modules in `steps/` that run the following tools:
 
 - `alt_TSS_polyA.smk`: Alternative TSS and polyA site usage, quantified using [txrevise](https://github.com/kauralasoo/txrevise) followed by [kallisto](https://pachterlab.github.io/kallisto/).
 - `expression.smk`: Gene expression and isoform ratio, quantified using [kallisto](https://pachterlab.github.io/kallisto/). Isoform-level abundances are summed per gene to get gene expression abundances. The same isoform-level abundances are normalized per gene to get isoform proportions.
@@ -100,6 +107,12 @@ Currently Pantry generates RNA phenotypes for seven modalities, grouped into fiv
 - `stability.smk`: RNA stability, quantified using [Subread featureCounts](http://subread.sourceforge.net/) to count reads from constitutive exons and all introns and using their ratio.
 
 Snakemake looks at the inputs and outputs for each rule and figures out the order and number of times to run each step. Pantry includes sensible defaults for this set of tools, but you can edit the commands and add new modalities.
+
+Pantry also includes an optional LaDDR add-on in `steps/laddr.smk` to generate latent residual phenotypes (`latent_residual`) after the standard Pantry modalities are normalized. This workflow:
+
+- converts Pantry BAM files to bigWig coverage (`bamCoverage`)
+- runs `laddr setup`, `laddr binning` (or links existing bins), `laddr coverage`, `laddr fit`, and `laddr transform`
+- converts LaDDR output to BED and applies Pantry normalization
 
 ![Phenotyping pipeline diagram](phenotyping/diagram_steps.png)
 
@@ -115,6 +128,13 @@ fastq_dir: input/fastq
 fastq_map: input/fastq_map.txt
 ...
 ```
+
+An optional top-level `laddr:` section enables latent residual phenotypes. Key options include:
+
+- `enabled`: turn LaDDR integration on/off.
+- `regress_modalities`: normalized Pantry modalities to regress out during `laddr coverage`.
+- `use_existing_bins`: if `true`, link existing `info/` and `gene_bins/`; otherwise run `laddr setup` + `laddr binning`.
+- `project_dir`: where LaDDR intermediate files are stored (default `intermediate/laddr`).
 
 ### Input files
 
@@ -163,6 +183,13 @@ This file, whose path is specified in the config file, is the list of samples to
 ### Phenotype files
 
 The phenotyping stage will result in phenotype tables (RNA phenotypes x samples) in `output/unnorm/`, and normalized versions directly in `output/`.
+
+If LaDDR is enabled, additional files are produced:
+
+- `output/unnorm/latent_residual.bed`
+- `output/latent_residual.bed.gz`
+- `output/latent_residual.bed.gz.tbi`
+- `output/latent_residual.phenotype_groups.txt`
 
 The [BED](https://genome.ucsc.edu/FAQ/FAQformat.html#format1) files include four annotation columns, `chr`, `start`, `end`, and `phenotype_id`, followed by one column per sample containing the phenotype values. There may be one phenotype per gene (e.g. expression) or multiple (e.g. splicing), but in either case the coordinates indicate the transcription start site of the phenotype's gene. This ensures that the same cis-window variants are tested for all phenotypes of the same gene.
 
@@ -243,4 +270,3 @@ If you run Pantry and use the results in a publication, you should also cite the
 - cis-heritability: [PMID: 21167468](https://pubmed.ncbi.nlm.nih.gov/21167468/)
 - cis-QTL mapping: [PMID: 31675989](https://pubmed.ncbi.nlm.nih.gov/31675989/)
 - TWAS weights: [PMID: 26854917](https://pubmed.ncbi.nlm.nih.gov/26854917/)
-
