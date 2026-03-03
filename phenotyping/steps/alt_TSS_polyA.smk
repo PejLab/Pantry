@@ -1,5 +1,5 @@
 localrules:
-    alt_TSS_polyA_pheno_groups,
+    pheno_groups_alt_TSS_polyA,
 
 TXREVISE_N_BATCHES = 100
 

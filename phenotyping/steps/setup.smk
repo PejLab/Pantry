@@ -70,6 +70,26 @@ def validate_config(config: dict):
         if 'fragment_length_sd' not in config:
             raise KeyError('fragment_length_sd required for single-end data')
 
+    if 'laddr' in config:
+        if not isinstance(config['laddr'], dict):
+            raise ValueError('laddr must be a mapping')
+        if 'enabled' in config['laddr'] and not isinstance(config['laddr']['enabled'], bool):
+            raise ValueError('laddr.enabled must be True or False')
+        if 'use_existing_bins' in config['laddr'] and not isinstance(config['laddr']['use_existing_bins'], bool):
+            raise ValueError('laddr.use_existing_bins must be True or False')
+        if 'regress_modalities' in config['laddr']:
+            if not isinstance(config['laddr']['regress_modalities'], list) or any(not isinstance(x, str) for x in config['laddr']['regress_modalities']):
+                raise ValueError('laddr.regress_modalities must be a list of strings')
+
+def available_modalities(modality_groups: dict) -> list:
+    """Get phenotype modality names with normalized BED outputs."""
+    modalities = []
+    for params in modality_groups.values():
+        for f in params['files']:
+            if f.endswith('.bed.gz'):
+                modalities.append(f.removesuffix('.bed.gz'))
+    return sorted(set(modalities))
+
 def process_config(config: dict):
     """Prepare user config for use in the pipeline.
     
@@ -97,6 +117,39 @@ def process_config(config: dict):
         config['intermediate_ref_dir'] = config['intermediate_dir'] / 'reference'
 
     config['fastq_map'] = load_fastq_map(config['fastq_map'], config['fastq_dir'], config.get('paired_end', None))
+
+    if 'laddr' in config:
+        laddr = config['laddr']
+        laddr.setdefault('enabled', False)
+        laddr.setdefault('dataset_name', 'pantry')
+        laddr.setdefault('project_dir', config['intermediate_dir'] / 'laddr')
+        laddr.setdefault('use_existing_bins', False)
+        laddr.setdefault('min_samples_expressed', 0.5)
+        laddr.setdefault('binning_method', 'adaptive_diffvar')
+        laddr.setdefault('batch_size', 40)
+        laddr.setdefault('max_bin_width', 1024)
+        laddr.setdefault('adaptive_max_samples', 256)
+        laddr.setdefault('adaptive_bins_per_gene', 256)
+        laddr.setdefault('adaptive_min_mean_total_covg', 128)
+        laddr.setdefault('adaptive_max_corr', 0.8)
+        laddr.setdefault('model_var_explained_max', 0.8)
+        laddr.setdefault('model_n_pcs_max', 16)
+        laddr.setdefault('bam_coverage_threads', 4)
+        laddr.setdefault('bam_coverage_bin_size', 1)
+        laddr['project_dir'] = Path(laddr['project_dir']).expanduser()
+        if 'existing_info_dir' in laddr:
+            laddr['existing_info_dir'] = Path(laddr['existing_info_dir']).expanduser()
+        if 'existing_bins_dir' in laddr:
+            laddr['existing_bins_dir'] = Path(laddr['existing_bins_dir']).expanduser()
+        if 'regress_modalities' not in laddr:
+            laddr['regress_modalities'] = available_modalities(config['modality_groups'])
+        valid_modalities = set(available_modalities(config['modality_groups']))
+        invalid = sorted(set(laddr['regress_modalities']) - valid_modalities)
+        if invalid:
+            raise ValueError(f'laddr.regress_modalities contains unknown modality names: {", ".join(invalid)}')
+        if laddr['use_existing_bins']:
+            if 'existing_info_dir' not in laddr or 'existing_bins_dir' not in laddr:
+                raise KeyError('laddr.existing_info_dir and laddr.existing_bins_dir are required when laddr.use_existing_bins is true')
 
 def validate_reference(ref_genome: Path, ref_anno: Path):
     """Validate the reference genome and annotations
@@ -149,6 +202,8 @@ ref_cdna = ref_dir / 'cDNA.fa.gz'
 validate_reference(ref_genome, ref_anno)
 
 modality_groups = config['modality_groups']
+laddr_config = config.get('laddr', {})
+laddr_enabled = laddr_config.get('enabled', False)
 
 if 'RNA_editing' in modality_groups:
     rna_editing_params = modality_groups['RNA_editing']
@@ -166,3 +221,10 @@ outputs = []
 for modality_group, params in modality_groups.items():
     for f in params['files']:
         outputs.append(output_dir / f)
+
+if laddr_enabled:
+    outputs.extend([
+        output_dir / 'latent_residual.bed.gz',
+        output_dir / 'latent_residual.bed.gz.tbi',
+        output_dir / 'latent_residual.phenotype_groups.txt',
+    ])

@@ -34,19 +34,19 @@ samples_file: input/samples.txt
 modality_groups:
   alt_TSS_polyA:
     files:
-    - alt_TSS.bed.gz
-    - alt_TSS.bed.gz.tbi
-    - alt_TSS.phenotype_groups.txt
-    - alt_polyA.bed.gz
-    - alt_polyA.bed.gz.tbi
-    - alt_polyA.phenotype_groups.txt
+      - alt_TSS.bed.gz
+      - alt_TSS.bed.gz.tbi
+      - alt_TSS.phenotype_groups.txt
+      - alt_polyA.bed.gz
+      - alt_polyA.bed.gz.tbi
+      - alt_polyA.phenotype_groups.txt
   expression:
     files:
-    - expression.bed.gz
-    - expression.bed.gz.tbi
-    - isoforms.bed.gz
-    - isoforms.bed.gz.tbi
-    - isoforms.phenotype_groups.txt
+      - expression.bed.gz
+      - expression.bed.gz.tbi
+      - isoforms.bed.gz
+      - isoforms.bed.gz.tbi
+      - isoforms.phenotype_groups.txt
   RNA_editing:
     ## Edit sites reference file (make sure chromosome names are consistent with the reference genome)
     edit_sites_bed: input/ref/All.AG.stranded.annovar.Hg38_multianno.AnnoAlu.AnnoRep.NR.chr1_0-2Mb.nochr.bed
@@ -55,15 +55,51 @@ modality_groups:
     edit_sites_min_coverage: 20
     edit_sites_min_samples: 60
     files:
-    - RNA_editing.bed.gz
-    - RNA_editing.bed.gz.tbi
-    - RNA_editing.phenotype_groups.txt
+      - RNA_editing.bed.gz
+      - RNA_editing.bed.gz.tbi
+      - RNA_editing.phenotype_groups.txt
   splicing:
     files:
-    - splicing.bed.gz
-    - splicing.bed.gz.tbi
-    - splicing.phenotype_groups.txt
+      - splicing.bed.gz
+      - splicing.bed.gz.tbi
+      - splicing.phenotype_groups.txt
   stability:
     files:
-    - stability.bed.gz
-    - stability.bed.gz.tbi
+      - stability.bed.gz
+      - stability.bed.gz.tbi
+
+### Optional latent phenotypes with LaDDR
+laddr:
+  enabled: true
+  ## Name used as dataset ID in LaDDR outputs/manifest.
+  dataset_name: pantry
+  ## Intermediate LaDDR working directory.
+  project_dir: intermediate/laddr
+  ## If true, link existing LaDDR info/ and gene_bins/ instead of running setup+binning.
+  use_existing_bins: false
+  # existing_info_dir: /path/to/laddr/info
+  # existing_bins_dir: /path/to/laddr/gene_bins
+  ## Pantry normalized phenotypes to regress out during `laddr coverage`.
+  ## Defaults to all normalized BED modalities defined above.
+  regress_modalities:
+    - alt_TSS
+    - alt_polyA
+    - expression
+    - isoforms
+    - RNA_editing
+    - splicing
+    - stability
+  ## `bamCoverage` parameters
+  bam_coverage_threads: 4
+  bam_coverage_bin_size: 1
+  ## LaDDR settings
+  min_samples_expressed: 0.5
+  binning_method: adaptive_diffvar
+  batch_size: 40
+  max_bin_width: 1024
+  adaptive_max_samples: 256
+  adaptive_bins_per_gene: 256
+  adaptive_min_mean_total_covg: 128
+  adaptive_max_corr: 0.8
+  model_var_explained_max: 0.8
+  model_n_pcs_max: 16
