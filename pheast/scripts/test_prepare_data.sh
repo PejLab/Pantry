@@ -5,15 +5,12 @@
 
 set -euo pipefail
 
-# phenoprefix=../../../gdml/laddr/pheast/geuvadis/input/phenotypes/gtex-residual-Geuvadis-cross_latent
-# phenodir=../../../gdml/pantry/phenos/geuvadis
 phenodir=../../../gdml/etc/rna-editing/geuvadis
 geno="../../../gdml/data/geuvadis/genotype/GEUVADIS.445_samples.GRCh38.20170504.maf01.filtered.nodup.nochr"
 genonew="input/GEUVADIS.445_samples.GRCh38.chr1_120Mb"
 
 for modality in expression stability; do
 mkdir -p input/phenotypes
-# cp ../../../gdml/data/geuvadis/samples.txt input/
 cp "${phenodir}/input/samples.txt" input/
 
 ## Modalities with non-grouped phenotypes (one per gene)
@@ -37,5 +34,7 @@ for modality in alt_polyA alt_TSS isoforms RNA_editing splicing; do
 done
 
 plink2 --bfile "$geno" --chr 1 --make-bed --from-bp 1 --to-bp 120000000 --output-chr chrM --out "$genonew"
+
+grep '^chr1_' ../../../gdml/pantry/GTEx/geno/LD_SNPs.txt > input/ld_snps_chr1.txt
 
 tar -czvf test_input_pheast.tar.gz input

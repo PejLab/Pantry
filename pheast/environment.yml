@@ -4,22 +4,22 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - bioconductor-impute  # for covariates
-  - bioconductor-qvalue  # for tensorqtl
-  - bioconductor-snpstats  # for covariates
-  - dask<2024.2  # for tensorqtl (pandas-plink)
-  - gcta  # for heritability
+  - bioconductor-impute # for covariates
+  - bioconductor-qvalue # for tensorqtl
+  - bioconductor-snpstats # for covariates and FUSION (replaces plink2R)
+  - dask<2024.2 # for tensorqtl (pandas-plink)
+  - gcta # for heritability
   - htslib # for bgzip
   - pandas
-  - pandas-plink  # for tensorqtl
+  - pandas-plink # for tensorqtl
   - pip
   - plink
   - plink2=2
-  - r-glmnet  # for FUSION
+  - r-glmnet # for FUSION
   - r-optparse
-  - rpy2  # for tensorqtl
+  - rpy2 # for tensorqtl
   - snakemake
   - snakemake-executor-plugin-slurm # change as needed for your cluster
   - pip:
-    - tensorqtl
-    - torch==2.3.1 # for tensorqtl
+      - tensorqtl
+      - torch==2.3.1 # for tensorqtl

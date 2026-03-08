@@ -73,8 +73,10 @@ read_plink <- function(prefix, impute="avg") {
     # Preserve zeros in fam file
     geno$fam[is.na(geno$fam)] <- 0
     
-    # Convert to numeric matrix (0,1,2 coding)
+    # Convert to numeric matrix (0,1,2 coding of A2 allele counts from snpStats)
     bed <- as(geno$genotypes, "numeric")
+    # Convert to PLINK-style A1 dosage counts for consistency with downstream FUSION logic.
+    bed <- 2 - bed
     
     if (impute == "avg") {
         # Impute missing values with column means

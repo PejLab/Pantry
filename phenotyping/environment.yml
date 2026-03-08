@@ -5,16 +5,16 @@ channels:
   - defaults
 dependencies:
   - bedtools
-  - bioconductor-genomicranges  # for RNA editing
-  - bioconductor-rtracklayer  # for RNA editing
-  - deeptools  # for bamCoverage used by optional LaDDR workflow
-  - gffread  # for txrevise
-  - graphviz  # for plotting pipeline diagrams
+  - bioconductor-genomicranges # for RNA editing
+  - bioconductor-rtracklayer # for RNA editing
+  - deeptools # for bamCoverage used by optional LaDDR workflow
+  - gffread # for txrevise
+  - graphviz # for plotting pipeline diagrams
   - gtfparse
   - htslib # for bgzip
   - kallisto=0.48.0
   - r-tidyverse # for txrevise and RNA editing
-  - r-optparse  # for txrevise
+  - r-optparse # for txrevise
   - r-txrevise
   - regtools>=1.0.0
   - samtools
