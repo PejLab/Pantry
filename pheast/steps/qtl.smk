@@ -12,6 +12,32 @@ def groups_input(wildcards):
     else:
         return []
 
+def qtl_filter_args(wildcards):
+    """Pass QTL genotype filter settings to tensorQTL wrapper scripts."""
+    args = f'--min_allele_count {qtl_min_allele_count}'
+    if qtl_maf_threshold is not None:
+        args += f' --maf_threshold {qtl_maf_threshold}'
+    return args
+
+rule qtl_genotype_qc:
+    """Report genotype variants below the QTL allele-count/MAF threshold."""
+    input:
+        geno = multiext(geno_prefix, '.bed', '.bim', '.fam'),
+    output:
+        output_dir / 'qtl' / 'genotype_qc.tsv',
+    params:
+        geno_prefix = geno_prefix,
+        qtl_dir = output_dir / 'qtl',
+        filter_args = qtl_filter_args,
+    shell:
+        """
+        mkdir -p {params.qtl_dir}
+        python3 scripts/genotype_qc.py \
+            {params.geno_prefix} \
+            {output} \
+            {params.filter_args}
+        """
+
 rule tensorqtl_cis:
     """Map cis-QTLs, determining significance using permutations.
     Outputs the top association per phenotype.
@@ -28,6 +54,7 @@ rule tensorqtl_cis:
         geno_prefix = geno_prefix,
         qtl_dir = output_dir / 'qtl',
         groups_arg = groups_arg,
+        filter_args = qtl_filter_args,
     resources:
         mem_mb = 32000,
         runtime = '12h',
@@ -42,6 +69,7 @@ rule tensorqtl_cis:
             {output} \
             --covariates {input.covar} \
             {params.groups_arg} \
+            {params.filter_args} \
             --mode cis
         """
 
@@ -59,6 +87,7 @@ rule tensorqtl_cis_independent:
     params:
         geno_prefix = geno_prefix,
         groups_arg = groups_arg,
+        filter_args = qtl_filter_args,
     resources:
         mem_mb = 32000,
         runtime = '20h',
@@ -73,12 +102,13 @@ rule tensorqtl_cis_independent:
             --covariates {input.covar} \
             --cis_output {input.cis} \
             {params.groups_arg} \
+            {params.filter_args} \
             --mode cis_independent
         """
 
 rule tensorqtl_trans:
     """Map trans-QTL associations without permutation testing.
-    Outputs all variant pairs with TSS distance > 5 Mb, MAF > 0.05, and p < 1e-5.
+    Outputs all variant pairs with TSS distance > 5 Mb, configured MAF threshold, and p < 1e-5.
     """
     input:
         geno = multiext(geno_prefix, '.bed', '.bim', '.fam'),
@@ -90,6 +120,7 @@ rule tensorqtl_trans:
     params:
         geno_prefix = geno_prefix,
         qtl_dir = output_dir / 'qtl',
+        filter_args = qtl_filter_args,
     resources:
         mem_mb = 32000,
         runtime = '12h',
@@ -103,6 +134,6 @@ rule tensorqtl_trans:
             {input.bed} \
             {output} \
             --covariates {input.covar} \
+            {params.filter_args} \
             --mode trans
         """
-

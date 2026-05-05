@@ -43,6 +43,13 @@ def process_config(config: dict):
     if 'intermediate_dir' not in config:
         config['intermediate_dir'] = Path('intermediate')
 
+    if 'qtl_min_allele_count' not in config:
+        config['qtl_min_allele_count'] = 10
+    config['qtl_min_allele_count'] = int(config['qtl_min_allele_count'])
+
+    if 'qtl_maf_threshold' in config and config['qtl_maf_threshold'] is not None:
+        config['qtl_maf_threshold'] = float(config['qtl_maf_threshold'])
+
 validate_config(config)
 process_config(config)
 
@@ -65,6 +72,10 @@ for modality, params in modalities.items():
 analyses = config['analyses']
 outputs = []
 for analysis, params in analyses.items():
+    if analysis == 'qtl':
+        outputs.append(output_dir / analysis / 'genotype_qc.tsv')
     for f in params['files']:
         outputs.append(expand(output_dir / analysis / f, modality=modalities.keys()))
 
+qtl_min_allele_count = config['qtl_min_allele_count']
+qtl_maf_threshold = config.get('qtl_maf_threshold')

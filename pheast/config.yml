@@ -11,6 +11,14 @@ geno_prefix: input/GEUVADIS.445_samples.GRCh38.chr1_120Mb
 ### Samples to include:
 samples_file: input/samples.txt
 
+### QTL genotype filtering
+## Variants with very low allele count can produce unstable tensorQTL results.
+## By default, QTL mapping uses MAF >= qtl_min_allele_count / (2 * n_samples),
+## where n_samples is the number of samples used in the tensorQTL run.
+qtl_min_allele_count: 10
+## Optionally set a fixed MAF threshold instead of the count-derived threshold:
+# qtl_maf_threshold: 0.05
+
 ### Optional parameters
 ## Provide a list of SNP IDs to include when computing TWAS weights:
 ## It is recommended to include only SNPs present in the LD reference used later for TWAS.
