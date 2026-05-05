@@ -9,6 +9,8 @@ rule preprocess_gtf_for_txrevise:
         ref_anno,
     output:
         ref_dir / 'txrevise' / 'gene_annotations.gtf',
+    resources:
+        mem_mb = 32000,
     shell:
         """
         python3 scripts/txrevise/preprocess_gtf.py \

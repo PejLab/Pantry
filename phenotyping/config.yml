@@ -1,36 +1,48 @@
-### Raw RNA-Seq data
+# -----------------------------------------------------------------------------
+# Raw RNA-Seq Data
+# -----------------------------------------------------------------------------
+# FASTQ sample layout. If paired_end is omitted, each sample's endedness is
+# inferred from the number of FASTQ paths per row in fastq_map.
 paired_end: True
 read_length: 75
 fastq_dir: input/fastq
 fastq_map: input/fastq_map.txt
-## If paired_end is False, kallisto requires estimated fragment (NOT read) length and standard deviation:
+
+# Single-end kallisto parameters. These are fragment, not read, length estimates.
 # fragment_length_mean: 200
 # fragment_length_sd: 50
 
-### Reference files
-## Download and unzip genome, e.g. http://ftp.ensembl.org/pub/release-106/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz
+# -----------------------------------------------------------------------------
+# Reference Files
+# -----------------------------------------------------------------------------
+# Reference genome FASTA. Download and unzip before running, e.g.:
+# http://ftp.ensembl.org/pub/release-106/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz
 ref_genome: input/ref/Homo_sapiens.GRCh38.dna.primary_assembly.chr1_0-2Mb.fa
-## Download and unzip gene annotations, e.g. http://ftp.ensembl.org/pub/release-106/gtf/homo_sapiens/Homo_sapiens.GRCh38.106.gtf.gz
+
+# Gene annotation GTF. Download and unzip before running, e.g.:
+# http://ftp.ensembl.org/pub/release-106/gtf/homo_sapiens/Homo_sapiens.GRCh38.106.gtf.gz
 ref_anno: input/ref/Homo_sapiens.GRCh38.106.chr1_0-2Mb.gtf
 
-### Samples to include (any samples in the FASTQ map but not listed here will be ignored):
+# One-column sample list. Samples in the FASTQ map but not listed here are ignored.
 samples_file: input/samples.txt
 
-### Optional parameters
-## Path to intermediate file directory, in case you don't want it inside this project directory due to its size:
-## This directory will be created if it doesn't exist, and will contain any generated (i.e. not input) files besides the final phenotype outputs.
+# -----------------------------------------------------------------------------
+# Shared Options
+# -----------------------------------------------------------------------------
+# Path to intermediate files. The directory is created if needed and will contain
+# generated files other than final phenotype outputs.
 # intermediate_dir: intermediate
-## Path to directory where intermediate reference files will be created:
-## This will be in the intermediate dir by default, but can be specified to be outside the project dir.
-## This could be useful if running multiple datasets with the same parameters, allowing the intermediate
-## reference files to be generated once and shared by all the dataset runs.
+
+# Path to generated intermediate reference files. By default this is inside
+# intermediate_dir, but it can be shared across dataset runs with the same
+# reference and parameters.
 # intermediate_ref_dir: intermediate/reference
 
-### Modality groups
-## List the modality groups to extract, with list of expected output files for each.
-## A snakefile will be loaded for each group, steps/{groupname}.smk
-## Each group represents one or more modalities that are generated from the same
-## software.
+# -----------------------------------------------------------------------------
+# Modality Groups
+# -----------------------------------------------------------------------------
+# Each group loads steps/{groupname}.smk and lists the expected normalized output
+# files. A group can produce one or more related modalities from the same tool.
 modality_groups:
   alt_TSS_polyA:
     files:
@@ -48,10 +60,10 @@ modality_groups:
       - isoforms.bed.gz.tbi
       - isoforms.phenotype_groups.txt
   RNA_editing:
-    ## Edit sites reference file (make sure chromosome names are consistent with the reference genome)
+    # Edit sites reference BED. Chromosome names must match the reference genome.
     edit_sites_bed: input/ref/All.AG.stranded.annovar.Hg38_multianno.AnnoAlu.AnnoRep.NR.chr1_0-2Mb.nochr.bed
-    ## Minimum coverage and samples required for a given site to be included.
-    ## If there are fewer samples than this, the min_samples threshold is lowered to the number of samples.
+    # Minimum coverage and samples required for a site to be included. If there
+    # are fewer samples than this, the sample threshold is lowered to n_samples.
     edit_sites_min_coverage: 20
     edit_sites_min_samples: 60
     files:
@@ -68,19 +80,27 @@ modality_groups:
       - stability.bed.gz
       - stability.bed.gz.tbi
 
-### Optional latent phenotypes with LaDDR
+# -----------------------------------------------------------------------------
+# Latent Residual Phenotypes
+# -----------------------------------------------------------------------------
+# Optional LaDDR integration for latent residual phenotypes.
 laddr:
   enabled: true
-  ## Name used as dataset ID in LaDDR outputs/manifest.
+
+  # Name used as dataset ID in LaDDR outputs/manifest.
   dataset_name: pantry
-  ## Intermediate LaDDR working directory.
+
+  # Intermediate LaDDR working directory.
   project_dir: intermediate/laddr
-  ## If true, link existing LaDDR info/ and gene_bins/ instead of running setup+binning.
+
+  # If true, link existing LaDDR info/ and gene_bins/ instead of running setup
+  # and binning.
   use_existing_bins: false
   # existing_info_dir: /path/to/laddr/info
   # existing_bins_dir: /path/to/laddr/gene_bins
-  ## Pantry normalized phenotypes to regress out during `laddr coverage`.
-  ## Defaults to all normalized BED modalities defined above.
+
+  # Pantry normalized phenotypes to regress out during laddr coverage. Defaults
+  # to all normalized BED modalities defined above.
   regress_modalities:
     - alt_TSS
     - alt_polyA
@@ -89,10 +109,11 @@ laddr:
     - RNA_editing
     - splicing
     - stability
-  ## `bamCoverage` parameters
+  # bamCoverage parameters.
   bam_coverage_threads: 4
   bam_coverage_bin_size: 1
-  ## LaDDR settings
+
+  # LaDDR settings.
   min_samples_expressed: 0.5
   binning_method: adaptive_diffvar
   batch_size: 40

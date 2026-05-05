@@ -43,6 +43,7 @@ def validate_config(config: dict):
     required = [
         'fastq_dir',
         'fastq_map',
+        'read_length',
         'ref_genome',
         'ref_anno',
         'samples_file',
@@ -152,16 +153,16 @@ def process_config(config: dict):
                 raise KeyError('laddr.existing_info_dir and laddr.existing_bins_dir are required when laddr.use_existing_bins is true')
 
 def validate_reference(ref_genome: Path, ref_anno: Path):
-    """Validate the reference genome and annotations
+    """Validate the reference genome and annotations.
     
-    Confirm both files exist and that the GTF includes transcript entries (which
-    are lacking in, e.g., RefSeq Select GTFs).
+    Confirm both files exist and that the GTF includes transcript entries, which
+    are lacking in some annotation files such as RefSeq Select GTFs.
     """
     if not ref_genome.exists():
         raise FileNotFoundError(f'Reference genome file not found: {ref_genome}')
     if not ref_anno.exists():
         raise FileNotFoundError(f'Reference annotation file not found: {ref_anno}')
-    
+
     has_transcript = False
     with open(ref_anno, 'r') as fh:
         checked = 0
@@ -209,13 +210,13 @@ if 'RNA_editing' in modality_groups:
     rna_editing_params = modality_groups['RNA_editing']
     edit_sites_bed = rna_editing_params['edit_sites_bed']
     edit_sites_min_coverage = rna_editing_params['edit_sites_min_coverage']
-    edit_sites_min_samples = min(rna_editing_params['edit_sites_min_samples'], len(samples))
+    configured_min_samples = rna_editing_params['edit_sites_min_samples']
+    edit_sites_min_samples = min(configured_min_samples, len(samples))
     edit_sites_bed = Path(edit_sites_bed).expanduser()
     if not edit_sites_bed.exists():
         raise FileNotFoundError(f'Edit sites BED file not found: {edit_sites_bed}')
-    if edit_sites_min_samples > len(samples):
-        print(f'Note: edit_sites_min_samples ({edit_sites_min_samples}) is greater than the number of samples ({len(samples)}). Setting to {len(samples)}.')
-        edit_sites_min_samples = len(samples)
+    if configured_min_samples > len(samples):
+        print(f'Note: edit_sites_min_samples ({configured_min_samples}) is greater than the number of samples ({len(samples)}). Setting to {len(samples)}.')
 
 outputs = []
 for modality_group, params in modality_groups.items():

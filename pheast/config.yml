@@ -1,37 +1,52 @@
-### Point to the Pantry output directory containing BED files:
+# -----------------------------------------------------------------------------
+# Inputs
+# -----------------------------------------------------------------------------
+# Pantry phenotype output directory containing {modality}.bed.gz files.
+#
+# This can point to the outputs of the phenotyping module, unless additional
+# processing is needed (see pheast/scripts/prepare_phenotypes.py).
 # phenotype_dir: ../phenotyping/output
-## Since the tables produced by the main test dataset may be too small for
-## downstream analyses, the Pheast tests use another test dataset produced by
-## Pheast/scripts/test_prepare_data.sh:
 phenotype_dir: input/phenotypes
 
-### Give the path prefix to genotypes in plink1 (bed/bim/fam) format:
+# PLINK 1 genotype prefix. The .bed, .bim, and .fam files must share this prefix.
 geno_prefix: input/GEUVADIS.445_samples.GRCh38.chr1_120Mb
 
-### Samples to include:
+# One-column sample list. Samples must be present in both phenotypes and genotypes.
 samples_file: input/samples.txt
 
-### QTL genotype filtering
-## Variants with very low allele count can produce unstable tensorQTL results.
-## By default, QTL mapping uses MAF >= qtl_min_allele_count / (2 * n_samples),
-## where n_samples is the number of samples used in the tensorQTL run.
-qtl_min_allele_count: 10
-## Optionally set a fixed MAF threshold instead of the count-derived threshold:
-# qtl_maf_threshold: 0.05
-
-### Optional parameters
-## Provide a list of SNP IDs to include when computing TWAS weights:
-## It is recommended to include only SNPs present in the LD reference used later for TWAS.
-twas_snps: input/ld_snps_chr1.txt
-## Path to intermediate file directory, in case you don't want it inside this project directory due to its size:
-## This directory will be created if it doesn't exist, and will contain any generated (i.e. not input) files besides the final analysis results.
+# -----------------------------------------------------------------------------
+# Shared Options
+# -----------------------------------------------------------------------------
+# Path to intermediate files. The directory is created if needed and will contain
+# generated files other than final analysis results.
 # intermediate_dir: intermediate
 
-### Modalities
-## List the modalities to use. The phenotype table ({modality}.bed.gz)
-## must be present in the phenotype_dir, along with a
-## {modality}.phenotype_groups.txt file in the case of grouped phenotypes.
-## 'cross_modality' is used to run cross-modality QTL mapping. See phenotyping/scripts/combine_modalities.sh for more details.
+# -----------------------------------------------------------------------------
+# QTL Options
+# -----------------------------------------------------------------------------
+# Variants with very low allele count can produce unstable tensorQTL results.
+# By default, QTL mapping uses MAF >= qtl_min_allele_count / (2 * n_samples),
+# where n_samples is the number of samples used in each tensorQTL run.
+qtl_min_allele_count: 10
+
+# Optionally set a fixed MAF threshold instead of the count-derived threshold.
+# qtl_maf_threshold: 0.05
+
+# -----------------------------------------------------------------------------
+# TWAS Options
+# -----------------------------------------------------------------------------
+# SNP IDs to include when computing TWAS weights. It is recommended to include
+# only SNPs present in the LD reference used later for TWAS association testing.
+twas_snps: input/ld_snps_chr1.txt
+
+# -----------------------------------------------------------------------------
+# Modalities
+# -----------------------------------------------------------------------------
+# Each modality must have a {modality}.bed.gz phenotype table in phenotype_dir.
+# Set grouped: true for modalities with {modality}.phenotype_groups.txt files.
+#
+# The cross_modality pseudo-modality is only for cross-modality cis-QTL mapping.
+# See phenotyping/scripts/combine_modalities.sh for how to build that input.
 modalities:
   # cross_modality:
   #   grouped: true
@@ -50,10 +65,11 @@ modalities:
   stability:
     grouped: false
 
-### Analyses
-## List the analyses to run. A snakefile will be loaded for each analysis,
-## steps/{analysis}.smk, and results will be written to output/{analysis}/.
-## {modality} will be replaced with each modality name.
+# -----------------------------------------------------------------------------
+# Analyses
+# -----------------------------------------------------------------------------
+# Each analysis loads steps/{analysis}.smk and writes to output/{analysis}/.
+# The {modality} placeholder is expanded for every modality listed above.
 analyses:
   heritability:
     files:
