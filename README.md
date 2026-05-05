@@ -98,10 +98,11 @@ Consult these descriptions of the Pantry code and expected file formats to run P
 
 The `phenotyping/` directory is a template for phenotyping one dataset (e.g. tissue). To run Pantry on a dataset, copy the contents of `phenotyping/` to a new directory that you can write to. Your project directory now contains all the data processing code, so that if you modify it or add custom modalities, you have a record of it that stays with the results and is not automatically changed by Pantry updates or your other Pantry runs. The `pheast/` template directory works similarly for the second stage of the pipeline.
 
-Currently Pantry generates RNA phenotypes for seven core modalities, grouped into five Snakemake modules in `steps/` that run the following tools:
+Currently Pantry generates RNA phenotypes for eight core modalities, grouped into six Snakemake modules in `steps/` that run the following tools:
 
 - `alt_TSS_polyA.smk`: Alternative TSS and polyA site usage, quantified using [txrevise](https://github.com/kauralasoo/txrevise) followed by [kallisto](https://pachterlab.github.io/kallisto/).
 - `expression.smk`: Gene expression and isoform ratio, quantified using [kallisto](https://pachterlab.github.io/kallisto/). Isoform-level abundances are summed per gene to get gene expression abundances. The same isoform-level abundances are normalized per gene to get isoform proportions.
+- `intron_retention.smk`: Retained intron PSI, quantified using [MAJIQ](https://majiq.biociphers.org/) with `--all-introns`.
 - `RNA_editing.smk`: RNA editing, quantified using [`samtools mpileup`](https://www.htslib.org/doc/samtools-mpileup.html) with a pre-defined set of edit sites, plus subsequent processing to get edit ratios.
 - `splicing.smk`: Intron excision ratio, quantified using [RegTools](https://regtools.readthedocs.io/en/latest/) followed by [leafCutter](https://davidaknowles.github.io/leafcutter/).
 - `stability.smk`: RNA stability, quantified using [Subread featureCounts](http://subread.sourceforge.net/) to count reads from constitutive exons and all introns and using their ratio.
@@ -265,6 +266,7 @@ If you run Pantry and use the results in a publication, you should also cite the
 - Alternative TSS and polyA: [PMID: 30618377](https://pubmed.ncbi.nlm.nih.gov/30618377/)
 - Expression, isoform ratio: [PMID: 27043002](https://pubmed.ncbi.nlm.nih.gov/27043002/)
 - Intron excision ratio (splicing): [PMID: 29229983](https://pubmed.ncbi.nlm.nih.gov/29229983/) and [PMID: 36949070](https://pubmed.ncbi.nlm.nih.gov/36949070/)
+- Intron retention: [PMID: 36869033](https://pubmed.ncbi.nlm.nih.gov/36869033/)
 - RNA editing: [PMID: 35922514](https://pubmed.ncbi.nlm.nih.gov/35922514/) and [PMID: 33590861](https://pubmed.ncbi.nlm.nih.gov/33590861/)
 - RNA stability: [PMID: 26098447](https://pubmed.ncbi.nlm.nih.gov/26098447/) and [PMID: 24227677](https://pubmed.ncbi.nlm.nih.gov/24227677/)
 - cis-heritability: [PMID: 21167468](https://pubmed.ncbi.nlm.nih.gov/21167468/)

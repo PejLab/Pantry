@@ -20,7 +20,7 @@ for modality in expression stability; do
 done
 
 ## Modalies with grouped phenotypes
-for modality in alt_polyA alt_TSS isoforms RNA_editing splicing; do
+for modality in alt_polyA alt_TSS isoforms intron_retention RNA_editing splicing; do
     python3 scripts/test_subset_grouped_pheno.py \
         --in-bed "${phenodir}/output/${modality}.bed.gz" \
         --in-groups "${phenodir}/output/${modality}.phenotype_groups.txt" \

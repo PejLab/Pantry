@@ -11,7 +11,7 @@ dependencies:
   - gffread # for txrevise
   - graphviz # for plotting pipeline diagrams
   - gtfparse
-  - htslib # for bgzip
+  - htslib # for bgzip and MAJIQ (intron retention)
   - kallisto=0.48.0
   - r-tidyverse # for txrevise and RNA editing
   - r-optparse # for txrevise

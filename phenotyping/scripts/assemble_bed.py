@@ -27,6 +27,12 @@ def load_tss(ref_anno: Path) -> pd.DataFrame:
     anno.columns = ['#chr', 'start', 'end', 'gene_id']
     return anno
 
+def load_tss_with_gene_id_base(ref_anno: Path) -> pd.DataFrame:
+    """Load TSS annotations with versionless gene IDs for external tools."""
+    anno = load_tss(ref_anno)
+    anno['gene_id_base'] = anno['gene_id'].astype(str).str.split('.').str[0]
+    return anno
+
 def load_exons(ref_anno: Path) -> pd.DataFrame:
     """Load exon annotations
     
@@ -245,6 +251,48 @@ def assemble_splicing(counts: Path, ref_anno: Path, bed: Path, min_frac: float =
     df = df[['#chr', 'start', 'end', 'phenotype_id'] + sample_ids]
     df.to_csv(bed, sep='\t', index=False, float_format='%g')
 
+def assemble_intron_retention(data: Path, ref_anno: Path, bed: Path):
+    """Convert retained-intron PSI values from MAJIQ into BED format."""
+    df = pd.read_csv(data, sep='\t', dtype={'seqid': str})
+    metadata_cols = {
+        'majiq_ir_id',
+        'ec_idx',
+        'seqid',
+        'start',
+        'end',
+        'strand',
+        'gene_id',
+        'gene_id_base',
+        'gene_name',
+        'event_type',
+        'is_denovo',
+        'event_denovo',
+        'ref_exon_start',
+        'ref_exon_end',
+        'other_exon_start',
+        'other_exon_end',
+    }
+    sample_ids = [col for col in df.columns if col not in metadata_cols]
+
+    if 'gene_id_base' not in df.columns:
+        df['gene_id_base'] = df['gene_id'].astype(str).str.split('.').str[0]
+    if 'majiq_ir_id' not in df.columns:
+        df['majiq_ir_id'] = (
+            'IR:' + df['gene_id_base'].astype(str)
+            + ':' + df['seqid'].astype(str)
+            + ':' + df['start'].astype(int).astype(str)
+            + ':' + df['end'].astype(int).astype(str)
+            + ':' + df['strand'].astype(str)
+            + ':' + df.index.astype(str)
+        )
+
+    anno = load_tss_with_gene_id_base(ref_anno).rename(columns={'gene_id': 'tss_gene_id'})
+    df = anno.merge(df, on='gene_id_base', how='inner')
+    df['phenotype_id'] = df['tss_gene_id'] + '__' + df['majiq_ir_id'].str.replace(':', '_', regex=False)
+    df = df[['#chr', 'start_x', 'end_x', 'phenotype_id'] + sample_ids]
+    df = df.rename(columns={'start_x': 'start', 'end_x': 'end'})
+    df.to_csv(bed, sep='\t', index=False, float_format='%g')
+
 def load_featureCounts(sample_ids: list, counts_dir: Path, feature: str, min_count: int = 10) -> pd.DataFrame:
     """Assemble featureCounts outputs into a table"""
     counts = []
@@ -327,6 +375,12 @@ def main():
     p_sp.add_argument('--min-frac', type=float, default=0.05, help='Minimum mean fraction for junction to be included')
     p_sp.add_argument('--max-frac', type=float, default=0.95, help='Maximum mean fraction for junction to be included')
 
+    # intron retention
+    p_ir = sub.add_parser('intron-retention', help='Assemble MAJIQ retained-intron PSI phenotypes')
+    p_ir.add_argument('--input', type=Path, required=True, help='Retained-intron PSI table from extract_ir_psi.py')
+    p_ir.add_argument('--ref-anno', dest='ref_anno', type=Path, required=True, help='Reference annotation GTF file')
+    p_ir.add_argument('--output', type=Path, required=True, help='Output BED file')
+
     # stability
     p_stab = sub.add_parser('stability', help='Assemble mRNA stability (exon/intron ratios)')
     p_stab.add_argument('--samples', type=Path, required=True, help='Path to sample IDs file (one sample ID per line)')
@@ -348,6 +402,8 @@ def main():
                             min_count=args.min_count,
                             min_frac=args.min_frac, max_frac=args.max_frac,
                             log2_expr=args.log2_expr)
+    elif args.cmd == 'intron-retention':
+        assemble_intron_retention(args.input, args.ref_anno, args.output)
     elif args.cmd == 'latent':
         assemble_latent(args.input, args.ref_anno, args.output)
     elif args.cmd == 'rna-editing':

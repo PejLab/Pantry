@@ -56,6 +56,8 @@ modalities:
     grouped: true
   expression:
     grouped: false
+  intron_retention:
+    grouped: true
   isoforms:
     grouped: true
   RNA_editing:

@@ -3,7 +3,7 @@
 ## for special downstream analyses such as QTL mapping that reports
 ## conditionally independent QTLs per gene even across modalities.
 ##
-## Usage: bash scripts/combine_modalities.sh alt_polyA alt_TSS expression isoforms RNA_editing splicing stability
+## Usage: bash scripts/combine_modalities.sh alt_polyA alt_TSS expression intron_retention isoforms RNA_editing splicing stability
 ##
 ## Outputs: output/cross_modality.bed.gz, output/cross_modality.bed.gz.tbi, output/cross_modality.phenotype_groups.txt
 ##
@@ -12,7 +12,7 @@
 ## a modality in the Pheast config and generate QTLs for it.
 
 if [ "$#" -lt 1 ]; then
-    echo "Usage: bash scripts/combine_modalities.sh alt_polyA alt_TSS expression isoforms splicing stability"
+    echo "Usage: bash scripts/combine_modalities.sh alt_polyA alt_TSS expression intron_retention isoforms RNA_editing splicing stability"
     exit 1
 fi
 

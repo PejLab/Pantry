@@ -75,6 +75,17 @@ modality_groups:
       - splicing.bed.gz
       - splicing.bed.gz.tbi
       - splicing.phenotype_groups.txt
+  intron_retention:
+    # MAJIQ requires a GFF3 annotation and an academic/commercial license file.
+    # If annotation_gff3 is omitted, Pantry converts ref_anno from GTF to GFF3.
+    # annotation_gff3: input/ref/gencode.v47.annotation.gff3.gz
+    # license: input/ref/majiq_license_academic_official.lic
+    psicov_batch_size: 25
+    min_experiments: 0.01
+    files:
+      - intron_retention.bed.gz
+      - intron_retention.bed.gz.tbi
+      - intron_retention.phenotype_groups.txt
   stability:
     files:
       - stability.bed.gz
@@ -105,6 +116,7 @@ laddr:
     - alt_TSS
     - alt_polyA
     - expression
+    - intron_retention
     - isoforms
     - RNA_editing
     - splicing
