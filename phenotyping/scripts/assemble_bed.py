@@ -192,39 +192,15 @@ def assemble_latent(data: Path, ref_anno: Path, bed: Path):
     df = df[['#chr', 'start', 'end', 'phenotype_id'] + sample_ids]
     df.to_csv(bed, sep='\t', index=False, float_format='%g')
 
-def assemble_RNA_editing(data: Path, edit_sites_to_genes: Path, ref_anno: Path, bed: Path):
-    """Convert RNA editing output into BED file
-    
-    Input data columns after 'site' contain fractions (e.g. '12/27'). These are processed by:
-    1. Adding pseudocount of 0.5 to numerator and denominator
-    2. Removing rows with >40% missing values
-    3. Replacing remaining missing values with row means
-    """
-    df = pd.read_csv(data, sep='\t', dtype=str)
-    sample_ids = list(df.columns[1:])  # Skip first column (site)
-    for col in sample_ids:
-        num_den = df[col].str.split('/', expand=True)
-        num = pd.to_numeric(num_den[0], errors='coerce')
-        den = pd.to_numeric(num_den[1], errors='coerce')
-        
-        # Add pseudocount and calculate fraction
-        df[col] = (num + 0.5) / (den + 0.5)
-    
-    # Remove rows with >40% missing values
-    missing_threshold = len(sample_ids) * 0.4
-    df = df[df[sample_ids].isna().sum(axis=1) <= missing_threshold]
-    
-    # Replace remaining missing values with row means
-    df[sample_ids] = df[sample_ids].apply(lambda x: x.fillna(x.mean()), axis=1)
-    
-    site_to_gene = pd.read_csv(edit_sites_to_genes, sep='\t', header=None, names=['site', 'gene_id'])
-    
-    # Add gene IDs (sites mapping to multiple genes are duplicated for each gene, sites mapping to no genes are dropped)
-    df = df.merge(site_to_gene, on='site', how='inner')
-    
+def assemble_RNA_editing(data: Path, ref_anno: Path, bed: Path):
+    """Convert prepared RNA editing phenotype matrix into BED file."""
+    df = pd.read_csv(data, sep='\t')
+    sample_ids = list(df.columns[1:])
+    df = df.rename(columns={df.columns[0]: 'phenotype_id'})
+    df['gene_id'] = df['phenotype_id'].str.replace(r'__.*$', '', regex=True)
+
     anno = load_tss(ref_anno)
     df = anno.merge(df, on='gene_id', how='inner')
-    df['phenotype_id'] = df['gene_id'] + '__' + df['site']
     df = df[['#chr', 'start', 'end', 'phenotype_id'] + sample_ids]
     df.to_csv(bed, sep='\t', index=False, float_format='%g')
 
@@ -362,8 +338,7 @@ def main():
 
     # RNA editing
     p_edit = sub.add_parser('rna-editing', help='Assemble RNA editing phenotypes')
-    p_edit.add_argument('--input', type=Path, required=True, help='RNA editing matrix with fractions as num/den strings')
-    p_edit.add_argument('--edit-sites-to-genes', dest='edit_sites_to_genes', type=Path, required=True, help='Mapping of RNA editing sites to gene IDs (TSV)')
+    p_edit.add_argument('--input', type=Path, required=True, help='Prepared RNA editing phenotype matrix')
     p_edit.add_argument('--ref-anno', dest='ref_anno', type=Path, required=True, help='Reference annotation GTF file')
     p_edit.add_argument('--output', type=Path, required=True, help='Output BED file')
 
@@ -407,7 +382,7 @@ def main():
     elif args.cmd == 'latent':
         assemble_latent(args.input, args.ref_anno, args.output)
     elif args.cmd == 'rna-editing':
-        assemble_RNA_editing(args.input, args.edit_sites_to_genes, args.ref_anno, args.output)
+        assemble_RNA_editing(args.input, args.ref_anno, args.output)
     elif args.cmd == 'splicing':
         assemble_splicing(args.input, args.ref_anno, args.output,
                           min_frac=args.min_frac, max_frac=args.max_frac)

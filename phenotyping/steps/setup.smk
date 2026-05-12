@@ -211,12 +211,16 @@ if 'RNA_editing' in modality_groups:
     edit_sites_bed = rna_editing_params['edit_sites_bed']
     edit_sites_min_coverage = rna_editing_params['edit_sites_min_coverage']
     configured_min_samples = rna_editing_params['edit_sites_min_samples']
-    edit_sites_min_samples = min(configured_min_samples, len(samples))
+    edit_sites_min_samples_fraction = rna_editing_params.get('edit_sites_min_samples_fraction', 0.1)
+    fraction_min_samples = math.ceil(edit_sites_min_samples_fraction * len(samples))
+    edit_sites_min_samples = min(max(configured_min_samples, fraction_min_samples), len(samples))
+    edit_sites_cluster = rna_editing_params.get('edit_sites_cluster', True)
+    edit_sites_correlation_threshold = rna_editing_params.get('edit_sites_correlation_threshold', 0.9)
     edit_sites_bed = Path(edit_sites_bed).expanduser()
     if not edit_sites_bed.exists():
         raise FileNotFoundError(f'Edit sites BED file not found: {edit_sites_bed}')
-    if configured_min_samples > len(samples):
-        print(f'Note: edit_sites_min_samples ({configured_min_samples}) is greater than the number of samples ({len(samples)}). Setting to {len(samples)}.')
+    if max(configured_min_samples, fraction_min_samples) > len(samples):
+        print(f'Note: RNA editing site sample threshold is greater than the number of samples ({len(samples)}). Setting to {len(samples)}.')
 
 outputs = []
 for modality_group, params in modality_groups.items():

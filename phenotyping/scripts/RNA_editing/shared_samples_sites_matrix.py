@@ -4,17 +4,23 @@
 
 import argparse
 import gzip
-import os
 from pathlib import Path
 
 def main():
     # Parse command line arguments
-    parser = argparse.ArgumentParser(description='Create edit level matrix from RNA editing files')
-    parser.add_argument('--path_to_edit_files', required=True, help='Path to directory containing edit files')
-    parser.add_argument('--samples_file', required=True, help='File containing list of samples')
-    parser.add_argument('--output_file', required=True, help='Output matrix file')
-    parser.add_argument('--min_coverage', type=int, required=True, help='Minimum coverage threshold')
-    parser.add_argument('--min_samples', type=int, required=True, help='Minimum number of samples threshold')
+    parser = argparse.ArgumentParser(
+        description='Create a site-by-sample RNA editing ratio matrix from per-sample editing files'
+    )
+    parser.add_argument('--path_to_edit_files', required=True,
+                        help='Directory containing {sample}.rnaeditlevel.tsv.gz files')
+    parser.add_argument('--samples_file', required=True,
+                        help='File containing sample IDs, one per line')
+    parser.add_argument('--output_file', required=True,
+                        help='Output TSV matrix with one row per retained edit site and one column per sample')
+    parser.add_argument('--min_coverage', type=int, required=True,
+                        help='Minimum read coverage required for a site to count as observed in a sample')
+    parser.add_argument('--min_samples', type=int, required=True,
+                        help='Minimum number of samples in which a site must meet --min_coverage to be retained')
     args = parser.parse_args()
 
     # Ensure path ends with slash
@@ -37,8 +43,6 @@ def main():
     # Process each sample
     for sample in samples:
         file_path = f"{path_edit_files}{sample}.rnaeditlevel.tsv.gz"
-        if not os.path.exists(file_path):
-            raise FileNotFoundError(f"File not found for sample {sample}: {file_path}")
 
         print(f"Analyzing: {sample}")
         

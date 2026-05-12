@@ -62,14 +62,23 @@ modality_groups:
   RNA_editing:
     # Edit sites reference BED. Chromosome names must match the reference genome.
     edit_sites_bed: input/ref/All.AG.stranded.annovar.Hg38_multianno.AnnoAlu.AnnoRep.NR.chr1_0-2Mb.nochr.bed
-    # Minimum coverage and samples required for a site to be included. If there
-    # are fewer samples than this, the sample threshold is lowered to n_samples.
+    # A site is retained if it has at least this coverage in at least
+    # max(edit_sites_min_samples, ceil(edit_sites_min_samples_fraction * n_samples))
+    # samples. The effective sample threshold is capped at n_samples.
     edit_sites_min_coverage: 20
-    edit_sites_min_samples: 60
+    edit_sites_min_samples: 10
+    edit_sites_min_samples_fraction: 0.1
+    # If true, correlated edit sites within the same gene are clustered to
+    # reduce the number of RNA editing phenotypes tested per gene. If false,
+    # each mapped edit site is retained as its own phenotype.
+    edit_sites_cluster: false
+    # Minimum Pearson correlation used when edit_sites_cluster is true.
+    edit_sites_correlation_threshold: 0.9
     files:
       - RNA_editing.bed.gz
       - RNA_editing.bed.gz.tbi
       - RNA_editing.phenotype_groups.txt
+      - RNA_editing.site_to_phenotype.tsv
   splicing:
     files:
       - splicing.bed.gz
@@ -96,7 +105,7 @@ modality_groups:
 # -----------------------------------------------------------------------------
 # Optional LaDDR integration for latent residual phenotypes.
 laddr:
-  enabled: true
+  enabled: false
 
   # Name used as dataset ID in LaDDR outputs/manifest.
   dataset_name: pantry

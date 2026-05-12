@@ -6,7 +6,65 @@ import argparse
 import os
 import subprocess
 import sys
-from parse_pileup_query import parse_pileup
+
+
+def parse_pileup(pileup_line, minbasequal, offset):
+    """Parse a pileup line and return counts of ref, A, T, C, and G bases."""
+    if len(pileup_line.split('\t')) < 6:
+        raise ValueError("Invalid pileup line format")
+
+    pilefields = pileup_line.strip().split('\t')
+    pileup = list(pilefields[4])
+    qualities = list(pilefields[5])
+
+    acount = tcount = ccount = gcount = refnuccount = 0
+    indel = 0
+    readcount = 0
+    indelstop = 0
+
+    j = 0
+    while j < len(pileup):
+        if pileup[j] == '^':  # ignore read map qualities
+            indel = 1
+            indellength = 1
+            indelstop = j + indellength
+
+        if indel == 0:
+            if pileup[j] in ['+', '-']:  # ignore indels
+                indel = 1
+                indellength = int(pileup[j + 1]) + 1
+
+                if j + 2 < len(pileup) and pileup[j + 2].isdigit():
+                    indellength = (10 * int(pileup[j + 1])) + int(pileup[j + 2]) + 2
+
+                indelstop = j + indellength
+
+        if indel == 1:
+            if j == indelstop:
+                indel = 0
+                j += 1
+                continue
+
+        if indel == 0:  # count up the occurrence of each nucleotide
+            if pileup[j] != '$':
+                readcount += 1
+
+                if ord(qualities[readcount - 1]) >= (minbasequal + offset):
+                    if pileup[j] in ['.', ',']:
+                        refnuccount += 1
+                    elif pileup[j].lower() == 'a':
+                        acount += 1
+                    elif pileup[j].lower() == 't':
+                        tcount += 1
+                    elif pileup[j].lower() == 'c':
+                        ccount += 1
+                    elif pileup[j].lower() == 'g':
+                        gcount += 1
+
+        j += 1
+
+    return (refnuccount, acount, tcount, ccount, gcount)
+
 
 def main():
     # Parse command line arguments

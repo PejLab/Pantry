@@ -1,5 +1,6 @@
 localrules:
     map_edit_sites_to_genes,
+    prepare_RNA_editing_phenotypes,
     pheno_groups_RNA_editing,
 
 rule query_editing_level:
@@ -28,7 +29,7 @@ rule shared_sample_sites:
         levels = expand(interm_dir / 'RNA_editing' / 'edit_levels' / '{sample_id}.rnaeditlevel.tsv.gz', sample_id=samples),
         samples = samples_file,
     output:
-        matrix = interm_dir / 'RNA_editing' / f'edMat.{edit_sites_min_coverage}cov.{edit_sites_min_samples}samps.tsv',
+        matrix = interm_dir / 'RNA_editing' / 'edit_site_matrix.tsv',
     params:
         edit_levels_dir = interm_dir / 'RNA_editing' / 'edit_levels',
         min_cov = edit_sites_min_coverage,
@@ -51,14 +52,35 @@ rule map_edit_sites_to_genes:
         tsv = ref_dir / 'edit_sites_to_genes.tsv',
     shell:
         """
-        Rscript scripts/RNA_editing/map_edit_sites_to_genes.R {input.edit_sites} {input.ref_anno} {output.tsv}
+        python3 scripts/RNA_editing/map_edit_sites_to_genes.py {input.edit_sites} {input.ref_anno} {output.tsv}
+        """
+
+rule prepare_RNA_editing_phenotypes:
+    input:
+        matrix = interm_dir / 'RNA_editing' / 'edit_site_matrix.tsv',
+        edit_sites_to_genes = ref_dir / 'edit_sites_to_genes.tsv',
+    output:
+        matrix = interm_dir / 'RNA_editing' / 'phenotype_matrix.tsv',
+        site_map = output_dir / 'RNA_editing.site_to_phenotype.tsv',
+    params:
+        cluster = '--cluster' if edit_sites_cluster else '',
+        correlation_threshold = edit_sites_correlation_threshold,
+    shell:
+        """
+        mkdir -p {output_dir}
+        python3 scripts/RNA_editing/prepare_rna_editing_phenotypes.py \
+            --edit-matrix {input.matrix} \
+            --site-to-gene {input.edit_sites_to_genes} \
+            --output-matrix {output.matrix} \
+            --output-site-map {output.site_map} \
+            --correlation-threshold {params.correlation_threshold} \
+            {params.cluster}
         """
 
 rule assemble_RNA_editing_bed:
     """Convert RNA editing matrix into BED file"""
     input:
-        matrix = interm_dir / 'RNA_editing' / f'edMat.{edit_sites_min_coverage}cov.{edit_sites_min_samples}samps.tsv',
-        edit_sites_to_genes = ref_dir / 'edit_sites_to_genes.tsv',
+        matrix = interm_dir / 'RNA_editing' / 'phenotype_matrix.tsv',
         ref_anno = ref_anno,
     output:
         bed = output_dir / 'unnorm' / 'RNA_editing.bed',
@@ -72,7 +94,6 @@ rule assemble_RNA_editing_bed:
         python3 scripts/assemble_bed.py rna-editing \
             --input {input.matrix} \
             --ref-anno {input.ref_anno} \
-            --edit-sites-to-genes {input.edit_sites_to_genes} \
             --output {output.bed}
         """
 
