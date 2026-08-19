@@ -1,11 +1,14 @@
-suppressPackageStartupMessages(library(snpStats))
 library(impute)
 
+script_arg <- grep("^--file=", commandArgs(FALSE), value = TRUE)
+script_dir <- dirname(normalizePath(sub("^--file=", "", script_arg[1])))
+source(file.path(script_dir, "fusion_twas", "utils", "plink_utils.R"))
+
 load_geno <- function(filename) {
-    geno <- read.plink(filename)
-    # Convert to 0,1,2 coding
-    geno_mat <- as(geno$genotypes, "numeric")
-    t(geno_mat)
+    geno <- read_plink(filename)
+    geno_mat <- t(geno$bed)
+    colnames(geno_mat) <- geno$fam[, 2]
+    geno_mat
 }
 
 get_PCs <- function(df, n_pcs) {

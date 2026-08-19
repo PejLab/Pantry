@@ -6,8 +6,8 @@ channels:
 dependencies:
   - bioconductor-impute # for covariates
   - bioconductor-qvalue # for tensorqtl
-  - bioconductor-snpstats # for covariates and FUSION (replaces plink2R)
   - dask<2024.2 # for tensorqtl (pandas-plink)
+  - gemma=0.98.5 # for FUSION BLUP models
   - gcta # for heritability
   - htslib # for bgzip
   - pandas

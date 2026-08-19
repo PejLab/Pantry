@@ -41,7 +41,6 @@ rule twas_compute_weights_batch:
         worker = 'scripts/fit_twas_weights.py',
         fusion = 'scripts/fusion_twas/FUSION.compute_weights.R',
         gcta = 'scripts/fusion_twas/gcta_nr_robust',
-        gemma = 'scripts/fusion_twas/gemma',
     output:
         interm_dir / 'twas' / 'status_{modality}' / '{batch_start}_{batch_end}.tsv',
     params:
@@ -63,8 +62,7 @@ rule twas_compute_weights_batch:
             --status {output} \
             --threads {threads} \
             --fusion-script {input.fusion} \
-            --gcta {input.gcta} \
-            --gemma {input.gemma}
+            --gcta {input.gcta}
         """
 
 def twas_batch_status_input(wildcards):

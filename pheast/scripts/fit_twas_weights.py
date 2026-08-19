@@ -9,7 +9,8 @@ import re
 import shutil
 import subprocess
 import sys
-from concurrent.futures import ThreadPoolExecutor
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -56,7 +57,6 @@ def parse_args():
     parser.add_argument("--threads", required=True, type=int)
     parser.add_argument("--fusion-script", required=True, type=Path)
     parser.add_argument("--gcta", required=True, type=Path)
-    parser.add_argument("--gemma", required=True, type=Path)
     parser.add_argument("--plink", default="plink")
     parser.add_argument("--rscript", default="Rscript")
     return parser.parse_args()
@@ -142,7 +142,7 @@ def validate_tools(args):
         [args.plink, "--help"],
         [args.rscript, "--version"],
         [args.gcta, "--version"],
-        [args.gemma, "-h"],
+        ["gemma", "-h"],
     ]
     for command in commands:
         subprocess.run(
@@ -181,6 +181,24 @@ def result_row(model, outcome, weight_path="", hsq=("", "", ""), diagnostic=""):
         "heritability_p": hsq[2],
         "diagnostic": diagnostic,
     }
+
+
+def format_duration(seconds):
+    seconds = max(0, round(seconds))
+    hours, remainder = divmod(seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+
+
+def progress_message(completed, total, elapsed, outcomes):
+    rate = completed / (elapsed / 60) if elapsed > 0 else 0
+    eta = (total - completed) / (rate / 60) if rate > 0 else 0
+    return (
+        f"Progress: {completed}/{total} ({100 * completed / total:.1f}%) | "
+        f"success={outcomes['success']} skipped={outcomes['skipped']} "
+        f"failed={outcomes['failed']} | elapsed={format_duration(elapsed)} "
+        f"rate={rate:.2f} models/min | ETA={format_duration(eta)}"
+    )
 
 
 def fit_model(model, sample_ids, args, batch_temp, weights_dir):
@@ -231,7 +249,6 @@ def fit_model(model, sample_ids, args, batch_temp, weights_dir):
                     "--noclean",
                     "--PATH_plink", args.plink,
                     "--PATH_gcta", args.gcta,
-                    "--PATH_gemma", args.gemma,
                     "--models", "blup,lasso,top1,enet",
                 ],
                 log_handle,
@@ -311,8 +328,30 @@ def main():
     batch_temp.mkdir(parents=True, exist_ok=True)
 
     worker = lambda model: fit_model(model, sample_ids, args, batch_temp, weights_dir)
+    rows = [None] * len(models)
+    outcomes = {"success": 0, "skipped": 0, "failed": 0}
+    started = time.monotonic()
+    print(
+        f"Starting {len(models)} TWAS models with {args.threads} workers",
+        file=sys.stderr,
+        flush=True,
+    )
     with ThreadPoolExecutor(max_workers=args.threads) as executor:
-        rows = list(executor.map(worker, models))
+        futures = {
+            executor.submit(worker, model): index
+            for index, model in enumerate(models)
+        }
+        for completed, future in enumerate(as_completed(futures), start=1):
+            index = futures[future]
+            row = future.result()
+            rows[index] = row
+            outcomes[row["outcome"]] += 1
+            elapsed = time.monotonic() - started
+            print(
+                progress_message(completed, len(models), elapsed, outcomes),
+                file=sys.stderr,
+                flush=True,
+            )
 
     failures = [row for row in rows if row["outcome"] == "failed"]
     if failures:

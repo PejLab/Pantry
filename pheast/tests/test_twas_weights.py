@@ -24,6 +24,19 @@ batches = load_script("twas_batches")
 
 
 class TestTwasWeightWorker(unittest.TestCase):
+    def test_progress_message(self):
+        message = fit.progress_message(
+            completed=5,
+            total=20,
+            elapsed=150,
+            outcomes={"success": 3, "skipped": 2, "failed": 0},
+        )
+        self.assertEqual(
+            message,
+            "Progress: 5/20 (25.0%) | success=3 skipped=2 failed=0 | "
+            "elapsed=00:02:30 rate=2.00 models/min | ETA=00:07:30",
+        )
+
     def test_adaptive_batch_ranges(self):
         self.assertEqual(batches.batch_ranges(0, 200), [])
         self.assertEqual(batches.batch_ranges(5, 200), [(1, 5)])
@@ -38,7 +51,6 @@ class TestTwasWeightWorker(unittest.TestCase):
             rscript="Rscript",
             fusion_script=root / "FUSION.compute_weights.R",
             gcta=root / "gcta",
-            gemma=root / "gemma",
         )
         model = fit.Model(1, "1", 1_000_000, "gene1", ("2.5",))
         return args, model, root / "tmp", root / "weights"

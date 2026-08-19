@@ -1,10 +1,19 @@
-# ==== TODO
-# * Make sure BLUP/BSLMM weights are being scaled properly based on MAF
+# Pantry changes from the current official FUSION.compute_weights.R:
+# - Load utils/plink_utils.R relative to this script instead of using here(),
+#   because FUSION is embedded below the Pantry project root.
+# - Give each GEMMA invocation an explicit output directory and basename, and
+#   fail on a nonzero exit status, so concurrent model workers remain isolated.
+# - Skip loci with only one SNP because glmnet cannot fit the configured models.
+# - Run PLINK LASSO with seed 1 so repeated weight-fitting runs are reproducible.
 
 suppressMessages(library("optparse"))
-suppressMessages(library(snpStats))
 suppressMessages(library('glmnet'))
-suppressMessages(library('methods'))
+
+script_arg = grep("^--file=", commandArgs(FALSE), value=TRUE)
+script_dir = dirname(normalizePath(sub("^--file=", "", script_arg[1])))
+source(file.path(script_dir, "utils", "plink_utils.R"))
+
+PLINK_LASSO_SEED = 1
 
 option_list = list(
   make_option("--bfile", action="store", default=NA, type='character',
@@ -65,36 +74,6 @@ if ( opt$verbose == 2 ) {
   SYS_PRINT = T
 }
 
-# Replacement for plink2R::read_plink function
-read_plink <- function(prefix, impute="avg") {
-    # Read PLINK files using snpStats
-    geno <- read.plink(prefix)
-    
-    # Preserve zeros in fam file
-    geno$fam[is.na(geno$fam)] <- 0
-    
-    # Convert to numeric matrix (0,1,2 coding of A2 allele counts from snpStats)
-    bed <- as(geno$genotypes, "numeric")
-    # Convert to PLINK-style A1 dosage counts for consistency with downstream FUSION logic.
-    bed <- 2 - bed
-    
-    if (impute == "avg") {
-        # Impute missing values with column means
-        col_means <- colMeans(bed, na.rm=TRUE)
-        for (i in 1:ncol(bed)) {
-            bed[is.na(bed[,i]), i] <- col_means[i]
-        }
-    } else {
-        stopifnot(is.null(impute))
-    }
-        
-    return(list(
-        bed=bed,
-        fam=geno$fam,
-        bim=geno$map
-    ))
-}
-
 # --- PREDICTION MODELS
 
 # BSLMM
@@ -121,7 +100,7 @@ weights.bslmm = function( input , bv_type , snp , out=NA ) {
 weights.lasso = function( input , hsq , snp , out=NA ) {
 	if ( is.na(out) ) out = paste(input,".LASSO",sep='')
 
-	arg = paste( opt$PATH_plink , " --allow-no-sex --bfile " , input , " --lasso " , hsq , " --out " , out , sep='' )
+	arg = paste( opt$PATH_plink , " --allow-no-sex --bfile " , input , " --lasso " , hsq , " --seed " , PLINK_LASSO_SEED , " --out " , out , sep='' )
 	system( arg , ignore.stdout=SYS_PRINT,ignore.stderr=SYS_PRINT )
 	if ( !file.exists(paste(out,".lasso",sep='')) ) {
 	cat( paste(out,".lasso",sep='') , " LASSO output did not exist\n" )
@@ -155,6 +134,14 @@ weights.enet = function( genos , pheno , alpha=0.5 ) {
 	return( eff.wgt )
 }
 
+rank_normalize = function(x) {
+	keep = !is.na(x)
+	if (sum(keep) == 0) return(x)
+	r = rank(x[keep], ties.method="average")
+	x[keep] = qnorm((r - 0.5) / sum(keep))
+	return(x)
+}
+
 # --- CLEANUP
 cleanup = function() {
 	if ( ! opt$noclean ) {
@@ -182,7 +169,7 @@ if ( system( paste(opt$PATH_plink,"--help") , ignore.stdout=T,ignore.stderr=T ) 
 	q()
 }
 
-if ( !is.na(opt$hsq_set) && system( opt$PATH_gcta , ignore.stdout=T,ignore.stderr=T ) != 0 ){
+if ( is.na(opt$hsq_set) && system( opt$PATH_gcta , ignore.stdout=T,ignore.stderr=T ) != 0 ){
 	cat( "ERROR: gcta could not be executed, set with --PATH_gcta\n" , sep='', file=stderr() )
 	cleanup()
 	q()
@@ -214,9 +201,7 @@ if ( !is.na(opt$pheno) ) {
 }
 
 if ( opt$rn ) {
-	library('GenABEL')
-	library(preprocessCore)
-	pheno[,3] = rntransform( pheno[,3] )
+	pheno[,3] = rank_normalize( pheno[,3] )
 	write.table(pheno,quote=F,row.names=F,col.names=F,file=pheno.file)
 }
 
@@ -306,9 +291,10 @@ if ( sum(nasnps) != 0 ) {
 # regress covariates out of the genotypes as well (this is more accurate but slower)
 if ( !is.na(opt$covar) && opt$resid ) {
 	if ( opt$verbose >= 1 ) cat("regressing covariates out of the genotypes\n")
-	for ( i in 1:ncol(genos$bed) ) {
-		genos$bed[,i] = summary(lm( genos$bed[,i] ~ as.matrix(covar[,3:ncol(covar)]) ))$resid
-	}
+	X = cbind(1, as.matrix(covar[,3:ncol(covar),drop=F]))
+	XtX_inv = solve(crossprod(X))
+	proj = X %*% XtX_inv
+	genos$bed = genos$bed - proj %*% crossprod(X, genos$bed)
 	genos$bed = scale(genos$bed)
 }
 
@@ -422,6 +408,4 @@ snps = genos$bim
 save( wgt.matrix , snps , cv.performance , hsq, hsq.pv, N.tot , file = paste( opt$out , ".wgt.RDat" , sep='' ) )
 # --- CLEAN-UP
 if ( opt$verbose >= 1 ) cat("Cleaning up\n")
-# cleanup()
-
-print(length(genos$bim))
+cleanup()

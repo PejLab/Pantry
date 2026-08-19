@@ -40,7 +40,7 @@ rule assoc_test_trait:
         """
         mkdir -p {params.output_dir}
         parallel -j {threads} \
-            Rscript ../scripts/FUSION.assoc_test.R \
+            Rscript ../scripts/fusion_twas/FUSION.assoc_test.R \
                 --sumstats {input.sumstats} \
                 --weights {input.weights} \
                 --weights_dir {params.weights_dir} \
