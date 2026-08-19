@@ -39,6 +39,11 @@ qtl_min_allele_count: 10
 # only SNPs present in the LD reference used later for TWAS association testing.
 twas_snps: input/ld_snps_chr1.txt
 
+# Number of phenotype models assigned to each cluster job and number fitted
+# concurrently within that job.
+twas_models_per_job: 200
+twas_threads: 4
+
 # -----------------------------------------------------------------------------
 # Modalities
 # -----------------------------------------------------------------------------

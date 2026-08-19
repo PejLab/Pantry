@@ -101,8 +101,13 @@ read_plink <- function(prefix, impute="avg") {
 weights.bslmm = function( input , bv_type , snp , out=NA ) {
 	if ( is.na(out) ) out = paste(input,".BSLMM",sep='')
 
-	arg = paste( opt$PATH_gemma , " -miss 1 -maf 0 -r2 1 -rpace 1000 -wpace 1000 -bfile " , input , " -bslmm " , bv_type , " -outdir . -o " , out , sep='' )
-	system( arg , ignore.stdout=SYS_PRINT,ignore.stderr=SYS_PRINT)
+	# GEMMA requires -o to be a file name, separate from -outdir. Keeping
+	# each invocation in dirname(out) also isolates concurrent model workers.
+	out.dir = dirname(out)
+	out.name = basename(out)
+	arg = paste( opt$PATH_gemma , " -miss 1 -maf 0 -r2 1 -rpace 1000 -wpace 1000 -bfile " , input , " -bslmm " , bv_type , " -outdir " , out.dir , " -o " , out.name , sep='' )
+	status = system( arg , ignore.stdout=SYS_PRINT,ignore.stderr=SYS_PRINT)
+	if ( status != 0 ) stop("GEMMA failed with exit status ",status)
 	eff = read.table( paste(out,".param.txt",sep=''),head=T,as.is=T)
 	eff.wgt = rep(NA,length(snp))
 	m = match( snp , eff$rs )

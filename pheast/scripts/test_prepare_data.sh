@@ -5,7 +5,7 @@
 
 set -euo pipefail
 
-phenodir=../../../gdml/etc/rna-editing/geuvadis
+phenodir=../../../gdml/pantry/phenos/GEUVADIS_intronret
 geno="../../../gdml/data/geuvadis/genotype/GEUVADIS.445_samples.GRCh38.20170504.maf01.filtered.nodup.nochr"
 genonew="input/GEUVADIS.445_samples.GRCh38.chr1_120Mb"
 

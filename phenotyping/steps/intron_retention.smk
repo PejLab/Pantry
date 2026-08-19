@@ -14,7 +14,10 @@ majiq_threads = majiq_params.get('threads', 8)
 majiq_psicov_batch_size = majiq_params.get('psicov_batch_size', 25)
 majiq_min_experiments = majiq_params.get('min_experiments', 0.01)
 majiq_batches = list(range(ceil(len(samples) / majiq_psicov_batch_size)))
-majiq_sj = expand(str(majiq_build_dir / '{sample_id}.sj'), sample_id=samples)
+majiq_sj = [
+    directory(path)
+    for path in expand(str(majiq_build_dir / '{sample_id}.sj'), sample_id=samples)
+]
 
 
 def majiq_batch_samples(batch):
@@ -39,6 +42,8 @@ if 'annotation_gff3' not in majiq_params:
             majiq_annotation_gff3,
         params:
             outdir = ref_dir / 'majiq',
+        resources:
+            mem_mb = 32000,
         shell:
             """
             mkdir -p {params.outdir}

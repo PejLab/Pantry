@@ -1,7 +1,7 @@
-import math
+import gzip
 from pathlib import Path
 import pandas as pd
-import subprocess
+from scripts.twas_batches import batch_ranges as twas_batch_ranges
 
 configfile: 'config.yml'
 

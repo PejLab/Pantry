@@ -1,10 +1,12 @@
 localrules:
     twas_pos_file,
 
-TWAS_N_BATCHES = 64
-MAX_BATCH_SIZE = 300
 twas_geno_prefix = interm_dir / 'twas' / 'geno' if 'twas_snps' in config else geno_prefix
 twas_snps = Path(config['twas_snps']) if 'twas_snps' in config else ''
+
+def twas_model_count(modality):
+    with gzip.open(pheno_dir / f'{modality}.bed.gz', 'rt') as handle:
+        return sum(1 for _ in handle) - 1
 
 rule twas_geno:
     """Subset genotypes to SNPs used in TWAS LD reference panel."""
@@ -29,56 +31,59 @@ rule twas_compute_weights_batch:
     """Use FUSION to compute TWAS weights from expression and genotypes.
     
     Outputs also include the actual weights
-    ('{interm_dir}/twas/weights_{modality}/{gene}.wgt.RDat'), but the genes for
+    ('{interm_dir}/twas/{modality}/{gene}.wgt.RDat'), but the genes for
     which we end up with outputs are not known until the rule is run.
     """
     input:
         geno = multiext(str(twas_geno_prefix), '.bed', '.bim', '.fam'),
         bed = pheno_dir / '{modality}.bed.gz',
         covar = interm_dir / 'covar' / '{modality}.covar.plink.tsv',
+        worker = 'scripts/fit_twas_weights.py',
+        fusion = 'scripts/fusion_twas/FUSION.compute_weights.R',
         gcta = 'scripts/fusion_twas/gcta_nr_robust',
         gemma = 'scripts/fusion_twas/gemma',
     output:
-        # expand(interm_dir / 'twas' / 'weights_{{modality}}' / '{gene}.wgt.RDat', gene=gene_list),
-        interm_dir / 'twas' / 'hsq_{modality}' / '{batch_start}_{batch_end}.hsq',
+        interm_dir / 'twas' / 'status_{modality}' / '{batch_start}_{batch_end}.tsv',
     params:
         twas_geno_prefix = twas_geno_prefix,
         twas_interm_dir = interm_dir / 'twas',
     resources:
         runtime = '8h',
+    threads: config['twas_threads']
     shell:
         """
-        sh scripts/fusion_compute_weights.sh \
-            {params.twas_geno_prefix} \
-            {input.bed} \
-            {input.covar} \
-            {wildcards.modality} \
-            {wildcards.batch_start} \
-            {wildcards.batch_end} \
-            {params.twas_interm_dir}
+        python {input.worker} \
+            --geno {params.twas_geno_prefix} \
+            --bed {input.bed} \
+            --covar {input.covar} \
+            --modality {wildcards.modality} \
+            --batch-start {wildcards.batch_start} \
+            --batch-end {wildcards.batch_end} \
+            --output-dir {params.twas_interm_dir} \
+            --status {output} \
+            --threads {threads} \
+            --fusion-script {input.fusion} \
+            --gcta {input.gcta} \
+            --gemma {input.gemma}
         """
 
-def twas_batch_hsq_input(wildcards):
-    """Get start and end indices of BED file for TWAS batches."""
-    bed = pheno_dir / f'{wildcards.modality}.bed.gz'
-    n = int(subprocess.check_output(f'zcat < {bed} | wc -l', shell=True)) - 1
-    batch_size = min(math.ceil(n / TWAS_N_BATCHES), MAX_BATCH_SIZE)
-    # Given the necessary batch size, items might fit into fewer batches:
-    n_batches = math.ceil(n / batch_size)
-    for i in range(n_batches):
-        start = i * batch_size + 1
-        end = min((i + 1) * batch_size, n)
-        yield interm_dir / 'twas' / f'hsq_{wildcards.modality}' / f'{start}_{end}.hsq'
+def twas_batch_status_input(wildcards):
+    """Get the status files for all model-sized TWAS batches."""
+    n_models = twas_model_count(wildcards.modality)
+    if n_models < 1:
+        raise ValueError(f'No TWAS models found for modality {wildcards.modality}')
+    for start, end in twas_batch_ranges(n_models, config['twas_models_per_job']):
+        yield interm_dir / 'twas' / f'status_{wildcards.modality}' / f'{start}_{end}.tsv'
 
 rule twas_assemble_summary:
     """Summarize weights from all batches/genes.
     
-    The hsq 'input' files aren't actually used, but signify the batch was run.
-    The true input files are the per-gene weights, but the genes for which we
-    end up with outputs are not known until the rule is run.
+    Batch status tables define which phenotypes produced weights and retain
+    compact diagnostics for phenotypes that FUSION intentionally skipped.
     """
     input:
-        twas_batch_hsq_input,
+        status = twas_batch_status_input,
+        assembler = 'scripts/assemble_twas_weight_list.py',
     output:
         file_list = interm_dir / 'twas' / '{modality}.list',
         profile = interm_dir / 'twas' / '{modality}.profile',
@@ -89,13 +94,11 @@ rule twas_assemble_summary:
         """
         # Avoid using relative path in case intermediate dir is a symlink:
         scripts_dir="$(realpath scripts)"
+        python {input.assembler} \
+            --status {input.status} \
+            --weights-dir {params.twas_interm_dir} \
+            --output {output.file_list}
         cd {params.twas_interm_dir}
-        # List weight files and sort by phenotype ID (basename without extension)
-        find {wildcards.modality} -maxdepth 1 -type f -name '*.wgt.RDat' \
-            | awk -F'/' '{{fn=$NF; sub(/\.wgt\.RDat$/, "", fn); print fn "\t" $0}}' \
-            | sort -k1,1 \
-            | cut -f2- \
-            > {wildcards.modality}.list
         Rscript $scripts_dir/fusion_twas/utils/FUSION.profile_wgt.R \
             {wildcards.modality}.list \
             > {wildcards.modality}.profile \
@@ -147,5 +150,5 @@ rule twas_compress_output:
             {wildcards.modality}.profile \
             {wildcards.modality}.profile.err \
             {wildcards.modality}.pos \
-            {wildcards.modality}/
+            --files-from={input.file_list}
         """

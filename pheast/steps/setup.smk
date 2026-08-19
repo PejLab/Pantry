@@ -36,12 +36,12 @@ def process_config(config: dict):
     ]
     for path in paths:
         if path in config.keys():
-            config[path] = Path(config[path]).expanduser()
+            config[path] = str(Path(config[path]).expanduser())
 
     config['samples'] = pd.read_csv(config['samples_file'], sep='\t', header=None, dtype=str)[0].tolist()
 
     if 'intermediate_dir' not in config:
-        config['intermediate_dir'] = Path('intermediate')
+        config['intermediate_dir'] = 'intermediate'
 
     if 'qtl_min_allele_count' not in config:
         config['qtl_min_allele_count'] = 10
@@ -50,11 +50,23 @@ def process_config(config: dict):
     if 'qtl_maf_threshold' in config and config['qtl_maf_threshold'] is not None:
         config['qtl_maf_threshold'] = float(config['qtl_maf_threshold'])
 
+    if 'twas_models_per_job' not in config:
+        config['twas_models_per_job'] = 200
+    config['twas_models_per_job'] = int(config['twas_models_per_job'])
+    if config['twas_models_per_job'] < 1:
+        raise ValueError('twas_models_per_job must be at least 1')
+
+    if 'twas_threads' not in config:
+        config['twas_threads'] = 4
+    config['twas_threads'] = int(config['twas_threads'])
+    if config['twas_threads'] < 1:
+        raise ValueError('twas_threads must be at least 1')
+
 validate_config(config)
 process_config(config)
 
-pheno_dir = config['phenotype_dir']
-interm_dir = config['intermediate_dir']
+pheno_dir = Path(config['phenotype_dir'])
+interm_dir = Path(config['intermediate_dir'])
 output_dir = Path('output')
 geno_prefix = config['geno_prefix']
 
