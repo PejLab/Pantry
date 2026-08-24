@@ -1,3 +1,7 @@
+# Pantry changes from the current official utils/plink_utils.R:
+# - Read the BIM chromosome column as character so chromosome labels such as
+#   "chr1" are accepted in addition to integer chromosome codes.
+
 # utils/plink_utils.R
 # -----------------------------------------------------------------------
 # Drop-in replacement for plink2R::read_plink().
@@ -14,7 +18,7 @@
 
 read_plink = function(prefix, impute = "none") {
   bim = read.table(paste0(prefix, ".bim"), header = FALSE,
-                   colClasses = c("integer","character","numeric",
+                   colClasses = c("character","character","numeric",
                                   "integer","character","character"))
   fam = read.table(paste0(prefix, ".fam"), header = FALSE,
                    colClasses = c("character","character","character",
