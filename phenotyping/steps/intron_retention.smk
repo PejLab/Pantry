@@ -14,9 +14,14 @@ majiq_threads = majiq_params.get('threads', 8)
 majiq_psicov_batch_size = majiq_params.get('psicov_batch_size', 25)
 majiq_min_experiments = majiq_params.get('min_experiments', 0.01)
 majiq_batches = list(range(ceil(len(samples) / majiq_psicov_batch_size)))
+# MAJIQ names junction coverage after the resolved BAM, including symlink targets.
+majiq_sj_by_sample = {
+    sample: majiq_build_dir / f'{(interm_dir / "bam" / f"{sample}.bam").resolve().stem}.sj'
+    for sample in samples
+}
 majiq_sj = [
-    directory(path)
-    for path in expand(str(majiq_build_dir / '{sample_id}.sj'), sample_id=samples)
+    directory(majiq_sj_by_sample[sample])
+    for sample in samples
 ]
 
 
@@ -26,7 +31,7 @@ def majiq_batch_samples(batch):
 
 
 def majiq_batch_sj(wildcards):
-    return expand(str(majiq_build_dir / '{sample_id}.sj'), sample_id=majiq_batch_samples(wildcards.batch))
+    return [str(majiq_sj_by_sample[sample]) for sample in majiq_batch_samples(wildcards.batch)]
 
 
 def majiq_batch_prefixes(wildcards):
