@@ -3,6 +3,9 @@
 It validates and processes the configuration and sets global variables.
 """
 
+from copy import deepcopy
+
+
 def load_fastq_map(map_file: Path, fastq_dir: Path, paired_end=None) -> dict:
     """Load the FASTQ file paths for each sample.
     
@@ -180,30 +183,32 @@ def validate_reference(ref_genome: Path, ref_anno: Path):
         raise ValueError(f'Reference annotation file does not contain transcript entries (at least not in the first 1000 lines): {ref_anno}')
 
 validate_config(config)
-process_config(config)
+# Keep Snakemake's config serializable, including nested modality and LaDDR settings.
+pipeline_config = deepcopy(config)
+process_config(pipeline_config)
 
-interm_dir = config['intermediate_dir']
-ref_dir = config['intermediate_ref_dir']
+interm_dir = pipeline_config['intermediate_dir']
+ref_dir = pipeline_config['intermediate_ref_dir']
 output_dir = Path('output')
 
-samples_file = config['samples_file']
-samples = config['samples']
+samples_file = pipeline_config['samples_file']
+samples = pipeline_config['samples']
 
-paired_end = config.get('paired_end', None)
-read_length = config['read_length']
-fastq_dir = config['fastq_dir']
-fastq_map = config['fastq_map']
+paired_end = pipeline_config.get('paired_end', None)
+read_length = pipeline_config['read_length']
+fastq_dir = pipeline_config['fastq_dir']
+fastq_map = pipeline_config['fastq_map']
 if any(not is_paired for paths, is_paired in fastq_map.values()):
-    fragment_length_mean = config['fragment_length_mean']
-    fragment_length_sd = config['fragment_length_sd']
+    fragment_length_mean = pipeline_config['fragment_length_mean']
+    fragment_length_sd = pipeline_config['fragment_length_sd']
 
-ref_genome = config['ref_genome']
-ref_anno = config['ref_anno']
+ref_genome = pipeline_config['ref_genome']
+ref_anno = pipeline_config['ref_anno']
 ref_cdna = ref_dir / 'cDNA.fa.gz'
 validate_reference(ref_genome, ref_anno)
 
-modality_groups = config['modality_groups']
-laddr_config = config.get('laddr', {})
+modality_groups = pipeline_config['modality_groups']
+laddr_config = pipeline_config.get('laddr', {})
 laddr_enabled = laddr_config.get('enabled', False)
 
 if 'RNA_editing' in modality_groups:
