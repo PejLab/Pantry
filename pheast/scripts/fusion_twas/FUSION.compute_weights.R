@@ -5,6 +5,8 @@
 #   fail on a nonzero exit status, so concurrent model workers remain isolated.
 # - Skip loci with only one SNP because glmnet cannot fit the configured models.
 # - Run PLINK LASSO with seed 1 so repeated weight-fitting runs are reproducible.
+# - Skip phenotypes whose elastic-net training or inner-CV training splits
+#   contain no variable predictors.
 
 suppressMessages(library("optparse"))
 suppressMessages(library('glmnet'))
@@ -129,7 +131,24 @@ weights.enet = function( genos , pheno , alpha=0.5 ) {
 	# remove monomorphics
 	sds = apply( genos  , 2 , sd )
 	keep = sds != 0 & !is.na(sds)
-	enet = cv.glmnet( x=genos[,keep] , y=pheno , alpha=alpha , nfold=5 , intercept=T , standardize=F )
+	skip.untrainable = function(context) {
+		cat("Elastic-net CV untrainable: no variable predictors in ", context,
+		    "; skipping this phenotype\n", sep="")
+		cleanup()
+		q(save="no", status=0)
+	}
+	if ( !any(keep) ) skip.untrainable("full training set")
+	x = genos[,keep,drop=FALSE]
+	# Use the same balanced random assignment as cv.glmnet's default, and
+	# inspect exactly the folds that it will fit (including in outer CV).
+	foldid = sample(rep(seq_len(5), length.out=nrow(x)))
+	for ( fold in sort(unique(foldid)) ) {
+		train.sds = apply(x[foldid != fold,,drop=FALSE], 2, sd)
+		if ( !any(!is.na(train.sds) & train.sds != 0) ) {
+			skip.untrainable(paste("inner training fold", fold))
+		}
+	}
+	enet = cv.glmnet( x=x , y=pheno , alpha=alpha , nfolds=5 , foldid=foldid , intercept=T , standardize=F )
 	eff.wgt[ keep ] = coef( enet , s = "lambda.min")[2:(sum(keep)+1)]
 	return( eff.wgt )
 }

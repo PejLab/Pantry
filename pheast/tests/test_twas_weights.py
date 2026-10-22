@@ -57,6 +57,8 @@ class TestTwasWeightWorker(unittest.TestCase):
 
     def test_missing_weight_classification(self):
         expected = [
+            ("Elastic-net CV untrainable: no variable predictors in full training set; skipping this phenotype", "elastic-net CV untrainable: no variable predictors in a training split"),
+            ("Elastic-net CV untrainable: no variable predictors in inner training fold 3; skipping this phenotype", "elastic-net CV untrainable: no variable predictors in a training split"),
             ("heritability 0.01; LRT P-value 0.5 : skipping gene", "insufficient heritability"),
             ("likely GCTA could not converge, skipping gene", "GCTA did not converge"),
             ("Only one SNP available, skipping this gene", "only one cis-SNP"),
@@ -66,6 +68,10 @@ class TestTwasWeightWorker(unittest.TestCase):
                 self.assertEqual(fit.classify_missing_weight(message), ("skipped", diagnostic))
         self.assertEqual(
             fit.classify_missing_weight("ERROR: invalid covariate"),
+            ("failed", "FUSION exited without producing a weight file"),
+        )
+        self.assertEqual(
+            fit.classify_missing_weight("All used predictors have zero variance"),
             ("failed", "FUSION exited without producing a weight file"),
         )
 

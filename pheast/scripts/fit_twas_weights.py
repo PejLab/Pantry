@@ -29,6 +29,13 @@ STATUS_FIELDS = [
 ]
 
 SKIP_PATTERNS = [
+    (
+        re.compile(
+            r"Elastic-net CV untrainable: no variable predictors in "
+            r"(?:full training set|inner training fold \d+); skipping this phenotype"
+        ),
+        "elastic-net CV untrainable: no variable predictors in a training split",
+    ),
     (re.compile(r"heritability .*skipping gene", re.IGNORECASE), "insufficient heritability"),
     (re.compile(r"likely GCTA could not converge, skipping gene", re.IGNORECASE), "GCTA did not converge"),
     (re.compile(r"Only one SNP available, skipping this gene", re.IGNORECASE), "only one cis-SNP"),
