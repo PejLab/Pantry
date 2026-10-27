@@ -38,9 +38,6 @@ rule twas_compute_weights_batch:
         geno = multiext(str(twas_geno_prefix), '.bed', '.bim', '.fam'),
         bed = pheno_dir / '{modality}.bed.gz',
         covar = interm_dir / 'covar' / '{modality}.covar.plink.tsv',
-        worker = 'scripts/fit_twas_weights.py',
-        fusion = 'scripts/fusion_twas/FUSION.compute_weights.R',
-        gcta = 'scripts/fusion_twas/gcta_nr_robust',
     output:
         interm_dir / 'twas' / 'status_{modality}' / '{batch_start}_{batch_end}.tsv',
     params:
@@ -51,7 +48,7 @@ rule twas_compute_weights_batch:
     threads: config['twas_threads']
     shell:
         """
-        python {input.worker} \
+        python scripts/fit_twas_weights.py \
             --geno {params.twas_geno_prefix} \
             --bed {input.bed} \
             --covar {input.covar} \
@@ -61,8 +58,8 @@ rule twas_compute_weights_batch:
             --output-dir {params.twas_interm_dir} \
             --status {output} \
             --threads {threads} \
-            --fusion-script {input.fusion} \
-            --gcta {input.gcta}
+            --fusion-script scripts/fusion_twas/FUSION.compute_weights.R \
+            --gcta scripts/fusion_twas/gcta_nr_robust
         """
 
 def twas_batch_status_input(wildcards):
@@ -81,7 +78,6 @@ rule twas_assemble_summary:
     """
     input:
         status = twas_batch_status_input,
-        assembler = 'scripts/assemble_twas_weight_list.py',
     output:
         file_list = interm_dir / 'twas' / '{modality}.list',
         profile = interm_dir / 'twas' / '{modality}.profile',
@@ -92,7 +88,7 @@ rule twas_assemble_summary:
         """
         # Avoid using relative path in case intermediate dir is a symlink:
         scripts_dir="$(realpath scripts)"
-        python {input.assembler} \
+        python scripts/assemble_twas_weight_list.py \
             --status {input.status} \
             --weights-dir {params.twas_interm_dir} \
             --output {output.file_list}

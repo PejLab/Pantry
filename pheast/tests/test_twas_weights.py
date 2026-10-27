@@ -1,6 +1,8 @@
 import csv
 import gzip
 import importlib.util
+import os
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -24,6 +26,49 @@ batches = load_script("twas_batches")
 
 
 class TestTwasWeightWorker(unittest.TestCase):
+    def test_subprocess_limits_override_parent_and_reach_descendants(self):
+        names = ["OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS",
+                 "BLIS_NUM_THREADS", "VECLIB_MAXIMUM_THREADS"]
+        child = "import os; print(','.join(os.environ[n] for n in " + repr(names) + "))"
+        parent = "import subprocess,sys; subprocess.run([sys.executable, '-c', " + repr(child) + "], check=True)"
+        with tempfile.TemporaryFile(mode="w+") as log:
+            with patch.dict(os.environ, {name: "16" for name in names}):
+                fit.run_logged([sys.executable, "-c", parent], log)
+                self.assertEqual(os.environ["OPENBLAS_NUM_THREADS"], "16")
+            log.seek(0)
+            self.assertEqual(log.read().strip(), "1,1,1,1,1")
+
+    def test_elapsed_time_for_every_outcome(self):
+        for outcome in ("success", "skipped", "failed"):
+            with self.subTest(outcome=outcome):
+                with patch.object(fit, "_fit_model", return_value={"outcome": outcome}), patch.object(
+                    fit.time, "monotonic", side_effect=[10.0, 12.3456]
+                ):
+                    row = fit.fit_model(None, None, None, None, None)
+                self.assertEqual(row["elapsed_seconds"], 2.346)
+
+    def test_failed_batch_retains_completed_timings(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            args = SimpleNamespace(threads=1, output_dir=root, status=root / "status" / "1_1.tsv",
+                                   bed=root / "bed", batch_start=1, batch_end=1,
+                                   geno=root / "geno", modality="expression")
+            model = fit.Model(1, "1", 10, "gene1", ("2.5",))
+            row = fit.result_row(model, "failed", diagnostic="test failure")
+            row["elapsed_seconds"] = 5.0
+            with patch.object(fit, "parse_args", return_value=args), patch.object(
+                fit, "validate_tools"
+            ), patch.object(fit, "read_batch", return_value=(["S1"], [model])), patch.object(
+                fit, "read_sample_ids", return_value=[("S1", "S1")]
+            ), patch.object(fit, "fit_model", return_value=row):
+                with self.assertRaisesRegex(RuntimeError, "1 of 1 TWAS models failed"):
+                    fit.main()
+            with args.status.with_suffix(".timings.tsv").open() as handle:
+                saved = list(csv.DictReader(handle, delimiter="\t"))
+            self.assertEqual(saved[0]["elapsed_seconds"], "5.0")
+            self.assertEqual(saved[0]["outcome"], "failed")
+            self.assertFalse(args.status.exists())
+
     def test_progress_message(self):
         message = fit.progress_message(
             completed=5,

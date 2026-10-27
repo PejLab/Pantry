@@ -26,6 +26,7 @@ STATUS_FIELDS = [
     "heritability_se",
     "heritability_p",
     "diagnostic",
+    "elapsed_seconds",
 ]
 
 SKIP_PATTERNS = [
@@ -133,8 +134,15 @@ def read_sample_ids(fam_path, samples):
 
 
 def run_logged(command, log_handle):
+    # Each batch worker owns one CPU; descendants must not start BLAS pools.
+    env = os.environ.copy()
+    env.update({name: "1" for name in (
+        "OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS",
+        "BLIS_NUM_THREADS", "VECLIB_MAXIMUM_THREADS",
+    )})
     result = subprocess.run(
         [str(item) for item in command],
+        env=env,
         stdout=log_handle,
         stderr=subprocess.STDOUT,
         text=True,
@@ -209,6 +217,13 @@ def progress_message(completed, total, elapsed, outcomes):
 
 
 def fit_model(model, sample_ids, args, batch_temp, weights_dir):
+    started = time.monotonic()
+    row = _fit_model(model, sample_ids, args, batch_temp, weights_dir)
+    row["elapsed_seconds"] = round(time.monotonic() - started, 3)
+    return row
+
+
+def _fit_model(model, sample_ids, args, batch_temp, weights_dir):
     safe_id = re.sub(r"[^A-Za-z0-9_.-]", "_", model.phenotype_id)
     work_dir = batch_temp / f"{model.bed_index:09d}_{safe_id}"
     if work_dir.exists():
@@ -338,6 +353,7 @@ def main():
     rows = [None] * len(models)
     outcomes = {"success": 0, "skipped": 0, "failed": 0}
     started = time.monotonic()
+    timings_path = args.status.with_suffix(".timings.tsv")
     print(
         f"Starting {len(models)} TWAS models with {args.threads} workers",
         file=sys.stderr,
@@ -352,6 +368,8 @@ def main():
             index = futures[future]
             row = future.result()
             rows[index] = row
+            # Keep completed timings even if this batch later fails or is killed.
+            write_status(timings_path, [item for item in rows if item is not None])
             outcomes[row["outcome"]] += 1
             elapsed = time.monotonic() - started
             print(

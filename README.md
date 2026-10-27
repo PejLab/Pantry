@@ -254,6 +254,8 @@ It is recommended to run the script before executing the Pheast snakemake workfl
 
 #### Pheast output files
 
+TWAS batch workers automatically limit OpenBLAS, OpenMP, MKL, BLIS, and Accelerate to one thread per subprocess; `twas_threads` controls the number of phenotypes fitted concurrently. No shell environment settings are needed. Each phenotype's wall time, including input preparation and cleanup but excluding time queued for a worker, is recorded in `elapsed_seconds` in the batch status table. A sibling `<batch_start>_<batch_end>.timings.tsv` table is updated atomically after every completed phenotype, including scientific skips and failures, so completed timings remain available when a batch fails or is interrupted. An interrupted phenotype has no completed timing.
+
 Pheast will generate, in its own `output/` directory, results in their typical formats, including cis-QTL files directly from `tensorqtl` and TWAS transcriptomic models in the same compressed archive format as the [models provided in the FUSION documentation](http://gusevlab.org/projects/fusion/#download-pre-computed-predictive-models).
 
 ## Citing
